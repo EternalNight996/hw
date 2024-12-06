@@ -152,8 +152,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets",
 ]
 
@@ -216,11 +218,12 @@ dependencies = [
 
 [[package]]
 name = "e-utils"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f05c88ed15815aed47892c3c6a8c3effdc3d47601542362565ebf9259c03c28"
+checksum = "68c07d7e01193273df38b2c04762846d94bb0ec6efcbcc9d835891c5ab26300a"
 dependencies = [
  "async-trait",
+ "chrono",
  "encoding_rs",
  "memchr",
  "once_cell",
@@ -403,7 +406,7 @@ dependencies = [
 
 [[package]]
 name = "hw"
-version = "0.1.0-beta.1"
+version = "0.1.0"
 dependencies = [
  "built",
  "e-utils",

@@ -4,8 +4,8 @@ crate-type = ["rlib"]
 proc-macro = false
 
 [features]
-ohm = ["wmi","system"]
-aida64 = ["wmi","system"]
+ohm = ["wmi", "system"]
+aida64 = ["wmi", "system"]
 cli = ["structopt"]
 system = ["sysinfo/system"]
 user = ["sysinfo/user"]
@@ -16,19 +16,14 @@ component = ["sysinfo/component"]
 os = ["system", "user", "network", "multithread", "disk", "component"]
 build = ["winresource", "static_vcruntime"]
 built = ["dep:built"]
-default = ["aida64","os","ohm","cli"]
+default = ["aida64", "os", "ohm", "cli", "build", "built"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
 static_vcruntime = { version = "2", optional = true }
 [build-dependencies]
 built = { version = "0.7", features = ["chrono", "git2"], optional = true }
-[package.metadata.winresource]
-OriginalFilename = "hw.exe"
-Comments = "Hardware Monitor"
-FileDescription = "Hardware Monitor"
-LegalCopyright = "Copyright (C) Eternal Night"
-ProductName = "Hardware Monitor"
+e-utils = { version = "0.4", features = ["chrono", "cmd"] }
 
 [target.'cfg(target_os="windows")'.dependencies]
 wmi = { version = "0.14", optional = true }
@@ -48,7 +43,7 @@ hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.0-beta.1"
+version = "0.1.0"
 authors = [
     "Eternal Night <EternalNight996@gmail.com, EternalNightYeah2@yeah.net>",
 ]
@@ -59,12 +54,6 @@ homepage = "https://gitee.com/eternalnight996"
 categories = ["gui", "network-programming"]
 description = "MII - Machine Internal Inspection"
 documentation = "https://docs.rs"
-keywords = [
-    "hardware",
-    "monitor",
-    "system",
-    "sensors",
-    "hw",
-]
-include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "docs/", "COPYRIGHT","examples/","build.rs"]
+keywords = ["hardware", "monitor", "system", "sensors", "hw"]
+include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "COPYRIGHT", "build.rs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

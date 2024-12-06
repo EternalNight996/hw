@@ -2,13 +2,13 @@
 root_dir := justfile_directory()
 os := os_family()
 arch := arch()
-scripts_dir := root_dir / "scripts" / os
+scripts_dir :=  "C:/scripts" / os
 project := "hw"
 base_dir := root_dir / "target"
 release_dir := base_dir / "release"
 out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
-features := "built"
+features := "build,built"
 
 # 运行开发版本（带参数）
 set positional-arguments
@@ -158,6 +158,12 @@ _copy-resources:
     fi
     @if [ "{{os}}" = "windows" ] && [ -f "{{scripts_dir}}/e-app-fileinfo.exe" ]; then \
         "{{scripts_dir}}/e-app-fileinfo.exe" --api fileinfo --task copy-lib --args "{{out_dir}}/{{project}}.exe" "{{out_dir}}" ; \
+    fi
+    @if [ -f "build.txt" ]; then \
+        just copy "build.txt" "{{out_dir}}/" ; \
+    fi
+    @if [ -f "version.txt" ]; then \
+        just copy "version.txt" "{{out_dir}}/" ; \
     fi
 
 # 跨平台复制
