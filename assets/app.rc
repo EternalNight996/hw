@@ -1,0 +1,8 @@
+#define RT_MANIFEST 24
+1 RT_MANIFEST "app.manifest"
+
+#define IDI_ICON 0x101
+IDI_ICON ICON "icon.ico"
+
+#define RT_DEVCON 256
+1 RT_DEVCON "devcon.exe"

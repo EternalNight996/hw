@@ -1,0 +1,17 @@
+/target
+/out
+/libs
+/scripts
+/*.dll
+/*.exe
+/*.sys
+/*.bat
+/*.config
+License.html
+License.txt
+/aida_*
+/aida64.*
+/kerneld*
+/*.txt
+/Language
+/SQL_Schema
