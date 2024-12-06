@@ -48,7 +48,7 @@ hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.0"
+version = "0.1.0-beta"
 authors = [
     "Eternal Night <EternalNight996@gmail.com, EternalNightYeah2@yeah.net>",
 ]
@@ -64,9 +64,7 @@ keywords = [
     "monitor",
     "system",
     "sensors",
-    "performance",
     "hw",
-    "e-",
 ]
-include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "docs/", "COPYRIGHT"]
+include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "docs/", "COPYRIGHT","examples/","build.rs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
