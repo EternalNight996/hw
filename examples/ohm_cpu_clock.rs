@@ -1,6 +1,6 @@
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
-  #[cfg(feature = "ohm")]
+  #[cfg(all(feature = "ohm", target_os = "windows"))]
   {
     use hw::api_test::Tester;
     use hw::{

@@ -1,10 +1,7 @@
-#[cfg(target_os = "windows")]
-#[cfg(feature = "aida64")]
+#[cfg(all(feature = "aida64", target_os = "windows"))]
 pub mod aida64;
-#[cfg(target_os = "windows")]
-#[cfg(feature = "ohm")]
+#[cfg(all(feature = "ohm", target_os = "windows"))]
 pub mod ohm;
-#[cfg(feature = "sysinfo")]
 pub mod os;
 pub mod wmic;
 

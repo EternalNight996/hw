@@ -14,9 +14,9 @@ pub static LOAD_CONTROLLER: Lazy<LoadController> = Lazy::new(|| LoadController::
 pub const EXTEND1: i32 = 0x1;
 
 pub enum Inner {
-  #[cfg(feature = "ohm")]
+  #[cfg(all(feature = "ohm", target_os = "windows"))]
   OHM(crate::ohm::OHM),
-  #[cfg(feature = "aida64")]
+  #[cfg(all(feature = "aida64", target_os = "windows"))]
   AIDA64(crate::aida64::AIDA64),
   #[cfg(feature = "os")]
   OS(crate::os::OS),
@@ -24,17 +24,16 @@ pub enum Inner {
 impl Inner {
   #[cfg(feature = "cli")]
   pub fn from_api(api: crate::OptsApi) -> e_utils::AnyResult<Self> {
-    #[allow(unused)]
     use crate::{wmic::HardwareMonitor as _, OptsApi};
 
     match api {
-      #[cfg(feature = "ohm")]
+      #[cfg(all(feature = "ohm", target_os = "windows"))]
       OptsApi::OHM => Ok(Self::OHM(crate::ohm::OHM::new()?)),
-      #[cfg(not(feature = "ohm"))]
+      #[cfg(not(all(feature = "ohm", target_os = "windows")))]
       OptsApi::OHM => Err("OHM not supported".into()),
-      #[cfg(feature = "aida64")]
+      #[cfg(all(feature = "aida64", target_os = "windows"))]
       OptsApi::AIDA64 => Ok(Self::AIDA64(crate::aida64::AIDA64::new()?)),
-      #[cfg(not(feature = "aida64"))]
+      #[cfg(not(all(feature = "aida64", target_os = "windows")))]
       OptsApi::AIDA64 => Err("AIDA64 not supported".into()),
       #[cfg(feature = "os")]
       OptsApi::OS => Ok(Self::OS(crate::os::OS::new())),
@@ -46,7 +45,7 @@ impl Inner {
 
 /// API
 impl Inner {
-   #[cfg(feature = "system")]
+  #[cfg(feature = "system")]
   pub async fn get_cpu_core_count(&self) -> e_utils::AnyResult<usize> {
     let mut sys = sysinfo::System::new();
     sys.refresh_cpu_specifics(sysinfo::CpuRefreshKind::nothing().with_frequency());
@@ -132,8 +131,13 @@ impl LoadController {
     self.running.store(false, Ordering::SeqCst);
   }
   /// 启动负载
-   #[cfg(feature = "system")]
-  pub fn spawn_load(core_count: usize, hw_type: &HardwareType, s_type: &SensorType, loaded: f64) -> e_utils::Result<Vec<std::thread::JoinHandle<()>>> {
+  #[cfg(feature = "system")]
+  pub fn spawn_load(
+    core_count: usize,
+    hw_type: &HardwareType,
+    s_type: &SensorType,
+    loaded: f64,
+  ) -> e_utils::Result<Vec<std::thread::JoinHandle<()>>> {
     LOAD_CONTROLLER.set_loaded(loaded);
     if matches!(
       (hw_type, s_type),
@@ -159,7 +163,7 @@ impl LoadController {
 }
 
 /// 生成CPU负载的线程
- #[cfg(feature = "system")]
+#[cfg(feature = "system")]
 fn spawn_cpu_load(core_count: usize) -> Vec<std::thread::JoinHandle<()>> {
   use std::time::{Duration, Instant};
   const ADJUST_INTERVAL: Duration = Duration::from_secs(1);
@@ -196,7 +200,7 @@ fn spawn_cpu_load(core_count: usize) -> Vec<std::thread::JoinHandle<()>> {
     .collect()
 }
 /// 调整负载
- #[cfg(feature = "system")]
+#[cfg(feature = "system")]
 fn adjust_load(sys: &mut sysinfo::System) {
   sys.refresh_cpu_specifics(sysinfo::CpuRefreshKind::nothing().with_cpu_usage());
   let cpu_load = sys.global_cpu_usage();

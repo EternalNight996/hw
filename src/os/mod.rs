@@ -1,3 +1,4 @@
+#[cfg(feature = "system")]
 pub use sysinfo;
 #[allow(unused)]
 use crate::api_test::{HardwareType, Sensor, SensorType};

@@ -1,6 +1,6 @@
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
-  #[cfg(feature = "aida64")]
+  #[cfg(all(feature = "aida64", target_os = "windows"))]
   {
     use hw::api_test::Tester;
     use hw::{
