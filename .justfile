@@ -8,7 +8,9 @@ base_dir := root_dir / "target"
 release_dir := base_dir / "release"
 out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
-features := "os"
+features := "build,built"
+ignore_lib := "shell32.dll KERNEL32.DLL ntdll.dll USER32.dll GDI32.dll ADVAPI32.dll WS2_32.dll ole32.dll OLEAUT32.dll SHLWAPI.dll COMCTL32.dll COMDLG32.dll VERSION.dll WINMM.dll IMM32.dll MSIMG32.dll"
+
 
 # 运行开发版本（带参数）
 set positional-arguments
@@ -60,6 +62,7 @@ build:
     just _copy-exe
     just _compress-exe
     just _copy-resources
+    just copy-lib "{{out_dir}}/{{project}}.exe" "{{out_dir}}" "{{ignore_lib}}"
     # 打开输出目录
     just open "{{out_dir}}"
 
@@ -156,8 +159,8 @@ _copy-resources:
     @if [ -f "readme.md" ]; then \
         just copy "readme.md" "{{out_dir}}/" ; \
     fi
-    @if [ "{{os}}" = "windows" ] && [ -f "{{scripts_dir}}/e-app-fileinfo.exe" ]; then \
-        "{{scripts_dir}}/e-app-fileinfo.exe" --api fileinfo --task copy-lib --args "{{out_dir}}/{{project}}.exe" "{{out_dir}}" ; \
+    @if [ -f "readme.zh.md" ]; then \
+        just copy "readme.zh.md" "{{out_dir}}/" ; \
     fi
     @if [ -f "build.txt" ]; then \
         just copy "build.txt" "{{out_dir}}/" ; \
@@ -166,7 +169,21 @@ _copy-resources:
         just copy "git_history.txt" "{{out_dir}}/" ; \
     fi
 
-# 跨平台复制
+
+# 复制依赖
+copy-lib src="" target="" ignore="":
+    @if [ "{{os}}" = "windows" ] && [ -f "{{scripts_dir}}/e-app-fileinfo.exe" ]; then \
+        "{{scripts_dir}}/e-app-fileinfo.exe" --api fileinfo --task copy-lib --args "{{src}}" "{{target}}" ; \
+        if [ -n "{{ignore}}" ]; then \
+            for file in {{ignore}}; do \
+                if [ -f "{{target}}/$file" ]; then \
+                    just remove "{{target}}/$file" ; \
+                fi \
+            done \
+        fi \
+    fi
+
+# 跨平台复制 
 copy src dst:
     @if [ "{{os}}" = "windows" ]; then \
         powershell -NoProfile -Command "\
@@ -199,3 +216,4 @@ remove src:
             rm -f "{{src}}" ; \
         fi \
     fi
+

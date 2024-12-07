@@ -1,6 +1,6 @@
-<img src="../assets/icon.ico" alt=""/>
+<img src="assets/icon.ico" alt=""/>
 
-### 📄 [English](../readme.md)  | 📄  [中文](readme.zh.md)
+### 📄 [English](readme.md)  | 📄  [中文](readme.zh.md)
 [![Test Status](https://github.com/rust-random/rand/workflows/Tests/badge.svg?event=push)](https://github.com/eternalnight996/hw/actions) [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://doc.rust-lang.org/book/) [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw) [![API](https://docs.rs/hw/badge.svg)](https://docs.rs/rand)
 
 # 一个强大的跨平台硬件监控工具
@@ -41,7 +41,19 @@
 ## 📸 界面预览与命令示例
 
 ### OpenHardwareMonitor 监控
-![OHM监控界面](../assets/screen/OHM.png)
+![OHM监控界面](assets/screen/OHM.png)
+
+**Cargo 安装示例:**
+```bash
+cargo install hw
+```
+**just 安装示例:**
+```bash
+git clone https://github.com/eternalnight996/hw.git
+cd hw
+cargo install just
+just
+```
 
 **CPU Clock监控示例**
 
@@ -73,10 +85,10 @@ R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"re
   - `100`: CPU负载百分比
 
 ### AIDA64 监控
-![AIDA64监控界面](../assets/screen/AIDA64.png)
+![AIDA64监控界面](assets/screen/AIDA64.png)
 
 ### sysinfo 监控
-![系统监控界面](../assets/screen/OS.png)
+![系统监控界面](assets/screen/OS.png)
 
 ### 传感器类型支持详情
 <table>
@@ -471,9 +483,9 @@ async fn main() -> e_utils::AnyResult<()> {
   Ok(())
 }
 ```
-### [📖 Rust调用OHM做内部调用](../examples/ohm_cpu_clock.rs)
-### [📖 Rust调用OS做内部调用](../examples/os_cpu_clock.rs)
-### [📖 Rust调用AIDA64做内部调用](../examples/aida64_cpu_voltage.rs)
+### [📖 Rust调用OHM做内部调用](examples/ohm_cpu_clock.rs)
+### [📖 Rust调用OS做内部调用](examples/os_cpu_clock.rs)
+### [📖 Rust调用AIDA64做内部调用](examples/aida64_cpu_voltage.rs)
 
 ---
 ## 依赖版本

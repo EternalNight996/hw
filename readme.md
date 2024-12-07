@@ -1,6 +1,6 @@
 <img src="assets/icon.ico" alt=""/>
 
-### 📄 [中文](docs/readme.zh.md)  | 📄  [English](readme.md)
+### 📄 [中文](readme.zh.md)  | 📄  [English](readme.md)
 [![Test Status](https://github.com/rust-random/rand/workflows/Tests/badge.svg?event=push)](https://github.com/eternalnight996/hw/actions) [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://doc.rust-lang.org/book/) [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw) [![API](https://docs.rs/hw/badge.svg)](https://docs.rs/rand)
 
 # A Powerful Cross-Platform Hardware Monitoring Tool
@@ -44,6 +44,18 @@ This is a hardware monitoring tool written in Rust that supports multiple monito
 ![OHM Monitoring Interface](assets/screen/OHM.png)
 
 **CPU Clock Monitoring Example**
+
+**Cargo Command Install Examples:**
+```bash
+cargo install hw
+```
+**just install examples:**
+```bash
+git clone https://github.com/eternalnight996/hw.git
+cd hw
+cargo install just
+just
+```
 
 1. **data command** - Returns current value only
 ```bash

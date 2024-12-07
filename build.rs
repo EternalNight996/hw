@@ -12,7 +12,6 @@ fn main() -> Result<()> {
   // 基础编译配置
   println!("cargo:rustc-env=RUSTFLAGS=-C target-cpu=native");
   println!("cargo:rustc-link-arg=-s"); // 剥离符号表
-
   #[cfg(all(feature = "build", target_os = "windows"))]
   setup_windows_build()?;
   #[cfg(feature = "built")]
