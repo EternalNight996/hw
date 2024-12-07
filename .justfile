@@ -8,7 +8,7 @@ base_dir := root_dir / "target"
 release_dir := base_dir / "release"
 out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
-features := "build,built"
+features := "built,build"
 
 # 运行开发版本（带参数）
 set positional-arguments
@@ -162,8 +162,8 @@ _copy-resources:
     @if [ -f "build.txt" ]; then \
         just copy "build.txt" "{{out_dir}}/" ; \
     fi
-    @if [ -f "version.txt" ]; then \
-        just copy "version.txt" "{{out_dir}}/" ; \
+    @if [ -f "git_history.txt" ]; then \
+        just copy "git_history.txt" "{{out_dir}}/" ; \
     fi
 
 # 跨平台复制

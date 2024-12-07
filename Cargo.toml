@@ -14,8 +14,8 @@ multithread = ["sysinfo/multithread"]
 disk = ["sysinfo/disk"]
 component = ["sysinfo/component"]
 os = ["system", "user", "network", "multithread", "disk", "component"]
-build = ["winresource", "static_vcruntime"]
-built = ["dep:built"]
+build = ["winresource", "static_vcruntime", "e-utils/build"]
+built = ["dep:built", "e-utils/fs"]
 default = ["aida64", "os", "ohm", "cli", "build", "built"]
 
 [target.'cfg(windows)'.build-dependencies]
@@ -23,7 +23,7 @@ winresource = { version = "0.1", optional = true }
 static_vcruntime = { version = "2", optional = true }
 [build-dependencies]
 built = { version = "0.7", features = ["chrono", "git2"], optional = true }
-e-utils = { version = "0.4", features = ["chrono", "cmd"] }
+e-utils = { version = "0.4" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 wmi = { version = "0.14", optional = true }
