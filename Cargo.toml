@@ -16,7 +16,7 @@ component = ["sysinfo/component"]
 os = ["system", "user", "network", "multithread", "disk", "component"]
 build = ["winresource", "static_vcruntime", "e-utils/build"]
 built = ["dep:built", "e-utils/fs"]
-default = ["aida64", "os", "ohm", "cli", "build", "built"]
+default = ["aida64", "os", "ohm", "cli"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
