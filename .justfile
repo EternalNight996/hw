@@ -8,7 +8,7 @@ base_dir := root_dir / "target"
 release_dir := base_dir / "release"
 out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
-features := "built,build"
+features := "os"
 
 # 运行开发版本（带参数）
 set positional-arguments

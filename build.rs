@@ -1,3 +1,4 @@
+#![allow(unused)]
 use e_utils::AnyResult as Result;
 
 // 常量定义
