@@ -1,6 +1,6 @@
 <img src="assets/icon.ico" alt=""/>
 
-### 📄 [中文](docs/README.ZH.MD)  | 📄  [English](README.MD)
+### 📄 [中文](docs/readme.zh.md)  | 📄  [English](readme.md)
 [![Test Status](https://github.com/rust-random/rand/workflows/Tests/badge.svg?event=push)](https://github.com/eternalnight996/hw/actions) [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://doc.rust-lang.org/book/) [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw) [![API](https://docs.rs/hw/badge.svg)](https://docs.rs/rand)
 
 # A Powerful Cross-Platform Hardware Monitoring Tool
