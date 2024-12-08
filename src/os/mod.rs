@@ -1,19 +1,18 @@
-#[cfg(feature = "system")]
-pub use sysinfo;
+pub use sysinfo::*;
 #[allow(unused)]
 use crate::api_test::{HardwareType, Sensor, SensorType};
 
 #[cfg(feature = "system")]
-pub struct OS(sysinfo::System);
+pub struct OS(System);
 #[cfg(feature = "system")]
 impl OS {
   pub fn new() -> Self {
-    Self(sysinfo::System::new())
+    Self(System::new())
   }
-  pub fn get_mut(&mut self) -> &mut sysinfo::System {
+  pub fn get_mut(&mut self) -> &mut System {
     &mut self.0
   }
-  pub fn get(&self) -> &sysinfo::System {
+  pub fn get(&self) -> &System {
     &self.0
   }
 }
@@ -59,7 +58,7 @@ impl OS {
       .enumerate()
       .flat_map(|(index, st)| match st {
         SensorType::GBData => {
-          self.0.refresh_memory_specifics(sysinfo::MemoryRefreshKind::nothing().with_ram());
+          self.0.refresh_memory_specifics(MemoryRefreshKind::nothing().with_ram());
           let total = Self::bytes_to_gib(self.0.total_memory()).round();
           let used = Self::bytes_to_gib(self.0.used_memory());
           let free = Self::bytes_to_gib(self.0.free_memory());
@@ -77,7 +76,7 @@ impl OS {
           }])
         }
         SensorType::GBSmallData => {
-          self.0.refresh_memory_specifics(sysinfo::MemoryRefreshKind::nothing().with_swap());
+          self.0.refresh_memory_specifics(MemoryRefreshKind::nothing().with_swap());
           let total = Self::bytes_to_gib(self.0.total_swap()).round();
           let used = Self::bytes_to_gib(self.0.used_swap());
           let free = Self::bytes_to_gib(self.0.free_swap());
@@ -95,7 +94,7 @@ impl OS {
           }])
         }
         SensorType::Load => {
-          self.0.refresh_memory_specifics(sysinfo::MemoryRefreshKind::nothing().with_ram());
+          self.0.refresh_memory_specifics(MemoryRefreshKind::nothing().with_ram());
           let total = self.0.total_memory() as f64;
           let used = self.0.used_memory() as f64;
           let load = (used / total * 100.0).round();
@@ -125,7 +124,7 @@ impl OS {
       .into_iter()
       .flat_map(|st| match st {
         SensorType::Clock => {
-          self.0.refresh_cpu_specifics(sysinfo::CpuRefreshKind::nothing().with_frequency());
+          self.0.refresh_cpu_specifics(CpuRefreshKind::nothing().with_frequency());
           let res: Vec<Sensor> = self
             .0
             .cpus()
@@ -150,7 +149,7 @@ impl OS {
           Some(res)
         }
         SensorType::Load => {
-          self.0.refresh_cpu_specifics(sysinfo::CpuRefreshKind::nothing().with_cpu_usage());
+          self.0.refresh_cpu_specifics(CpuRefreshKind::nothing().with_cpu_usage());
           let res: Vec<Sensor> = self
             .0
             .cpus()
