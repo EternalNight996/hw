@@ -51,9 +51,15 @@ edition = "2021"
 rust-version = "1.78.0"
 license-file = "LICENSE"
 homepage = "https://gitee.com/eternalnight996"
-categories = ["gui", "network-programming"]
 description = "MII - Machine Internal Inspection"
-documentation = "https://docs.rs"
+documentation = "https://docs.rs/hw"
 keywords = ["hardware", "monitor", "system", "sensors", "hw"]
+categories = [
+    "hardware-support",
+    "os::windows-apis",
+    "development-tools::monitoring",
+    "system-programming",
+    "command-line-utilities"
+]
 include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "COPYRIGHT", "build.rs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
