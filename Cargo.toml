@@ -57,8 +57,8 @@ keywords = ["hardware", "monitor", "system", "sensors", "hw"]
 categories = [
     "hardware-support",
     "os::windows-apis",
-    "development-tools::monitoring",
-    "system-programming",
+    "development-tools::debugging",
+    "os",
     "command-line-utilities"
 ]
 include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "COPYRIGHT", "build.rs"]
