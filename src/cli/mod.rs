@@ -12,12 +12,14 @@ arg_enum! {
     pub enum OptsApi {
         OHM,
         AIDA64,
-        OS
+        OS,
+        OS2
     }
 }
 
 /// e-app
 /// ------------------------------------------------------
+/// 
 #[derive(StructOpt, Debug, Clone, Serialize, Deserialize)]
 #[structopt(name = "", setting = structopt::clap::AppSettings::TrailingVarArg,)]
 #[structopt(after_help = r#"
@@ -165,30 +167,6 @@ impl Default for Opts {
 
 impl Opts {
   /// # Example
-  ///```rust
-  /// #[tokio::main]
-  /// async fn main() -> e_utils::AnyResult<()> {
-  ///   use e_utils::cmd::CmdResult;
-  ///   use hw::cli::api;
-  ///   use hw::cli::Opts;
-  ///   use serde_json::Value;
-  ///   let opts = Opts::new(None as Option<Vec<&str>>)?;
-  ///   let mut res: CmdResult<Value> = CmdResult {
-  ///     content: String::new(),
-  ///     status: false,
-  ///     opts: Value::Null,
-  ///   };
-  ///   match api(opts, &mut res.opts).await {
-  ///     Ok(v) => {
-  ///       res.content = v;
-  ///       res.status = true;
-  ///     }
-  ///     Err(e) => res.content = e.to_string(),
-  ///   }
-  ///   println!("\n{}", res.to_str()?);
-  ///   Ok(())
-  /// }
-  /// ```
   pub fn new<I>(args: Option<I>) -> AnyResult<Self>
   where
     Self: Sized,

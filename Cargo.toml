@@ -8,15 +8,32 @@ ohm = ["wmi", "system"]
 aida64 = ["wmi", "system"]
 cli = ["structopt"]
 system = ["sysinfo/system"]
-user = ["sysinfo/user"]
-network = ["sysinfo/network"]
+user = ["sysinfo/user", "desktop"]
+desktop = [
+    "windows/Win32_Foundation",
+    "windows/Win32_Storage_FileSystem",
+    "windows/Win32_NetworkManagement_NetManagement",
+]
+network = ["sysinfo/network", "net-interface", "futures"]
 multithread = ["sysinfo/multithread"]
 disk = ["sysinfo/disk"]
 component = ["sysinfo/component"]
 os = ["system", "user", "network", "multithread", "disk", "component"]
+drive = [
+    "winapi/winbase",
+    "winapi/libloaderapi",
+    "winapi/minwinbase",
+    "winapi/winuser",
+]
 build = ["winresource", "static_vcruntime", "e-utils/build"]
 built = ["dep:built", "e-utils/fs"]
-default = ["aida64", "os", "ohm", "cli"]
+net-interface = [
+    "windows/Win32_Foundation",
+    "windows/Win32_NetworkManagement_IpHelper",
+    "windows/Win32_Networking_WinSock",
+    "libc",
+]
+default = ["aida64", "os", "ohm", "cli", "drive"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
@@ -27,6 +44,8 @@ e-utils = { version = "0.4" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 wmi = { version = "0.14", optional = true }
+windows = { version = "0.30", optional = true }
+winapi = { version = "0.3.9", optional = true }
 
 [dependencies]
 e-utils = { version = "0.4", features = ["tokio", "cmd"] }
@@ -36,7 +55,8 @@ serde_json = "1.0"
 structopt = { version = "0.3", optional = true }
 strum = { version = "0.26", features = ["derive"] }
 sysinfo = { version = "0.33", default-features = false }
-
+libc = { version = "0.2", optional = true }
+futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
 hw = { path = "./" }
@@ -59,7 +79,7 @@ categories = [
     "os::windows-apis",
     "development-tools::debugging",
     "os",
-    "command-line-utilities"
+    "command-line-utilities",
 ]
 include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "COPYRIGHT", "build.rs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -20,6 +20,7 @@ pub enum Inner {
   AIDA64(crate::aida64::AIDA64),
   #[cfg(feature = "os")]
   OS(crate::os::OS),
+  OS2,
 }
 impl Inner {
   #[cfg(feature = "cli")]
@@ -39,6 +40,7 @@ impl Inner {
       OptsApi::OS => Ok(Self::OS(crate::os::OS::new())),
       #[cfg(not(feature = "os"))]
       OptsApi::OS => Err("OS not supported".into()),
+      OptsApi::OS2 => Ok(Self::OS2),
     }
   }
 }

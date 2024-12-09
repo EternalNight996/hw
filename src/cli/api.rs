@@ -1,19 +1,22 @@
-use crate::api_test::Tester;
+use std::str::FromStr as _;
+
 #[allow(unused)]
 use super::{Opts, OptsApi};
+use crate::{api_test::Tester, os};
 use serde_json::Value;
+use strum::VariantArray;
 
 /// # Input api 统一接口
 pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
   let mut tester = Tester::from_opts(&op)?;
-  if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
-    return Err("Task No check Or print Or data".into());
-  }
   println!("{}", tester.get_test_start());
   #[cfg(any(feature = "ohm", feature = "aida64", feature = "os"))]
   match tester.inner {
     #[cfg(all(feature = "ohm", target_os = "windows"))]
     crate::api_test::Inner::OHM(_) => {
+      if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
+        return Err("Task No check Or print Or data".into());
+      }
       use crate::wmic::HardwareMonitor as _;
       let pid = crate::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
       crate::ohm::OHM::test(100)?;
@@ -29,6 +32,9 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
     }
     #[cfg(all(feature = "aida64", target_os = "windows"))]
     crate::api_test::Inner::AIDA64(_) => {
+      if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
+        return Err("Task No check Or print Or data".into());
+      }
       use crate::wmic::HardwareMonitor as _;
       let pid = crate::common::process::run("AIDA64.exe", std::env::current_dir()?)?;
       crate::aida64::AIDA64::test(100)?;
@@ -44,6 +50,9 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
     }
     #[cfg(feature = "os")]
     crate::api_test::Inner::OS(_) => {
+      if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
+        return Err("Task No check Or print Or data".into());
+      }
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load()?;
       let res = tester.run().await;
@@ -52,6 +61,16 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         handle.join().unwrap();
       }
       tester = res?;
+    }
+    crate::api_test::Inner::OS2 => {
+      let more_type = os::Type::from_str(&op.task).unwrap_or_default();
+      let more_types = if let os::Type::ALL = more_type {
+        os::Type::VARIANTS.to_vec()
+      } else {
+        vec![more_type]
+      };
+      let res = crate::os::query_os_more(&more_types, &op.args,&op.command).await?.join(", ");
+      return Ok(res);
     }
   };
   if tester.core.results.data.is_empty() && tester.core.is_check {

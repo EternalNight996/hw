@@ -444,6 +444,15 @@ hw --api OS --task print
 # CPU load monitoring
 hw --api OS --task check --args CPU Load
 ```
+
+### More
+```bash
+# CPU name
+hw --api OSInfo --task CpuName
+# Memory total
+hw --api OSInfo --task MemoryTotal
+# ...
+```
 ---
 ## Rust Call Usage Examples
 ### 📖 Features
@@ -485,6 +494,7 @@ async fn main() -> e_utils::AnyResult<()> {
 ### [📖 Rust调用OHM做内部调用](./examples/ohm_cpu_clock.rs)
 ### [📖 Rust调用OS做内部调用](./examples/os_cpu_clock.rs)
 ### [📖 Rust调用AIDA64做内部调用](./examples/aida64_cpu_voltage.rs)
+### [📖 Rust调用OSInfo做内部调用](./examples/osinfo_more.rs)
 ---
 ## Dependencies Version
 

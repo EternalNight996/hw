@@ -1,3 +1,9 @@
+pub mod net_interface;
+pub mod net_manage;
+pub mod user_desktop;
+pub mod drive;
+mod more;
+pub use more::*;
 pub use sysinfo::*;
 #[allow(unused)]
 use crate::api_test::{HardwareType, Sensor, SensorType};
@@ -48,10 +54,7 @@ impl OS {
       Ok(res.concat())
     }
   }
-  /// 将字节转换为 GiB，保留两位小数
-  fn bytes_to_gib(bytes: u64) -> f64 {
-    bytes as f64 / (1024.0 * 1024.0 * 1024.0)
-  }
+  
   fn query_memory(&mut self, sts: &Vec<SensorType>, parent: &HardwareType) -> Vec<Sensor> {
     sts
       .into_iter()
@@ -59,9 +62,9 @@ impl OS {
       .flat_map(|(index, st)| match st {
         SensorType::GBData => {
           self.0.refresh_memory_specifics(MemoryRefreshKind::nothing().with_ram());
-          let total = Self::bytes_to_gib(self.0.total_memory()).round();
-          let used = Self::bytes_to_gib(self.0.used_memory());
-          let free = Self::bytes_to_gib(self.0.free_memory());
+          let total = bytes_to_gib(self.0.total_memory()).round();
+          let used = bytes_to_gib(self.0.used_memory());
+          let free = bytes_to_gib(self.0.free_memory());
           Some(vec![Sensor {
             Name: "MemoryTotal".into(),
             Identifier: "MemoryTotal".into(),
@@ -77,9 +80,9 @@ impl OS {
         }
         SensorType::GBSmallData => {
           self.0.refresh_memory_specifics(MemoryRefreshKind::nothing().with_swap());
-          let total = Self::bytes_to_gib(self.0.total_swap()).round();
-          let used = Self::bytes_to_gib(self.0.used_swap());
-          let free = Self::bytes_to_gib(self.0.free_swap());
+          let total = bytes_to_gib(self.0.total_swap()).round();
+          let used = bytes_to_gib(self.0.used_swap());
+          let free = bytes_to_gib(self.0.free_swap());
           Some(vec![Sensor {
             Name: "SwapTotal".into(),
             Identifier: "SwapTotal".into(),
