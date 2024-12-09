@@ -18,13 +18,15 @@ network = ["sysinfo/network", "net-interface", "futures"]
 multithread = ["sysinfo/multithread"]
 disk = ["sysinfo/disk"]
 component = ["sysinfo/component"]
-os = ["system", "user", "network", "multithread", "disk", "component"]
 drive = [
     "winapi/winbase",
     "winapi/libloaderapi",
     "winapi/minwinbase",
     "winapi/winuser",
 ]
+file-info = ["goblin", "winapi/winbase"]
+os-system = []
+os-office = []
 build = ["winresource", "static_vcruntime", "e-utils/build"]
 built = ["dep:built", "e-utils/fs"]
 net-interface = [
@@ -33,7 +35,17 @@ net-interface = [
     "windows/Win32_Networking_WinSock",
     "libc",
 ]
-default = ["aida64", "os", "ohm", "cli", "drive"]
+os = [
+    "system",
+    "user",
+    "network",
+    "multithread",
+    "disk",
+    "component",
+    "os-system",
+    "os-office",
+]
+default = ["aida64", "os", "ohm", "cli", "drive", "file-info"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
@@ -48,7 +60,7 @@ windows = { version = "0.30", optional = true }
 winapi = { version = "0.3.9", optional = true }
 
 [dependencies]
-e-utils = { version = "0.4", features = ["tokio", "cmd"] }
+e-utils = { version = "0.4.5", features = ["tokio", "cmd", "parse"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
@@ -57,13 +69,14 @@ strum = { version = "0.26", features = ["derive"] }
 sysinfo = { version = "0.33", default-features = false }
 libc = { version = "0.2", optional = true }
 futures = { version = "0.3", optional = true }
+goblin = { version = "0.9", optional = true }
 
 [dev-dependencies]
 hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
     "Eternal Night <EternalNight996@gmail.com, EternalNightYeah2@yeah.net>",
 ]

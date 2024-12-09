@@ -1,16 +1,9 @@
-pub mod net_interface;
-pub mod net_manage;
-pub mod user_desktop;
-pub mod drive;
-mod more;
-pub use more::*;
-pub use sysinfo::*;
 #[allow(unused)]
 use crate::api_test::{HardwareType, Sensor, SensorType};
+use crate::share::bytes_to_gib;
+pub use sysinfo::*;
 
-#[cfg(feature = "system")]
 pub struct OS(System);
-#[cfg(feature = "system")]
 impl OS {
   pub fn new() -> Self {
     Self(System::new())
@@ -24,7 +17,6 @@ impl OS {
 }
 
 /// CPU
-#[cfg(feature = "system")]
 impl OS {
   /// 获取cpu核心数
   pub fn get_cpu_core_count(&self) -> usize {
@@ -32,7 +24,6 @@ impl OS {
   }
 }
 /// 接口
-#[cfg(feature = "system")]
 impl OS {
   pub fn query(&mut self, hw_type: HardwareType, sensor_type: SensorType) -> e_utils::AnyResult<Vec<Sensor>> {
     let hw_types = hw_type.all();
@@ -54,7 +45,7 @@ impl OS {
       Ok(res.concat())
     }
   }
-  
+
   fn query_memory(&mut self, sts: &Vec<SensorType>, parent: &HardwareType) -> Vec<Sensor> {
     sts
       .into_iter()

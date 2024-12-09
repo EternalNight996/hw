@@ -2,18 +2,19 @@ use std::str::FromStr as _;
 
 #[allow(unused)]
 use super::{Opts, OptsApi};
-use crate::{api_test::Tester, os};
+use crate::{
+  api_test::{Inner, Tester},
+  os_more,
+};
 use serde_json::Value;
 use strum::VariantArray;
 
 /// # Input api 统一接口
 pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
   let mut tester = Tester::from_opts(&op)?;
-  println!("{}", tester.get_test_start());
-  #[cfg(any(feature = "ohm", feature = "aida64", feature = "os"))]
   match tester.inner {
     #[cfg(all(feature = "ohm", target_os = "windows"))]
-    crate::api_test::Inner::OHM(_) => {
+    Inner::OHM(_) => {
       if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
         return Err("Task No check Or print Or data".into());
       }
@@ -21,7 +22,8 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let pid = crate::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
       crate::ohm::OHM::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
-      let load_handles = tester.spawn_load()?;
+      let load_handles = tester.spawn_load().unwrap_or_default();
+      println!("{}", tester.get_test_start());
       let res = tester.run().await;
       crate::common::process::kill(pid)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
@@ -31,7 +33,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       tester = res?;
     }
     #[cfg(all(feature = "aida64", target_os = "windows"))]
-    crate::api_test::Inner::AIDA64(_) => {
+    Inner::AIDA64(_) => {
       if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
         return Err("Task No check Or print Or data".into());
       }
@@ -39,7 +41,8 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let pid = crate::common::process::run("AIDA64.exe", std::env::current_dir()?)?;
       crate::aida64::AIDA64::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
-      let load_handles = tester.spawn_load()?;
+      let load_handles = tester.spawn_load().unwrap_or_default();
+      println!("{}", tester.get_test_start());
       let res = tester.run().await;
       crate::common::process::kill(pid)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
@@ -49,12 +52,13 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       tester = res?;
     }
     #[cfg(feature = "os")]
-    crate::api_test::Inner::OS(_) => {
+    Inner::OS(_) => {
       if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
         return Err("Task No check Or print Or data".into());
       }
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
-      let load_handles = tester.spawn_load()?;
+      let load_handles = tester.spawn_load().unwrap_or_default();
+      println!("{}", tester.get_test_start());
       let res = tester.run().await;
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
@@ -62,16 +66,20 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       }
       tester = res?;
     }
-    crate::api_test::Inner::OS2 => {
-      let more_type = os::Type::from_str(&op.task).unwrap_or_default();
-      let more_types = if let os::Type::ALL = more_type {
-        os::Type::VARIANTS.to_vec()
+    Inner::OSMore => {
+      let more_type = os_more::Type::from_str(&op.task).unwrap_or_default();
+      let more_types = if let os_more::Type::ALL = more_type {
+        os_more::Type::VARIANTS.to_vec()
       } else {
         vec![more_type]
       };
-      let res = crate::os::query_os_more(&more_types, &op.args,&op.command).await?.join(", ");
+      let res = crate::os_more::query_os_more(&more_types, op.args, op.command, op.full).await?.join(", ");
       return Ok(res);
     }
+    Inner::Drive => return crate::drive::drive_query(&op.task, &op.args, &op.command, op.full).await,
+    Inner::FileInfo => return crate::file_info::file_info_query(&op.task, &op.args, &op.command, op.full).await,
+    Inner::OSSystem => return crate::os_system::os_system_query(&op.task, &op.args, &op.command, op.full).await,
+    Inner::OSOffice => return crate::os_office::os_office_query(&op.task, &op.args, &op.command, op.full).await,
   };
   if tester.core.results.data.is_empty() && tester.core.is_check {
     tester.core.results.res = "FAIL".to_string();

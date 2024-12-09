@@ -59,20 +59,87 @@ just
 
 1. **data命令** - 仅返回当前值
 ```bash
-$ hw --api OS --task data --args CPU Clock
-R<{"content":"2904","status":true,"opts":null}>R
+hw --api OS --task data --args CPU Clock
+```
+```rust
+   Compiling hw v0.1.2 (D:\MyApp\hw)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.18s
+     Running `target\x86_64-pc-windows-msvc\debug\hw.exe --api OHM --task data --args CPU Clock`
+Started OpenHardwareMonitor.exe with PID: 5332
+Loading... (100%/100%)
+...
+--------------------------------
+平均值（1068MHz  0.0%）   数据:1068
+
+关闭负载
+
+=== 总结 -> CPU 中央处理器 ===
+--- 传感器 -> Clock 频率 MHz ---
+结果: PASS
+数据: 1068
+目标: 0.0 MHz
+平均: 1068.0 MHz
+最低: 901.2 MHz
+最高: 1101.5 MHz
+次数: 1
+错误次数: 0
+负载: 0.0%
+平均负载: 0.0%
+允许误差: ±0.0
+允许范围: 0.0 ~ 0.0 MHz
+====================
+
+
+R<{"content":"1068","status":true,"opts":null}>R
 ```
 
 2. **print命令** - 返回完整统计信息
 ```bash
-$ hw --api OS --task print --args CPU Clock
-R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"2904\",\"min\":2904.0,\"max\":2904.0,\"avg\":2904.0,\"total\":104544.0,\"samples\":36,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":99.0,\"total\":3576.0,\"status\":[]},\"status\":[[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0]]}","status":true,"opts":null}>R
+hw --api OHM --task print --full --args CPU Clock
+```
+```rust
+...
+
+R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"1102\",\"min\":1101.5174560546875,\"max\":1101.5174560546875,\"avg\":1102.0,\"total\":6609.104736328125,\"samples\":6,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":0.0,\"total\":0.0,\"status\":[]},\"status\":[[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875]]}","status":true,"opts":null}>R
 ```
 
 3. **check命令** - 进行值范围验证和负载测试
 ```bash
-$ hw --api OS --task check --args CPU Clock -- 10 2000 3000 100
-R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"2904\",\"min\":2904.0,\"max\":2904.0,\"avg\":2904.0,\"total\":104544.0,\"samples\":36,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":99.0,\"total\":3576.0,\"status\":[]},\"status\":[[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0],[\"\",2904.0]]}","status":true,"opts":null}>R
+hw --api OHM --task check --full --args CPU Clock -- 10 2000 3000 100
+```
+```rust
+...
+
+--- 第 10 秒中央处理器状态 ---
+CPU Core #1 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+CPU Core #6 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+CPU Core #5 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+CPU Core #4 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+CPU Core #3 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+CPU Core #2 - 当前=2904.0 MHz(频率) 误差: ±3000.0
+--------------------------------
+平均值（2904MHz  99.0%）   数据:2904
+
+关闭负载
+
+=== 总结 -> CPU 中央处理器 ===
+--- 传感器 -> Clock 频率 MHz ---
+结果: PASS
+数据: 2904
+目标: 2000.0 MHz
+平均: 2904.0 MHz
+最低: 2904.0 MHz
+最高: 2904.0 MHz
+次数: 10
+错误次数: 0
+负载: 100.0%
+平均负载: 99.0%
+允许误差: ±3000.0
+允许范围: -1000.0 ~ 5000.0 MHz
+====================
+
+
+R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"2904\",\"min\":2904.000732421875,\"max\":2904.001708984375,\"avg\":2904.0,\"total\":174240.07470703125,\"samples\":60,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":99.0,\"total\":5946.0,\"status\":[]},\"status\":[[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875]]}","status":true,"opts":null}>R 
 ```
 
 **命令区别说明：**
@@ -307,23 +374,25 @@ R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"re
     <th>MacOS</th>
     <th>Status</th>
     <th>Description</th>
+    <th>支持功能</th>
   </tr>
   <tr>
-    <td>OpenHardwareMonitor</td>
+    <td>OHM</td>
     <td>
       <h4 style="color:green">✓</h4>
       <span style="color:#888">100%</span>
     </td>
     <td>
-      <h4 style="color:orange">不支持</h4>
+      <h4>-</h4>
       <span style="color:#888">0%</span>
     </td>
     <td>
-      <h4 style="color:orange">不支持</h4>
+      <h4>-</h4>
       <span style="color:#888">0%</span>
     </td>
     <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>基础功能已完成，优化硬件兼容性</td>
+    <td>获取硬件传感器数据<br>完成所有功能开发</td>
+    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
   </tr>
   <tr>
     <td>AIDA64</td>
@@ -332,18 +401,19 @@ R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"re
       <span style="color:#888">100%</span>
     </td>
     <td>
-      <h4 style="color:orange">不支持</h4>
+      <h4>-</h4>
       <span style="color:#888">0%</span>
     </td>
     <td>
-      <h4 style="color:orange">不支持</h4>
+      <h4>-</h4>
       <span style="color:#888">0%</span>
     </td>
     <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>主要功能已稳定，持续改进解析</td>
+    <td>获取硬件传感器数据<br>完成所有功能开发</td>
+    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
   </tr>
   <tr>
-    <td>sysinfo</td>
+    <td>OS</td>
     <td>
       <h4 style="color:green">⚡</h4>
       <span style="color:#888">10%</span>
@@ -357,7 +427,98 @@ R<{"content":"{\"api\":\"OS\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"re
       <span style="color:#888">10%</span>
     </td>
     <td><h4 style="color:blue">🔄</h4><span>测试中</span></td>
-    <td>跨平台基础功能可用，支持更多的信息获取</td>
+    <td>接口Rust system跨平台基础功能可用<br>支持更多的信息获取</td>
+    <td>CPU,RAM</td>
+  </tr>
+  <tr>
+    <td>OSMore</td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>主要用于获取更多信息和管理</td>
+    <td>MemoryTotal(内存大小),CpuCoreCount(CPU内核数量),OsVersion(系统版本)<br>OsFullVersion(系统版本),KernelVersion(内核版本),HostName(主机名),Uptime(开机时间)<br>CpuUsage(CPU使用率),MemoryUsage(内存使用率),CpuArch(CPU架构),UserNames(用户名),<br>NetInterface(网络接口),NetManage[网络管理(DHCP、PING、同步时间、静态IP配置)],Desktop(桌面),Drive(硬盘),</td>
+  </tr>
+  <tr>
+    <td>Drive</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>对接PNPUTIL和devcon</td>
+    <td>scan(扫描),add-file(添加文件),add(添加),delete(删除),delete-find(删除并查找),<br>print(打印),nodes(节点),restart(重启),enable(启用),disable(禁用),remove(移除),export(导出)</td>
+  </tr>
+  <tr>
+    <td>FileInfo</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">99%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">99%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>获取文件的依赖dll或so，支持一键导出依赖</td>
+    <td>copy-lib(复制依赖),print(打印),nodes(列表)</td>
+  </tr>
+  <tr>
+    <td>OSSystem</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>系统</td>
+    <td>check(检查),check-with-cache(检查并缓存),activate(激活),deactivate(注销),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
+  </tr>
+  <tr>
+    <td>OSOffice</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">90%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>Office</td>
+    <td>check(检查),check-with-cache(检查并缓存),activate(激活),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
   </tr>
 </table>
 
@@ -386,16 +547,6 @@ just help
 just
 ```
 
-### 基本用法
-
-```bash
-# 打印所有硬件信息
-hw --api OHM --task print
-
-# 检查特定硬件指标
-hw --api OHM --task check --args CPU Temperature
-```
-
 ## 命令行参数
 
 ```
@@ -408,6 +559,12 @@ hw --api <API> --task <TASK> --args <HW_TYPE> <SENSOR_TYPE> -- [OPTIONS]
   - `OHM`: OpenHardwareMonitor
   - `AIDA64`: AIDA64
   - `OS`: sysinfo
+  - `OSMore`: 系统更多信息
+  - `Drive`: 驱动管理
+  - `FileInfo`: 文件信息
+  - `OSSystem`: 微软系统
+  - `OSOffice`: 微软Office
+
 - `--task`: 任务类型
   - `print`: 打印数据
   - `check`: 检查数值
@@ -438,7 +595,7 @@ hw --api AIDA64 --task check --args RAM Load
 hw --api AIDA64 --task check --args CPU Voltage
 ```
 
-### sysinfo
+### OS(sysinfo)
 ```bash
 # 系统整体状态
 hw --api OS --task print
@@ -446,50 +603,31 @@ hw --api OS --task print
 # CPU负载监控
 hw --api OS --task check --args CPU Load
 ```
+
+
 ---
 ## Rust调用使用示例
 ### 📖 特性
 ```toml
 [dependencies]
 # 所有特性
-hw = {version="0.1", default-features = false, feature=["cli", "ohm", "aida64", "os"]}
-# 打包则
-hw = {version="0.1", default-features = false, feature=["cli", "ohm", "aida64", "os","build"]}
+hw = {version="0.1"}
+# 打包所有特性
+hw = {version="0.1", default-features = false, feature=["build","built"]}
+# 只用OHM
+hw = {version="0.1", default-features = false, feature=["ohm"]}
+# 命令行则加上cli
+hw = {version="0.1", default-features = false, feature=["ohm","cli"]}
 ```
 
-### 🔢 调用cli做内部调用
-```rust
-#[cfg(feature = "cli")]
-#[tokio::main]
-async fn main() -> e_utils::AnyResult<()> {
-  use e_utils::cmd::CmdResult;
-  use hw::cli::api;
-  use hw::cli::Opts;
-  use serde_json::Value;
-  let opts = Opts::new(None as Option<Vec<&str>>)?;
-  let mut res: CmdResult<Value> = CmdResult {
-    content: String::new(),
-    status: false,
-    opts: Value::Null,
-  };
-  match api(opts, &mut res.opts).await {
-    Ok(v) => {
-      res.content = v;
-      res.status = true;
-    }
-    Err(e) => res.content = e.to_string(),
-  }
-  println!("\n{}", res.to_str()?);
-  Ok(())
-}
-```
-### [📖 Rust调用OHM做内部调用](examples/ohm_cpu_clock.rs)
-### [📖 Rust调用OS做内部调用](examples/os_cpu_clock.rs)
-### [📖 Rust调用AIDA64做内部调用](examples/aida64_cpu_voltage.rs)
+### [📖 Rust调用CLI做内部调用](examples/cli.rs)
+### [📖 Rust调用OHM做内部 获取CPU主频](examples/ohm_cpu_clock.rs)
+### [📖 Rust调用OS做内部调用 获取CPU主频](examples/os_cpu_clock.rs)
+### [📖 Rust调用AIDA64做内部调用 获取CPU主频](examples/aida64_cpu_voltage.rs)
+### [📖 Rust调用OSMore做内部调用 获取CPU主频](examples/os_more_all.rs)
 
 ---
-## 依赖版本
-
+## 第三方接口版本
 - OpenHardwareMonitor: v0.9.6
 - AIDA64: v7.40.7100
 - sysinfo: v0.33

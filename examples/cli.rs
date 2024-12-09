@@ -20,8 +20,6 @@ async fn main() -> e_utils::AnyResult<()> {
       Err(e) => res.content = e.to_string(),
     }
     println!("\n{}", res.to_str()?);
-    return Ok(());
   }
-  #[cfg(not(feature = "cli"))]
-  Err("请开启特性 cli".into())
+  Ok(())
 }

@@ -20,13 +20,16 @@ pub enum Inner {
   AIDA64(crate::aida64::AIDA64),
   #[cfg(feature = "os")]
   OS(crate::os::OS),
-  OS2,
+  OSMore,
+  Drive,
+  FileInfo,
+  OSSystem,
+  OSOffice,
 }
 impl Inner {
   #[cfg(feature = "cli")]
   pub fn from_api(api: crate::OptsApi) -> e_utils::AnyResult<Self> {
     use crate::{wmic::HardwareMonitor as _, OptsApi};
-
     match api {
       #[cfg(all(feature = "ohm", target_os = "windows"))]
       OptsApi::OHM => Ok(Self::OHM(crate::ohm::OHM::new()?)),
@@ -40,7 +43,11 @@ impl Inner {
       OptsApi::OS => Ok(Self::OS(crate::os::OS::new())),
       #[cfg(not(feature = "os"))]
       OptsApi::OS => Err("OS not supported".into()),
-      OptsApi::OS2 => Ok(Self::OS2),
+      OptsApi::OSMore => Ok(Self::OSMore),
+      OptsApi::Drive => Ok(Self::Drive),
+      OptsApi::FileInfo => Ok(Self::FileInfo),
+      OptsApi::OSSystem => Ok(Self::OSSystem),
+      OptsApi::OSOffice => Ok(Self::OSOffice),
     }
   }
 }

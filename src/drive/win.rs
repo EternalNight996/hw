@@ -1,6 +1,6 @@
 use std::{env, ffi::OsStr, path::PathBuf};
 
-use e_utils::cmd::Cmd;
+use e_utils::{cmd::Cmd, fs::AutoPath as _, regex::regex2};
 
 use super::ty::{DriveInfo, DriveNodeInfo, DriveStatus, DriveStatusType};
 
@@ -103,8 +103,8 @@ where
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
 /// ```
-pub fn pnputil_enable(commands: Vec<&str>) -> e_utils::AnyResult<String> {
-  let mut args = vec!["/enable-device"];
+pub fn pnputil_enable(commands: Vec<String>) -> e_utils::AnyResult<String> {
+  let mut args = vec!["/enable-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
@@ -119,8 +119,8 @@ pub fn pnputil_enable(commands: Vec<&str>) -> e_utils::AnyResult<String> {
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
 /// /force - 即使设备提供关键系统功能，也禁用
 /// ```
-pub fn pnputil_disable(commands: Vec<&str>) -> e_utils::AnyResult<String> {
-  let mut args = vec!["/disable-device"];
+pub fn pnputil_disable(commands: Vec<String>) -> e_utils::AnyResult<String> {
+  let mut args = vec!["/disable-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
@@ -136,8 +136,8 @@ pub fn pnputil_disable(commands: Vec<&str>) -> e_utils::AnyResult<String> {
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
 /// /force - 即使设备提供关键系统功能，也会删除
 /// ```
-pub fn pnputil_remove(commands: Vec<&str>) -> e_utils::AnyResult<String> {
-  let mut args = vec!["/remove-device"];
+pub fn pnputil_remove(commands: Vec<String>) -> e_utils::AnyResult<String> {
+  let mut args = vec!["/remove-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
@@ -151,8 +151,8 @@ pub fn pnputil_remove(commands: Vec<&str>) -> e_utils::AnyResult<String> {
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选。
 /// ```
-pub fn pnputil_restart(commands: Vec<&str>) -> e_utils::AnyResult<String> {
-  let mut args = vec!["/restart-device"];
+pub fn pnputil_restart(commands: Vec<String>) -> e_utils::AnyResult<String> {
+  let mut args = vec!["/restart-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
@@ -226,8 +226,12 @@ where
 /// pnputil /export-driver oem6.inf .
 /// pnputil /export-driver * c:\backup
 /// ```
-pub fn pnputil_export_driver(commands: Vec<&str>) -> e_utils::AnyResult<String> {
-  let mut args = vec!["/export-driver"];
+pub fn pnputil_export_driver(commands: Vec<String>) -> e_utils::AnyResult<String> {
+  if let Some(target) = commands.get(1) {
+    let target = std::path::Path::new(target);
+    target.auto_create_dir()?;
+  }
+  let mut args = vec!["/export-driver".to_string()];
   args.extend(commands);
   pnputil(args)
 }
@@ -238,19 +242,27 @@ where
 {
   let devcon_node_list = findnodes(&args, &commands, is_full)?;
   let mut res_list = vec![];
+  let target = args.get(0).ok_or("target is required 0")?;
   for devcon_node in &devcon_node_list {
-    let mut args = args.clone();
-    args.insert(0, devcon_node.id.clone());
-    let _fres = f(args);
-    let status = devcon_status(&devcon_node.id)?;
-    res_list.push(status);
+    if regex2(&devcon_node.driver_descript, target).0 || regex2(&devcon_node.name, target).0 || regex2(&devcon_node.id, target).0 {
+      let mut args = args.clone();
+      args.insert(0, devcon_node.id.clone());
+      let fres = f(args)?;
+      println!("FINED: {:#?} -> {}", devcon_node, fres);
+      let status = devcon_status(&devcon_node.id)?;
+      res_list.push(status);
+    }
   }
   Ok(res_list)
 }
 
 pub fn findnodes(args: &Vec<String>, commands: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
   let mut fcmds = vec!["findall".to_string()];
-  fcmds.extend(commands.clone());
+  if commands.len() > 0 {
+    fcmds.extend(commands.clone());
+  } else {
+    fcmds.push("*".to_string());
+  }
   let res = devcon(fcmds)?;
   let devcon_class = devcon_parse_driver_class(&res);
   let mut devcon_node_list = vec![];

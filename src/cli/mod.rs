@@ -13,13 +13,17 @@ arg_enum! {
         OHM,
         AIDA64,
         OS,
-        OS2
+        OSMore,
+        Drive,
+        FileInfo,
+        OSSystem,
+        OSOffice
     }
 }
 
 /// e-app
 /// ------------------------------------------------------
-/// 
+///
 #[derive(StructOpt, Debug, Clone, Serialize, Deserialize)]
 #[structopt(name = "", setting = structopt::clap::AppSettings::TrailingVarArg,)]
 #[structopt(after_help = r#"

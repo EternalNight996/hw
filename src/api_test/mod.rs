@@ -257,7 +257,7 @@ impl Tester {
         }
         #[cfg(feature = "os")]
         Inner::OS(os) => os.query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone()),
-        Inner::OS2 => return Err(format!("不支持 OS2",).into()),
+        _ => return Err("不支持".into()),
       };
       match res {
         Ok(sensors) => self.core.update_test_status(i, &sensors)?,
