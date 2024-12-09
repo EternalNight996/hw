@@ -73,7 +73,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       } else {
         vec![more_type]
       };
-      let res = crate::os_more::query_os_more(&more_types, op.args, op.command, op.full).await?.join(", ");
+      let res = crate::os_more::query_os_more(&more_types, &op.args, &op.command, op.full).await?.join(", ");
       return Ok(res);
     }
     Inner::Drive => return crate::drive::drive_query(&op.task, &op.args, &op.command, op.full).await,

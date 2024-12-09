@@ -26,14 +26,14 @@ mod tests {
   #[test]
   fn test_filter_items() {
     // 测试文件名过滤
-    let filters = vec!["desktop.ini".to_string()];
+    let filters = vec!["desktop.ini"];
     let items = get_desktop_items(None, None, &filters);
 
     // 确保过滤的文件名不在结果中
     assert!(
       items
         .iter()
-        .all(|item| !filters.contains(&item.path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string())),
+        .all(|item| !filters.contains(&item.path.file_name().and_then(|n| n.to_str()).unwrap_or(""))),
       "过滤的文件不应该出现在结果中"
     );
   }
@@ -41,7 +41,7 @@ mod tests {
   #[test]
   fn test_current_user_items() {
     if let Ok(username) = std::env::var("USER").or_else(|_| std::env::var("USERNAME")) {
-      let items = get_desktop_items(Some(username.clone()), None, &vec![]);
+      let items = get_desktop_items(Some(username.as_str()), None, &vec![]);
 
       // 确保找到的所有项目都属于当前用户
       for item in &items {

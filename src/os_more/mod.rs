@@ -1,7 +1,10 @@
 mod api;
+#[cfg(feature = "net-interface")]
 pub mod net_interface;
+#[cfg(feature = "network")]
 pub mod net_manage;
-pub mod user_desktop;
+#[cfg(feature = "desktop")]
+pub mod desktop;
 pub use api::*;
 
 /// 将字节转换为 GiB，保留两位小数

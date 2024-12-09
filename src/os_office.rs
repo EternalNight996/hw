@@ -7,27 +7,27 @@ use strum::*;
 
 use crate::os_system::ActiveLocalType;
 
-pub async fn os_office_query(task: &str, args: &Vec<String>, _filter: &Vec<String>, _is_full: bool) -> e_utils::AnyResult<String> {
+pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T], _filter: &[T], _is_full: bool) -> e_utils::AnyResult<String> {
   #[cfg(target_os = "windows")]
   {
-    let v1 = args.get(0).ok_or("Args Error must > 0 ")?;
-    let version = OfficeVersion::from_str(v1)?;
+    let v1 = args.get(0).map(AsRef::as_ref).unwrap_or_default();
+    let version = OfficeVersion::from_str(v1).unwrap_or(OfficeVersion::None);
     return match task {
       "check" => check_office(version).await,
-      "rkms" => register_office_kms(version, args.get(1).ok_or("Args Error must > 1 -> KMS Server")?).await,
-      "active" => active_office(version, args.get(1).ok_or("Args Error must > 1 -> Active Code")?).await,
+      "rkms" => register_office_kms(version, args.get(1).ok_or("Args Error must > 1 -> KMS Server")?.as_ref()).await,
+      "active" => active_office(version, args.get(1).ok_or("Args Error must > 1 -> Active Code")?.as_ref()).await,
       "check-with-cache" => {
-        let fname = format!("office-{}", args.get(0).ok_or("Args Error must > 0 -> Active Code")?.to_string());
-        let code = ActiveLocalType::Temp(fname).query_cache().await?;
+        let fname = format!("office-{}", args.get(1).ok_or("Args Error must > 1 -> Active Code")?.as_ref());
         let res = check_office(version).await?;
+        let code = ActiveLocalType::Temp(fname).query_cache().await.unwrap_or_default();
         Ok(format!("{};{}", res, code))
       }
       "clean-cache" => {
-        let fname = format!("office-{}", args.get(0).ok_or("Args Error must > 0 -> Active Code")?.to_string());
+        let fname = format!("office-{}", args.get(1).ok_or("Args Error must > 1 -> Active Code")?.as_ref());
         Ok(ActiveLocalType::Temp(fname).clean_cache()?)
       }
       "query-cache" => {
-        let fname = format!("office-{}", args.get(0).ok_or("Args Error must > 0 -> Active Code")?.to_string());
+        let fname = format!("office-{}", args.get(1).ok_or("Args Error must > 1 -> Active Code")?.as_ref());
         ActiveLocalType::Temp(fname).query_cache().await
       }
       _ => Err("Task Error".into()),

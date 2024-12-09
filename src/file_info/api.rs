@@ -8,7 +8,14 @@ use std::{
   path::{Path, PathBuf},
 };
 
-pub async fn file_info_query(task: &str, args: &Vec<String>, _filter: &Vec<String>, _is_full: bool) -> e_utils::AnyResult<String> {
+pub async fn file_info_query<T: AsRef<str>>(
+  task: &str,
+  args: impl IntoIterator<Item = T>,
+  _filter: impl IntoIterator<Item = T>,
+  _is_full: bool,
+) -> e_utils::AnyResult<String> {
+  let args: Vec<String> = args.into_iter().map(|x| x.as_ref().to_string()).collect();
+  let _filter: Vec<String> = _filter.into_iter().map(|x| x.as_ref().to_string()).collect();
   let src = args.get(0).ok_or("Args Error must > 0 ")?;
   match &*task {
     "copy-lib" => {

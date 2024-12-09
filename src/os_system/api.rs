@@ -4,38 +4,40 @@ use e_utils::{cmd::Cmd, parse::MyParseFormat as _, regex::Regex};
 
 use super::ActiveLocalType;
 
-pub async fn os_system_query(task: &str, args: &Vec<String>, _filter: &Vec<String>, _is_full: bool) -> e_utils::AnyResult<String> {
+pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T], _filter: &[T], _is_full: bool) -> e_utils::AnyResult<String> {
   #[cfg(target_os = "windows")]
-  return match task {
-    "check-with-cache" => {
-      let query = args.get(0).ok_or("Args Error must > 0 ")?.clone();
-      let res = check_os_active().await?;
-      let code = ActiveLocalType::Temp(query).query_cache().await?;
-      Ok(format!("{};{}", res, code))
-    }
-    "check" => check_os_active().await,
-    "active" => {
-      let code = args.get(0).ok_or("Args Error must > 1 ")?;
-      let tmp_fname = args.get(1).cloned().unwrap_or("hw_os_active".to_string());
-      let temp_type = ActiveLocalType::Temp(tmp_fname);
-      active_os(code, temp_type).await
-    }
-    "deactive" => deactivate_os().await,
-    "rkms" => {
-      let v = args.get(0).ok_or("Args Error must > 0 ")?;
-      register_kms(v).await
-    }
-    "ckms" => clear_kms().await,
-    "clean-cache" => {
-      let args = args.get(0).ok_or("Args Error must > 0 ")?.clone();
-      Ok(ActiveLocalType::Temp(args).clean_cache()?)
-    }
-    "query-cache" => {
-      let args = args.get(0).ok_or("Args Error must > 0 ")?.clone();
-      ActiveLocalType::Temp(args).query_cache().await
-    }
-    _ => Err("Task Error".into()),
-  };
+  {
+    return match task {
+      "check-with-cache" => {
+        let query = args.get(0).ok_or("Args Error must > 0 ")?.as_ref().to_string();
+        let res = check_os_active().await?;
+        let code = ActiveLocalType::Temp(query).query_cache().await.unwrap_or_default();
+        Ok(format!("{};{}", res, code))
+      }
+      "check" => check_os_active().await,
+      "active" => {
+        let code = args.get(0).ok_or("Args Error must > 1 ")?.as_ref();
+        let tmp_fname = args.get(1).ok_or("Args Error must > 1 ")?.as_ref().to_string();
+        let temp_type = ActiveLocalType::Temp(tmp_fname);
+        active_os(code, temp_type).await
+      }
+      "deactive" => deactivate_os().await,
+      "rkms" => {
+        let v = args.get(0).ok_or("Args Error must > 0 ")?.as_ref();
+        register_kms(v).await
+      }
+      "ckms" => clear_kms().await,
+      "clean-cache" => {
+        let args = args.get(0).ok_or("Args Error must > 0 ")?.as_ref().to_string();
+        Ok(ActiveLocalType::Temp(args).clean_cache()?)
+      }
+      "query-cache" => {
+        let args = args.get(0).ok_or("Args Error must > 0 ")?.as_ref().to_string();
+        ActiveLocalType::Temp(args).query_cache().await
+      }
+      _ => Err("Task Error".into()),
+    };
+  }
   #[cfg(not(feature = "windows"))]
   Err("OS System not supported".into())
 }

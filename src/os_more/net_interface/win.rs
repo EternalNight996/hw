@@ -18,7 +18,7 @@ use super::get_local_ipaddr;
 /// // 状态过滤
 /// "~is_connected" => x.is_connected(),
 /// "~has_dhcp_ip" => x.has_dhcp_ip(),
-pub fn get_interfaces_simple(filter: Vec<String>) -> Vec<InterfaceSimple> {
+pub fn get_interfaces_simple(filter: Vec<&str>) -> Vec<InterfaceSimple> {
   // 如果没有过滤条件，直接返回所有接口
   if filter.is_empty() {
     return get_interfaces().iter().map(|x| x.to_simple()).collect();
@@ -26,7 +26,7 @@ pub fn get_interfaces_simple(filter: Vec<String>) -> Vec<InterfaceSimple> {
   get_interfaces()
     .iter()
     .filter(|x| {
-      filter.iter().all(|f| match f.as_str() {
+      filter.iter().all(|f| match *f {
         // 速度过滤（从小到大排序，避免重复计算）
         "~Less100" => x.speed() < 100,
         "~100" => x.speed() >= 100,

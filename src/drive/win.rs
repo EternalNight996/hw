@@ -256,10 +256,10 @@ where
   Ok(res_list)
 }
 
-pub fn findnodes(args: &Vec<String>, commands: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
+pub fn findnodes(args: &Vec<String>, filters: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
   let mut fcmds = vec!["findall".to_string()];
-  if commands.len() > 0 {
-    fcmds.extend(commands.clone());
+  if filters.len() > 0 {
+    fcmds.extend(filters.clone());
   } else {
     fcmds.push("*".to_string());
   }

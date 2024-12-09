@@ -1,41 +1,102 @@
+use std::time::Duration;
+
 use e_utils::cmd::Cmd;
 
-pub async fn sync_datetime(arg: &str) -> e_utils::AnyResult<String> {
-  if cfg!(target_os = "windows") {
-    // Windows 时间同步逻辑保持不变
-    let res = Cmd::new("w32tm").args(["/query", "/status"]).a_output().await?;
-    if res.status.success() && res.stdout.contains("0x") {
-      let _ = Cmd::new("net").args(["start", "w32time"]).a_output().await?;
-    }
+#[cfg(windows)]
+async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
+  let status = Cmd::new("w32tm").args(["/query", "/status"]).a_output().await?;
+  println!("{}",status.stdout);
+  if !status.stdout.contains("Leap") {
+    println!("正在重新配置 Windows 时间服务...");
+
+    // 重新注册服务
     let _ = Cmd::new("w32tm")
-      .args(["/config", &format!("/manualpeerlist:{arg}"), "/syncfromflags:manual", "/update"])
+      .args(["/unregister"])
+      .a_output()
+      .await
+      .inspect(|v| println!("取消注册服务: {}", v.stdout));
+
+    let _ = Cmd::new("w32tm")
+      .args(["/register"])
+      .a_output()
+      .await
+      .inspect(|v| println!("注册服务: {}", v.stdout));
+
+    // 启动服务
+    let start_result = Cmd::new("net").args(["start", "w32time"]).a_output().await?;
+
+    println!("启动服务: {}", start_result.stdout);
+
+    if !start_result.status.success() {
+      return Err("无法启动 Windows 时间服务".into());
+    }
+
+    tokio::time::sleep(Duration::from_secs(2)).await;
+  }
+
+  Ok(())
+}
+
+pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
+  #[cfg(windows)]
+  {
+    ensure_windows_time_service().await?;
+
+    let config_result = Cmd::new("w32tm")
+      .args([
+        "/config",
+        &format!("/manualpeerlist:{}", server),
+        "/syncfromflags:manual",
+        "/reliable:yes",
+        "/update",
+      ])
       .a_output()
       .await?;
-    let res = Cmd::new("w32tm").args(["/resync"]).a_output().await?.stdout;
-    if res.contains("成功") || res.contains("success") {
-      Ok(res)
-    } else {
-      Err(res.into())
-    }
-  } else if cfg!(target_os = "macos") {
-    // macOS 时间同步
-    let res = Cmd::new("sudo").args(["sntp", "-sS", arg]).a_output().await?.stdout;
-    Ok(res)
-  } else {
-    // Linux 时间同步，先尝试 chronyd，失败则使用 ntpdate
-    let chrony_result = Cmd::new("sudo")
-      .args(["chronyd", "-q", &format!("server {}", arg)])
-      .a_output()
-      .await;
 
-    match chrony_result {
+    if !config_result.status.success() {
+      return Err("配置时间服务器失败".into());
+    }
+
+    // 尝试同步时间，最多重试3次
+    for i in 1..=3 {
+      println!("正在进行第 {} 次时间同步尝试...", i);
+
+      let sync_result = Cmd::new("w32tm").args(["/resync", "/force", "/nowait"]).a_output().await?;
+
+      if sync_result.status.success()
+        && (sync_result.stdout.contains("成功")
+          || sync_result.stdout.contains("success")
+          || sync_result.stdout.contains("已成功完成")
+          || sync_result.stdout.is_empty())
+      {
+        return Ok("时间同步成功".to_string());
+      }
+
+      if i < 3 {
+        println!("同步失败，等待重试...");
+        tokio::time::sleep(Duration::from_secs(2)).await;
+      }
+    }
+
+    Err("时间同步失败，请检查网络连接".into())
+  }
+
+  #[cfg(target_os = "macos")]
+  {
+    let res = Cmd::new("sudo").args(["sntp", "-sS", server]).a_output().await?;
+    Ok(res.stdout)
+  }
+
+  #[cfg(all(unix, not(target_os = "macos")))]
+  {
+    match Cmd::new("sudo").args(["chronyd", "-q", &format!("server {}", server)]).a_output().await {
       Ok(output) => Ok(output.stdout),
       Err(_) => {
-        // 如果 chronyd 失败，尝试 ntpdate
+        println!("chronyd 失败，尝试使用 ntpdate...");
         let _ = Cmd::new("sudo").args(["systemctl", "stop", "systemd-timesyncd"]).a_output().await?;
 
-        let res = Cmd::new("sudo").args(["ntpdate", arg]).a_output().await?.stdout;
-        Ok(res)
+        let res = Cmd::new("sudo").args(["ntpdate", server]).a_output().await?;
+        Ok(res.stdout)
       }
     }
   }

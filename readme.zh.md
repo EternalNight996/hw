@@ -38,10 +38,7 @@
 - **可扩展性**: 模块化设计，易于扩展新的监控后端
 - **性能优化**: 低资源占用，高效的数据采集和处理
 
-## 📸 界面预览与命令示例
-
-### OpenHardwareMonitor 监控
-![OHM监控界面](assets/screen/OHM.png)
+## 快速开始
 
 **Cargo 安装示例:**
 ```bash
@@ -55,6 +52,36 @@ cargo install just
 just
 ```
 
+**命令区别说明：**
+- **data**: 仅返回传感器当前值
+- **print**: 返回完整统计信息，但不做验证
+- **check**: 进行值范围验证和负载测试
+  - `10`: 测试次数
+  - `2000`: 目标值
+  - `3000`: 误差范围 (-1000~5000)
+  - `100`: CPU负载百分比
+
+---
+### 📖 特性
+```toml
+[dependencies]
+# 所有特性
+hw = {version="0.1"}
+# 打包所有特性
+hw = {version="0.1",feature=["build","built"]}
+# 只用OHM
+hw = {version="0.1", default-features = false, feature=["ohm"]}
+# 命令行则加上cli
+hw = {version="0.1", default-features = false, feature=["ohm","cli"]}
+```
+
+---
+## 📸 界面预览与命令示例
+
+### [1. 📖 点击Rust调用CLI](examples/cli.rs)
+### [2. 📖 点击Rust调用OHM 获取CPU主频](examples/ohm_cpu_clock.rs)
+### OpenHardwareMonitor 监控
+![OHM监控界面](assets/screen/OHM.png)
 **CPU Clock监控示例**
 
 1. **data命令** - 仅返回当前值
@@ -100,7 +127,7 @@ hw --api OHM --task print --full --args CPU Clock
 ```rust
 ...
 
-R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"1102\",\"min\":1101.5174560546875,\"max\":1101.5174560546875,\"avg\":1102.0,\"total\":6609.104736328125,\"samples\":6,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":0.0,\"total\":0.0,\"status\":[]},\"status\":[[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875],[\"\",1101.5174560546875]]}","status":true,"opts":null}>R
+R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"1102\",\"min\":1101.5174560546875,\"max\":1101.5174560546875,\"avg\":1102.0,\"total\":6609.104736328125,\"samples\":6,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":0.0,\"total\":0.0,\"status\":[]},\"status\":[...]}","status":true,"opts":null}>R
 ```
 
 3. **check命令** - 进行值范围验证和负载测试
@@ -139,23 +166,217 @@ CPU Core #2 - 当前=2904.0 MHz(频率) 误差: ±3000.0
 ====================
 
 
-R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"2904\",\"min\":2904.000732421875,\"max\":2904.001708984375,\"avg\":2904.0,\"total\":174240.07470703125,\"samples\":60,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":99.0,\"total\":5946.0,\"status\":[]},\"status\":[[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.0009765625],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.00146484375],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.001220703125],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.001708984375],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875],[\"\",2904.000732421875]]}","status":true,"opts":null}>R 
+R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"2904\",\"min\":2904.000732421875,\"max\":2904.001708984375,\"avg\":2904.0,\"total\":174240.07470703125,\"samples\":60,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":99.0,\"total\":5946.0,\"status\":[]},\"status\":[...]}","status":true,"opts":null}>R 
 ```
 
-**命令区别说明：**
-- **data**: 仅返回传感器当前值
-- **print**: 返回完整统计信息，但不做验证
-- **check**: 进行值范围验证和负载测试
-  - `10`: 测试次数
-  - `2000`: 目标值
-  - `3000`: 误差范围 (-1000~5000)
-  - `100`: CPU负载百分比
+```bash
+# CPU温度监控
+hw --api OHM --task check --args CPU Temperature
 
-### AIDA64 监控
-![AIDA64监控界面](assets/screen/AIDA64.png)
+# CPU频率测试 (5次, 目标3000MHz, 误差±2000MHz, 100%负载)
+hw --api OHM --task check --args CPU Clock -- 5 3000 2000 100
 
+# 风扇转速测试 (5次, 目标3000RPM, 误差±2000RPM)
+hw --api OHM --task check --args ALL Fan -- 5 3000 2000
+```
+
+### [3.📖 点击Rust调用OS 获取CPU主频](examples/os_cpu_clock.rs)
 ### sysinfo 监控
 ![系统监控界面](assets/screen/OS.png)
+```bash
+# 系统整体状态
+hw --api OS --task print
+
+# CPU负载监控
+hw --api OS --task check --args CPU Load
+```
+
+### [4.📖 点击Rust调用AIDA64 获取CPU主频](examples/aida64_cpu_voltage.rs)
+### AIDA64 监控
+![AIDA64监控界面](assets/screen/AIDA64.png)
+```bash
+# 内存使用率监控
+hw --api AIDA64 --task check --args RAM Load
+
+# CPU核心电压监控
+hw --api AIDA64 --task check --args CPU Voltage
+```
+### [5. 📖 点击Rust调用OSMore](examples/os_more_base.rs)
+### [6. 📖 点击Rust调用微软OFFICE](examples/os_office.rs)
+### [7. 📖 点击Rust调用微软系统激活](examples/os_system.rs)
+### [8. 📖 点击Rust调用导出DLL|SO动态链接库](examples/file_info.rs)
+### [9. 📖 点击Rust调用PING](examples/ping.rs)
+### [10. 📖 点击Rust调用设置DHCP](examples/dhcp.rs)
+### [11. 📖 点击Rust调用设置静态IP](examples/static_ip.rs)
+### [12. 📖 点击Rust调用桌面](examples/desktop.rs)
+### [13. 📖 点击Rust调用驱动](examples/drive.rs)
+### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
+### [15. 📖 点击Rust调用网络接口](examples/net_interfaces.rs)
+
+
+---
+## 🚀 开发进度
+<table>
+  <tr>
+    <th>Backend</th>
+    <th>Windows</th>
+    <th>Linux</th>
+    <th>MacOS</th>
+    <th>Status</th>
+    <th>Description</th>
+    <th>支持功能</th>
+  </tr>
+  <tr>
+    <td>OHM</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>获取硬件传感器数据<br>完成所有功能开发</td>
+    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
+  </tr>
+  <tr>
+    <td>AIDA64</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>获取硬件传感器数据<br>完成所有功能开发</td>
+    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
+  </tr>
+  <tr>
+    <td>OS</td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">10%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">10%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">10%</span>
+    </td>
+    <td><h4 style="color:blue">🔄</h4><span>测试中</span></td>
+    <td>接口Rust system跨平台基础功能可用<br>支持更多的信息获取</td>
+    <td>CPU,RAM</td>
+  </tr>
+  <tr>
+    <td>OSMore</td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">70%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>主要用于获取更多信息和管理</td>
+    <td>MemoryTotal(内存大小),CpuCoreCount(CPU内核数量),OsVersion(系统版本)<br>OsFullVersion(系统版本),KernelVersion(内核版本),HostName(主机名),Uptime(开机时间)<br>CpuUsage(CPU使用率),MemoryUsage(内存使用率),CpuArch(CPU架构),UserNames(用户名),<br>NetInterface(网络接口),NetManage[网络管理(DHCP、PING、同步时间、静态IP配置)],Desktop(桌面),Drive(硬盘),</td>
+  </tr>
+  <tr>
+    <td>Drive</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>对接PNPUTIL和devcon</td>
+    <td>scan(扫描),add-file(添加文件),add(添加),delete(删除),delete-find(删除并查找),<br>print(打印),nodes(节点),restart(重启),enable(启用),disable(禁用),remove(移除),export(导出)</td>
+  </tr>
+  <tr>
+    <td>FileInfo</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">99%</span>
+    </td>
+    <td>
+      <h4 style="color:green">⚡</h4>
+      <span style="color:#888">99%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>获取文件的依赖dll或so，支持一键导出依赖</td>
+    <td>copy-lib(复制依赖),print(打印),nodes(列表)</td>
+  </tr>
+  <tr>
+    <td>OSSystem</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>系统</td>
+    <td>check(检查),check-with-cache(检查并缓存),activate(激活),deactivate(注销),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
+  </tr>
+  <tr>
+    <td>OSOffice</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">90%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>Office</td>
+    <td>check(检查),check-with-cache(检查并缓存),activate(激活),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
+  </tr>
+</table>
+
+> **Note**: 
+> - OpenHardwareMonitor (OHM) 和 AIDA64 仅支持 Windows 平台
+> - sysinfo 支持跨平台但功能相对有限
+> - 具体传感器支持可能因硬件而异
+
 
 ### 传感器类型支持详情
 <table>
@@ -330,301 +551,6 @@ R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"r
   </tr>
 </table>
 
-### 监控后端特性对比
-
-<table>
-  <tr>
-    <th>Feature</th>
-    <th>OHM</th>
-    <th>AIDA64</th>
-    <th>sysinfo</th>
-  </tr>
-  <tr>
-    <td>实时监控</td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:green">✓</h4></td>
-  </tr>
-  <tr>
-    <td>历史数据</td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:red">✗</h4></td>
-  </tr>
-  <tr>
-    <td>硬件传感器</td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:green">✓</h4></td>
-    <td><h4 style="color:red">✗</h4></td>
-  </tr>
-  <tr>
-    <td>跨平台支持</td>
-    <td><h4 style="color:red">✗</h4></td>
-    <td><h4 style="color:red">✗</h4></td>
-    <td><h4 style="color:green">✓</h4></td>
-  </tr>
-</table>
-
-## 🚀 开发进度
-<table>
-  <tr>
-    <th>Backend</th>
-    <th>Windows</th>
-    <th>Linux</th>
-    <th>MacOS</th>
-    <th>Status</th>
-    <th>Description</th>
-    <th>支持功能</th>
-  </tr>
-  <tr>
-    <td>OHM</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">100%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>获取硬件传感器数据<br>完成所有功能开发</td>
-    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
-  </tr>
-  <tr>
-    <td>AIDA64</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">100%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>获取硬件传感器数据<br>完成所有功能开发</td>
-    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
-  </tr>
-  <tr>
-    <td>OS</td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">10%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">10%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">10%</span>
-    </td>
-    <td><h4 style="color:blue">🔄</h4><span>测试中</span></td>
-    <td>接口Rust system跨平台基础功能可用<br>支持更多的信息获取</td>
-    <td>CPU,RAM</td>
-  </tr>
-  <tr>
-    <td>OSMore</td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">70%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">70%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">70%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>主要用于获取更多信息和管理</td>
-    <td>MemoryTotal(内存大小),CpuCoreCount(CPU内核数量),OsVersion(系统版本)<br>OsFullVersion(系统版本),KernelVersion(内核版本),HostName(主机名),Uptime(开机时间)<br>CpuUsage(CPU使用率),MemoryUsage(内存使用率),CpuArch(CPU架构),UserNames(用户名),<br>NetInterface(网络接口),NetManage[网络管理(DHCP、PING、同步时间、静态IP配置)],Desktop(桌面),Drive(硬盘),</td>
-  </tr>
-  <tr>
-    <td>Drive</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">100%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>对接PNPUTIL和devcon</td>
-    <td>scan(扫描),add-file(添加文件),add(添加),delete(删除),delete-find(删除并查找),<br>print(打印),nodes(节点),restart(重启),enable(启用),disable(禁用),remove(移除),export(导出)</td>
-  </tr>
-  <tr>
-    <td>FileInfo</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">100%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">99%</span>
-    </td>
-    <td>
-      <h4 style="color:green">⚡</h4>
-      <span style="color:#888">99%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>获取文件的依赖dll或so，支持一键导出依赖</td>
-    <td>copy-lib(复制依赖),print(打印),nodes(列表)</td>
-  </tr>
-  <tr>
-    <td>OSSystem</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">100%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>系统</td>
-    <td>check(检查),check-with-cache(检查并缓存),activate(激活),deactivate(注销),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
-  </tr>
-  <tr>
-    <td>OSOffice</td>
-    <td>
-      <h4 style="color:green">✓</h4>
-      <span style="color:#888">90%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td>
-      <h4>-</h4>
-      <span style="color:#888">0%</span>
-    </td>
-    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
-    <td>Office</td>
-    <td>check(检查),check-with-cache(检查并缓存),activate(激活),kms(注册kms),clear-kms(清理kms),clear-cache(清理缓存),cache-kms(缓存激活码)</td>
-  </tr>
-</table>
-
-
-> **图例说明**:
-> - ✓ 完成 (Completed)
-> - ⚡ 进行中 (In Progress)
-> - 🔄 测试中 (Beta/Testing)
-> - ✗ 未开始 (Not Started)
-
-> **Note**: 
-> - OpenHardwareMonitor (OHM) 和 AIDA64 仅支持 Windows 平台
-> - sysinfo 支持跨平台但功能相对有限
-> - 具体传感器支持可能因硬件而异
-
-## 快速开始
-
-### 安装
-
-```bash
-# 安装构建工具
-cargo install just
-# 更多指令
-just help
-# 构建项目
-just
-```
-
-## 命令行参数
-
-```
-hw --api <API> --task <TASK> --args <HW_TYPE> <SENSOR_TYPE> -- [OPTIONS]
-```
-
-### 参数说明
-
-- `--api`: 选择监控后端
-  - `OHM`: OpenHardwareMonitor
-  - `AIDA64`: AIDA64
-  - `OS`: sysinfo
-  - `OSMore`: 系统更多信息
-  - `Drive`: 驱动管理
-  - `FileInfo`: 文件信息
-  - `OSSystem`: 微软系统
-  - `OSOffice`: 微软Office
-
-- `--task`: 任务类型
-  - `print`: 打印数据
-  - `check`: 检查数值
-  - `data`: 返回原始数据
-- `--args`: 硬件和传感器类型
-- `--`: 附加参数 (测试次数/目标值/误差范围/CPU负载)
-
----
-## 二进制调用使用示例
-### OpenHardwareMonitor
-```bash
-# CPU温度监控
-hw --api OHM --task check --args CPU Temperature
-
-# CPU频率测试 (5次, 目标3000MHz, 误差±2000MHz, 100%负载)
-hw --api OHM --task check --args CPU Clock -- 5 3000 2000 100
-
-# 风扇转速测试 (5次, 目标3000RPM, 误差±2000RPM)
-hw --api OHM --task check --args ALL Fan -- 5 3000 2000
-```
-
-### AIDA64
-```bash
-# 内存使用率监控
-hw --api AIDA64 --task check --args RAM Load
-
-# CPU核心电压监控
-hw --api AIDA64 --task check --args CPU Voltage
-```
-
-### OS(sysinfo)
-```bash
-# 系统整体状态
-hw --api OS --task print
-
-# CPU负载监控
-hw --api OS --task check --args CPU Load
-```
-
-
----
-## Rust调用使用示例
-### 📖 特性
-```toml
-[dependencies]
-# 所有特性
-hw = {version="0.1"}
-# 打包所有特性
-hw = {version="0.1", default-features = false, feature=["build","built"]}
-# 只用OHM
-hw = {version="0.1", default-features = false, feature=["ohm"]}
-# 命令行则加上cli
-hw = {version="0.1", default-features = false, feature=["ohm","cli"]}
-```
-
-### [📖 Rust调用CLI做内部调用](examples/cli.rs)
-### [📖 Rust调用OHM做内部 获取CPU主频](examples/ohm_cpu_clock.rs)
-### [📖 Rust调用OS做内部调用 获取CPU主频](examples/os_cpu_clock.rs)
-### [📖 Rust调用AIDA64做内部调用 获取CPU主频](examples/aida64_cpu_voltage.rs)
-### [📖 Rust调用OSMore做内部调用 获取CPU主频](examples/os_more_all.rs)
 
 ---
 ## 第三方接口版本
