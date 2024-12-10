@@ -30,10 +30,21 @@ fn main() -> Result<()> {
 #[cfg(all(feature = "build", target_os = "windows"))]
 fn setup_windows_build() -> Result<()> {
   use e_utils::build::PackageInfo;
+  /// 从环境变量中获取包信息
+  pub fn from_env() -> e_utils::build::PackageInfo {
+    e_utils::build::PackageInfo {
+      name: env!("CARGO_PKG_NAME").to_string(),
+      version: env!("CARGO_PKG_VERSION").to_string(),
+      description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+      authors: env!("CARGO_PKG_AUTHORS").to_string(),
+      homepage: env!("CARGO_PKG_HOMEPAGE").to_string(),
+      repository: env!("CARGO_PKG_REPOSITORY").to_string(),
+    }
+  }
 
   // 静态链接 VC 运行时
   static_vcruntime::metabuild();
-  let pkg = PackageInfo::from_env();
+  let pkg = from_env();
 
   winresource::WindowsResource::new()
     .set("FileDescription", &pkg.description)

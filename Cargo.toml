@@ -47,7 +47,7 @@ os = [
     "os-system",
     "os-office",
 ]
-default = ["ohm", "aida64", "os", "cli", "file-info", "drive", "log"]
+default = ["ohm", "aida64", "os", "cli", "file-info", "drive", "log","build"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
