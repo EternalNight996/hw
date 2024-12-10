@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use super::types::DesktopItem;
+use super::ty::DesktopItem;
 
 pub fn get_desktop_items(
     query_user: Option<String>,
