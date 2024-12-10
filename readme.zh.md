@@ -72,7 +72,8 @@ hw = {version="0.1",feature=["build","built"]}
 # 只用OHM
 hw = {version="0.1", default-features = false, feature=["ohm"]}
 # 命令行则加上cli
-hw = {version="0.1", default-features = false, feature=["ohm","cli"]}
+# 日志 支持 log 和 tracing, cli则默认支持println输出
+hw = {version="0.1", default-features = false, feature=["ohm","cli","log"]}
 ```
 
 ---
@@ -202,14 +203,104 @@ hw --api AIDA64 --task check --args RAM Load
 hw --api AIDA64 --task check --args CPU Voltage
 ```
 ### [5. 📖 点击Rust调用OSMore](examples/os_more_base.rs)
+```bash
+# 获取系统完整信息
+hw --api OSMore --task OsFullVersion 
+# 获取内存大小
+hw --api OSMore --task MemoryTotal 
+```
 ### [6. 📖 点击Rust调用微软OFFICE](examples/os_office.rs)
+```bash
+# 获取Office版本
+hw --api OSOffice --task check-with-cache --args V2016 test
+```
 ### [7. 📖 点击Rust调用微软系统激活](examples/os_system.rs)
+```bash
+# 激活系统
+hw --api OSSystem --task active --args XXXXX-XXXXX-XXXXX-XXXXX-XXXXX activation_temp
+# 检查系统激活状态并查询激活码缓存
+hw --api OSSystem --task check-with-cache --args activation_temp
+```
 ### [8. 📖 点击Rust调用导出DLL|SO动态链接库](examples/file_info.rs)
+```bash
+# 导出DLL|SO动态链接库
+hw --api FileInfo --task copy-lib --args target/debug/hw.exe target/debug/_libs
+# 打印文件节点
+hw --api FileInfo --task print --args target/debug/hw.exe
+# 打印文件节点
+hw --api FileInfo --task nodes --args target/debug/hw.exe
+```
 ### [9. 📖 点击Rust调用PING](examples/ping.rs)
+```bash
+# 测试PING
+hw --api NetManage --task ping --args 127.0.0.1 baidu.com 3
+# 测试PING节点
+hw --api NetManage --task ping-nodes --args baidu.com 3
+```
 ### [10. 📖 点击Rust调用设置DHCP](examples/dhcp.rs)
+```bash
+# 设置DHCP ~is_connected 是指正在连接的网卡
+hw --api OSMore --task NetManage --args dhcp -- ~is_connected
+```
 ### [11. 📖 点击Rust调用设置静态IP](examples/static_ip.rs)
+```bash
+# 设置静态IP
+hw --api OSMore --task NetManage  --args set-ip "以太网" 192.168.1.100 255.255.255.0 192.168.1.1
+# 设置DNS
+hw --api OSMore --task NetManage  --args set-dns "以太网" 223.5.5.5 114.114.114.114
+```
 ### [12. 📖 点击Rust调用桌面](examples/desktop.rs)
+```bash
+# 桌面节点
+hw --api OSMore --task Desktop --args nodes
+# 打印
+hw --api OSMore --task Desktop --args print
+```
 ### [13. 📖 点击Rust调用驱动](examples/drive.rs)
+```bash
+# 扫描驱动
+hw --api Drive --task scan
+# 驱动打印
+hw --api Drive --task print -- =net "*I225-V #6"
+hw --api Drive --task print -- "@pci*" "*I225-V #6"
+hw --api Drive --task print -- "@pci*" "PCI*" "*E0276CFFFFEEA86B00"
+  # --full 完整数据 但更消耗资源，建议加=和@去筛选
+hw --api Drive --task print --full -- =net "*I225-V #6" 
+  {
+  "id": "PCI\\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\\E0276CFFFFEEA86B00",
+  "drive_node": "1:",
+  "name": "Intel(R) Ethernet Controller (3) I225-V #6",
+  "inf_file": "c:\\drivers\\lan.intel\\pro2500\\e2f68.inf",
+  "inf_section": "E15F3_3.10.0.1..17763",
+  "driver_descript": "Intel(R) Ethernet Controller (3) I225-V #6",
+  "manufacturer_name": "Intel",
+  "provider_name": "Intel",
+  "driver_date": "2021/1/6",
+  "driver_version": "1.0.2.13",
+  "driver_node_rank": "16719872",
+  "driver_node_flags": "00003044",
+  "signed": false
+  }
+# 驱动节点
+hw --api Drive --task nodes -- =net
+# 导出驱动
+hw --api Drive --task export --args oem6.inf D:\\drives
+hw --api Drive --task export --args oem*.inf .
+# 重启驱动
+hw --api Drive --task restart -- =net "Intel(R) Ethernet Controller (3) I225-V #5"
+hw --api Drive --task restart -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 启用驱动
+hw --api Drive --task enable -- =net "Intel(R) Ethernet Controller (3) I225-V #5"
+# 禁用驱动
+hw --api Drive --task disable -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 删除驱动
+hw --api Drive --task delete -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 增加驱动
+hw --api Drive --task add  --args D:\\drives\\oem6.inf /install
+# 增加驱动文件夹
+hw --api Drive --task add-folder --args D:\\drives /install
+
+```
 ### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
 ### [15. 📖 点击Rust调用网络接口](examples/net_interfaces.rs)
 
@@ -314,7 +405,7 @@ hw --api AIDA64 --task check --args CPU Voltage
     </td>
     <td><h4 style="color:green">✓</h4><span>已完成</span></td>
     <td>对接PNPUTIL和devcon</td>
-    <td>scan(扫描),add-file(添加文件),add(添加),delete(删除),delete-find(删除并查找),<br>print(打印),nodes(节点),restart(重启),enable(启用),disable(禁用),remove(移除),export(导出)</td>
+    <td>scan(扫描),add-folder(添加文件),add(添加),delete(删除),delete-find(删除并查找),<br>print(打印),nodes(节点),restart(重启),enable(启用),disable(禁用),remove(移除),export(导出)</td>
   </tr>
   <tr>
     <td>FileInfo</td>

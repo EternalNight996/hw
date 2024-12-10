@@ -33,12 +33,12 @@ pub fn run(name: &str, cwd: impl AsRef<Path>) -> AnyResult<sysinfo::Pid> {
     .iter()
     .find(|(_, process)| process.name().to_ascii_lowercase() == *name.to_ascii_lowercase())
   {
-    println!(
+    crate::dp(format!(
       "{} is already running with Name: {}, PID: {}",
       name,
       process.name().to_string_lossy(),
       pid
-    );
+    ));
     pid.clone()
   } else {
     let pid = Cmd::new(name)
@@ -50,7 +50,7 @@ pub fn run(name: &str, cwd: impl AsRef<Path>) -> AnyResult<sysinfo::Pid> {
     // 启动新进程
     let _ = sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);
     if let Some(process) = sys.process(sysinfo::Pid::from_u32(pid)) {
-      println!("Started {} with PID: {}", name, pid);
+      crate::p(format!("Started {} with PID: {}", name, pid));
       process.pid()
     } else {
       return Err(format!("无法找到进程 {}", pid).into());

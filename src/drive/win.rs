@@ -61,9 +61,6 @@ pub fn devcon_parse_driver_class(output: &str) -> Vec<DriveInfo> {
 /// # DevCon
 /// # Example sh
 /// devcon findall {* | ID [ID ...] | =class [ID [ID ...]]}
-/// ```sh
-/// cargo run -- --api Drive --init -- findall *
-/// ```
 pub fn devcon<I, S>(args: I) -> e_utils::AnyResult<String>
 where
   I: IntoIterator<Item = S>,
@@ -91,7 +88,9 @@ where
 {
   let args = command;
   // 执行查询任务
-  Ok(Cmd::new("PNPUTIL").args(args).output()?.stdout)
+  let res = Cmd::new("PNPUTIL").args(args).output()?.stdout;
+  crate::dp(format!("PNPUTIL: {}", res));
+  Ok(res)
 }
 /// #/enable-device 启用系统上的设备。 从 Windows 10 版本 2004 开始提供命令
 /// ```
@@ -128,7 +127,7 @@ pub fn pnputil_disable(commands: Vec<String>) -> e_utils::AnyResult<String> {
 /// ```
 /// 从 Windows 10 版本 2004 开始可用的标志：
 /// /subtree - 删除整个设备子树，包括任何子设备
-/// /reboot - 如果需要完成操作，请重新启动系统
+/// /reboot - 如果需要完成操作��请重新启动系统
 /// 从 Windows 11 版本 21H2 开始可用的标志：
 /// /deviceid <device ID> - 删除具有匹配设备 ID 的所有设备
 /// 从 Windows 11 版本 22H2 开始可用的标志：
@@ -236,51 +235,67 @@ pub fn pnputil_export_driver(commands: Vec<String>) -> e_utils::AnyResult<String
   pnputil(args)
 }
 
-pub fn find_with_run<F>(args: &Vec<String>, commands: &Vec<String>, is_full: bool, f: F) -> e_utils::AnyResult<Vec<DriveStatus>>
+pub fn find_with_run<F>(args: &Vec<String>, filters: &Vec<String>, is_full: bool, f: F) -> e_utils::AnyResult<Vec<DriveStatus>>
 where
   F: Fn(Vec<String>) -> e_utils::AnyResult<String>,
 {
-  let devcon_node_list = findnodes(&args, &commands, is_full)?;
+  let devcon_node_list = findnodes(&filters, is_full)?;
   let mut res_list = vec![];
-  let target = args.get(0).ok_or("target is required 0")?;
   for devcon_node in &devcon_node_list {
-    if regex2(&devcon_node.driver_descript, target).0 || regex2(&devcon_node.name, target).0 || regex2(&devcon_node.id, target).0 {
-      let mut args = args.clone();
-      args.insert(0, devcon_node.id.clone());
-      let fres = f(args)?;
-      println!("FINED: {:#?} -> {}", devcon_node, fres);
-      let status = devcon_status(&devcon_node.id)?;
-      res_list.push(status);
-    }
+    let mut args = args.clone();
+    args.insert(0, devcon_node.id.clone());
+    let _fres = f(args)?;
+    crate::dp(format!("FINED: -> {}", devcon_node.id));
+    let status = devcon_status(&devcon_node.id)?;
+    crate::dp(format!("STATUS: {:#?}", status));
+    res_list.push(status);
   }
   Ok(res_list)
 }
 
-pub fn findnodes(args: &Vec<String>, filters: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
-  let mut fcmds = vec!["findall".to_string()];
-  if filters.len() > 0 {
-    fcmds.extend(filters.clone());
+/// 查找驱动节点
+/// devcon -> https://learn.microsoft.com/zh-cn/windows-hardware/drivers/devtest/devcon-findall
+pub fn findnodes(filters: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
+  let mut filters = filters.clone();
+  let _fk = filters.get(0).cloned().unwrap_or_default();
+  let fk = if _fk.starts_with("=") || _fk.starts_with("@") {
+    _fk.as_str()
   } else {
-    fcmds.push("*".to_string());
+    "*"
+  };
+  if fk != "*" {
+    filters.remove(0);
   }
-  let res = devcon(fcmds)?;
-  let devcon_class = devcon_parse_driver_class(&res);
-  let mut devcon_node_list = vec![];
-  if is_full {
-    for dclass in &devcon_class {
-      // 过滤为空的时，不过滤
-      if is_filter(&dclass.driver_descript, &args) {
-        let devcon_node = devcon_drive_node(dclass.clone())?;
-        if devcon_node.len() > 0 {
-          devcon_node_list.extend(devcon_node);
-        } else {
-          devcon_node_list.push(DriveNodeInfo::from(dclass.clone()));
+  // Early return for empty filters to avoid unnecessary processing
+  let devcon_class = devcon_parse_driver_class(&devcon(vec!["findall", fk])?);
+
+  // Pre-check if filters is empty to avoid repeated checks
+  let filters_empty = filters.is_empty();
+  let devcon_node_list = if is_full {
+    devcon_class
+      .iter()
+      .flat_map(|dclass| {
+        let nodes = match devcon_drive_node(dclass.clone()) {
+          Ok(nodes) if !nodes.is_empty() => nodes,
+          _ => vec![DriveNodeInfo::from(dclass.clone())],
+        };
+        nodes.into_iter()
+      })
+      .filter(|x| {
+        filters_empty || {
+          // Short-circuit evaluation to avoid unnecessary regex checks
+          is_filter(&x.id, &filters) || is_filter(&x.driver_descript, &filters)
         }
-      }
-    }
+      })
+      .collect()
   } else {
-    devcon_node_list = devcon_class.into_iter().map(|x| DriveNodeInfo::from(x)).collect();
-  }
+    devcon_class
+      .into_iter()
+      .map(DriveNodeInfo::from)
+      .filter(|x| filters_empty || is_filter(&x.id, &filters) || is_filter(&x.driver_descript, &filters))
+      .collect()
+  };
+
   Ok(devcon_node_list)
 }
 /// 请求node
@@ -291,13 +306,10 @@ pub fn devcon_drive_node(info: DriveInfo) -> e_utils::AnyResult<Vec<DriveNodeInf
 }
 /// 过滤
 pub fn is_filter(data: &str, filters: &Vec<String>) -> bool {
-  if filters.len() == 0 {
+  // Early return for empty filters
+  if filters.is_empty() {
     return true;
   }
-  for f in filters {
-    if data.contains(f) {
-      return true;
-    }
-  }
-  false
+  // Use all() iterator instead of for loop
+  filters.iter().all(|f| regex2(data, f).0)
 }

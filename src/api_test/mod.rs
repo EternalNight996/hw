@@ -152,7 +152,7 @@ impl TestCore {
   }
 
   pub fn update_test_status(&mut self, current_sec: usize, sensors: &[Sensor]) -> e_utils::AnyResult<()> {
-    println!("\n--- 第 {} 秒{}状态 ---", current_sec + 1, self.hw_name());
+    crate::dp(format!("\n--- 第 {} 秒{}状态 ---", current_sec + 1, self.hw_name()));
 
     for (_idx, sensor) in sensors.iter().enumerate() {
       self.results.update(sensor.Value);
@@ -173,10 +173,10 @@ impl TestCore {
         String::new()
       };
       let s = format!("{} - 当前={:.1} {} {}{}", sensor.Name, sensor.Value, sensor.sensor_unit(), full, check);
-      println!("{}", s);
+      crate::p(s);
       if self.is_check && is_value_out_of_range(sensor.Value, self.params.v1, self.params.v2) {
         self.results.error_count += 1;
-        println!("警告：{}超出允许范围！", sensor.Name);
+        crate::p(format!("警告：{}超出允许范围！", sensor.Name));
 
         if self.results.error_count > 2 {
           let err = format!(
@@ -205,15 +205,14 @@ impl TestCore {
         }
       }
     }
-    println!("--------------------------------");
-    println!(
-      "平均值（{}{}  {:.1}%）   数据:{}",
+    crate::p("--------------------------------");
+    crate::p(format!(
+      "平均值（{}{}  {:.1}%）   数据:{}\n",
       self.results.avg,
       self.sensor_unit(),
       self.results.load.avg,
       self.results.data
-    );
-    println!();
+    ));
     Ok(())
   }
 }
@@ -265,7 +264,7 @@ impl Tester {
           if self.core.is_check {
             return Err(e);
           } else {
-            println!("{}", e);
+            crate::p(format!("{}", e));
           }
         }
       }

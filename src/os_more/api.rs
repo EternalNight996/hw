@@ -70,14 +70,14 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
               let ifaces = crate::os_more::net_interface::get_interfaces();
               let count = ifaces.len();
               for iface in ifaces {
-                println!("{}", serde_json::to_string_pretty(&iface)?)
+                crate::p(serde_json::to_string_pretty(&iface)?)
               }
               Ok(format!("Count: {}", count))
             } else {
               let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
               let count = ifaces.len();
               for iface in ifaces {
-                println!("{}", serde_json::to_string_pretty(&iface)?)
+                crate::p(serde_json::to_string_pretty(&iface)?)
               }
               Ok(format!("Count: {}", count))
             }
@@ -150,7 +150,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             let target = args.get(2).ok_or("Args Error Target 1 ")?.as_ref();
             let count = args.get(3).ok_or("Args Error Count 2 ")?.as_ref();
             let res = crate::os_more::net_manage::ping(&source, &target, &count).await?;
-            println!("{}", res);
+            crate::p(res);
             Ok("PASS".to_string())
           }
           "ping-nodes" => {
@@ -172,7 +172,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             let results = futures::future::try_join_all(handles).await?;
             // 将所有响应合并为一个字符串
             let response = results.join("\n");
-            println!("{}", response);
+            crate::p(response);
             Ok("PASS".to_string())
           }
           _ => Ok(String::new()),
@@ -210,14 +210,14 @@ pub fn user_query<T: AsRef<str>>(info: &Type, args: &[T], filter: &[T]) -> e_uti
             for item in &items {
               let is_dir = if item.is_dir { "目录" } else { "" };
               let is_hidden = if item.is_hidden { "隐藏" } else { "" };
-              println!(
+              crate::p(format!(
                 "[{}] 用户[{}] 属性[{}] {} {}",
                 item.path.display(),
                 item.uname,
                 item.attribute,
                 is_dir,
                 is_hidden
-              );
+              ));
             }
             Ok(format!("Count: {count}"))
           }

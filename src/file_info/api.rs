@@ -8,14 +8,8 @@ use std::{
   path::{Path, PathBuf},
 };
 
-pub async fn file_info_query<T: AsRef<str>>(
-  task: &str,
-  args: impl IntoIterator<Item = T>,
-  _filter: impl IntoIterator<Item = T>,
-  _is_full: bool,
-) -> e_utils::AnyResult<String> {
+pub async fn file_info_query<T: AsRef<str>>(task: &str, args: impl IntoIterator<Item = T>) -> e_utils::AnyResult<String> {
   let args: Vec<String> = args.into_iter().map(|x| x.as_ref().to_string()).collect();
-  let _filter: Vec<String> = _filter.into_iter().map(|x| x.as_ref().to_string()).collect();
   let src = args.get(0).ok_or("Args Error must > 0 ")?;
   match &*task {
     "copy-lib" => {
@@ -25,7 +19,7 @@ pub async fn file_info_query<T: AsRef<str>>(
     }
     "print" => {
       let res = serde_json::to_string_pretty(&a_open(src).await?)?;
-      println!("{res}");
+      crate::p(&res);
       return Ok(res);
     }
     "nodes" => Ok(serde_json::to_string_pretty(&a_open(src).await?)?),
@@ -87,7 +81,7 @@ pub fn lib_copy(target: impl AsRef<Path>, to: impl AsRef<Path>) -> e_utils::AnyR
   let to = to.as_ref();
   for lib in lib_data_parse(&fs::read(target)?)? {
     if let Some(p) = lib.fullpath {
-      println!("{} -> {}", p.display(), to.display());
+      crate::p(format!("{} -> {}", p.display(), to.display()));
       let pto = to.join(p.file_name().unwrap_or_default());
       e_utils::fs::auto_copy(p, &pto)?;
       count += 1;

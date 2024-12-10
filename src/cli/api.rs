@@ -23,7 +23,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       crate::ohm::OHM::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load().unwrap_or_default();
-      println!("{}", tester.get_test_start());
+      crate::dp(tester.get_test_start());
       let res = tester.run().await;
       crate::common::process::kill(pid)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
@@ -42,7 +42,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       crate::aida64::AIDA64::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load().unwrap_or_default();
-      println!("{}", tester.get_test_start());
+      crate::dp(tester.get_test_start());
       let res = tester.run().await;
       crate::common::process::kill(pid)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
@@ -58,7 +58,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       }
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load().unwrap_or_default();
-      println!("{}", tester.get_test_start());
+      crate::p(tester.get_test_start());
       let res = tester.run().await;
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
@@ -77,9 +77,9 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       return Ok(res);
     }
     Inner::Drive => return crate::drive::drive_query(&op.task, &op.args, &op.command, op.full).await,
-    Inner::FileInfo => return crate::file_info::file_info_query(&op.task, &op.args, &op.command, op.full).await,
-    Inner::OSSystem => return crate::os_system::os_system_query(&op.task, &op.args, &op.command, op.full).await,
-    Inner::OSOffice => return crate::os_office::os_office_query(&op.task, &op.args, &op.command, op.full).await,
+    Inner::FileInfo => return crate::file_info::file_info_query(&op.task, &op.args).await,
+    Inner::OSSystem => return crate::os_system::os_system_query(&op.task, &op.args).await,
+    Inner::OSOffice => return crate::os_office::os_office_query(&op.task, &op.args).await,
   };
   if tester.core.results.data.is_empty() && tester.core.is_check {
     tester.core.results.res = "FAIL".to_string();
@@ -87,7 +87,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
   } else {
     tester.core.results.res = "PASS".to_string();
   }
-  println!("{}", tester.get_test_summary());
+  crate::p(tester.get_test_summary());
   if tester.core.is_data {
     Ok(tester.core.results.data)
   } else {

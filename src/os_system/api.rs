@@ -4,7 +4,7 @@ use e_utils::{cmd::Cmd, parse::MyParseFormat as _, regex::Regex};
 
 use super::ActiveLocalType;
 
-pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T], _filter: &[T], _is_full: bool) -> e_utils::AnyResult<String> {
+pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::AnyResult<String> {
   #[cfg(target_os = "windows")]
   {
     return match task {
@@ -43,10 +43,6 @@ pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T], _filter: &[T
 }
 
 /// # 检查OS是否激活
-/// # Example sh
-/// ```sh
-/// e-app.exe --api active --task check
-/// ```
 pub async fn check_os_active() -> e_utils::AnyResult<String> {
   // 执行 slmgr.vbs 命令
   let output = Cmd::new("cscript")
@@ -62,10 +58,6 @@ pub async fn check_os_active() -> e_utils::AnyResult<String> {
 }
 
 /// 激活系统
-/// # Example sh
-/// ```sh
-/// e-app.exe --api active --task active -- YVWGF-BXNMC-HTQYQ-CPQ99-66QFC fname.txt
-/// ```
 pub async fn active_os(product_key: &str, save_type: ActiveLocalType) -> e_utils::AnyResult<String> {
   if let Ok(re) = Regex::new(r"^[0-9A-Z]{5}-(?:[0-9A-Z]{5}-){3}[0-9A-Z]{5}$") {
     // Define the optimized regular expression pattern for a Microsoft product key
@@ -101,10 +93,6 @@ pub async fn active_os(product_key: &str, save_type: ActiveLocalType) -> e_utils
 }
 
 /// # 取消注册
-/// # Example sh
-/// ```sh
-/// e-app.exe --api active --task deactive
-/// ```
 pub async fn deactivate_os() -> e_utils::AnyResult<String> {
   let cmd = Cmd::new("cscript").args(["/nologo", "C:\\Windows\\System32\\slmgr.vbs"]);
   let out = cmd.output().map_err(|e| format!("Error: Uninstall the product key;{e}"))?;
@@ -123,10 +111,6 @@ pub async fn deactivate_os() -> e_utils::AnyResult<String> {
 }
 
 /// # 注册KMS
-/// # Example sh
-/// ```sh
-/// e-app.exe --api active --task rkms -- kms.03k.org
-/// ```
 pub async fn register_kms(server: &str) -> e_utils::AnyResult<String> {
   Ok(
     Cmd::new("cscript")
@@ -139,10 +123,6 @@ pub async fn register_kms(server: &str) -> e_utils::AnyResult<String> {
 }
 
 /// # 清除注册KMS
-/// # Example sh
-/// ```sh
-/// e-app.exe --api active --task ckms
-/// ```
 pub async fn clear_kms() -> e_utils::AnyResult<String> {
   Ok(
     Cmd::new("cscript")

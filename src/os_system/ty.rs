@@ -11,10 +11,6 @@ pub enum ActiveLocalType {
 
 impl ActiveLocalType {
   /// # 清除激活码持久化
-  /// # Example sh
-  /// ```sh
-  /// e-app.exe --api active --task cleanCache -- fname.txt
-  /// ```
   pub fn clean_cache(self) -> e_utils::AnyResult<String> {
     match self {
       ActiveLocalType::Temp(fname) => {
@@ -29,10 +25,6 @@ impl ActiveLocalType {
     }
   }
   /// # 查询激活码持久化
-  /// # Example sh
-  /// ```sh
-  /// e-app.exe --api active --task queryCache -- fname.txt
-  /// ```
   pub async fn query_cache(self) -> e_utils::AnyResult<String> {
     match self {
       ActiveLocalType::Temp(fname) => {

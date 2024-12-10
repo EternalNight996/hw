@@ -131,12 +131,12 @@ impl LoadController {
 impl LoadController {
   /// 开启
   pub fn start_running(&self) {
-    println!("启动负载");
+    crate::dp("启动负载");
     self.running.store(true, Ordering::SeqCst);
   }
   /// 关闭负载
   pub fn stop_running(&self) {
-    println!("关闭负载");
+    crate::dp("关闭负载");
     self.running.store(false, Ordering::SeqCst);
   }
   /// 启动负载
@@ -162,7 +162,7 @@ impl LoadController {
           .into(),
         );
       }
-      println!("硬件:{} 传感器:{} 内核:{} 标准负载:{}% 启动负载", hw_type, s_type, core_count, loaded);
+      crate::dp(&format!("硬件:{} 传感器:{} 内核:{} 标准负载:{}% 启动负载", hw_type, s_type, core_count, loaded));
       LOAD_CONTROLLER.start_running();
       Ok(spawn_cpu_load(core_count))
     } else {

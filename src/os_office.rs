@@ -7,7 +7,7 @@ use strum::*;
 
 use crate::os_system::ActiveLocalType;
 
-pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T], _filter: &[T], _is_full: bool) -> e_utils::AnyResult<String> {
+pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::AnyResult<String> {
   #[cfg(target_os = "windows")]
   {
     let v1 = args.get(0).map(AsRef::as_ref).unwrap_or_default();
@@ -80,7 +80,6 @@ impl OfficeVersion {
 /// # 检查OFFICE
 /// # Example sh
 /// ```sh
-/// e-app.exe --api office --task check -- V2016
 /// ```
 pub async fn check_office(v: OfficeVersion) -> e_utils::AnyResult<String> {
   let olist = check_office_dir().unwrap_or_default();
@@ -109,7 +108,6 @@ pub async fn check_office(v: OfficeVersion) -> e_utils::AnyResult<String> {
 /// # 注册OFFICE KMS
 /// # Example sh
 /// ```sh
-/// e-app.exe --api office --task rkms -- V2016 kms.03k.org
 /// ```
 pub async fn register_office_kms(v: OfficeVersion, server: &str) -> e_utils::AnyResult<String> {
   let olist = check_office_dir().unwrap_or_default();
@@ -138,7 +136,6 @@ pub async fn register_office_kms(v: OfficeVersion, server: &str) -> e_utils::Any
 /// # 激活OFFICE
 /// # Example sh
 /// ```sh
-/// e-app.exe --api office --task active -- V2016 NMMKJ-6RK4F-KMJVX-8D9MJ-6MWKP
 /// ```
 pub async fn active_office(v: OfficeVersion, code: &str) -> e_utils::AnyResult<String> {
   let olist = check_office_dir().unwrap_or_default();

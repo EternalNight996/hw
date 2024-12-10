@@ -107,11 +107,11 @@ impl HardwareMonitor for OHM {
         .map(|v| v.Value != 0.0)
         .unwrap_or(false)
       {
-        println!("Loading... ({}%/{}%)", count, count);
-        println!("OpenHardwareMonitor ready");
+        crate::dp(format!("Loading... ({}%/{}%)", count, count));
+        crate::dp("OpenHardwareMonitor ready");
         return Ok(());
       }
-      println!("Loading... ({}%/{}%)", i, count);
+      crate::dp(format!("Loading... ({}%/{}%)", i, count));
       std::thread::sleep(std::time::Duration::from_millis(200));
     }
     Err("OpenHardwareMonitor load timeout".into())

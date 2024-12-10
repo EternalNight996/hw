@@ -5,27 +5,27 @@ use e_utils::cmd::Cmd;
 #[cfg(windows)]
 async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
   let status = Cmd::new("w32tm").args(["/query", "/status"]).a_output().await?;
-  println!("{}",status.stdout);
+  crate::p(&status.stdout);
   if !status.stdout.contains("Leap") {
-    println!("正在重新配置 Windows 时间服务...");
+    crate::p("正在重新配置 Windows 时间服务...");
 
     // 重新注册服务
     let _ = Cmd::new("w32tm")
       .args(["/unregister"])
       .a_output()
       .await
-      .inspect(|v| println!("取消注册服务: {}", v.stdout));
+      .inspect(|v| crate::p(format!("取消注册服务: {}", v.stdout)));
 
     let _ = Cmd::new("w32tm")
       .args(["/register"])
       .a_output()
       .await
-      .inspect(|v| println!("注册服务: {}", v.stdout));
+      .inspect(|v| crate::p(format!("注册服务: {}", v.stdout)));
 
     // 启动服务
     let start_result = Cmd::new("net").args(["start", "w32time"]).a_output().await?;
 
-    println!("启动服务: {}", start_result.stdout);
+    crate::p(format!("启动服务: {}", start_result.stdout));
 
     if !start_result.status.success() {
       return Err("无法启动 Windows 时间服务".into());
@@ -59,7 +59,7 @@ pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
 
     // 尝试同步时间，最多重试3次
     for i in 1..=3 {
-      println!("正在进行第 {} 次时间同步尝试...", i);
+      crate::wp(format!("正在进行第 {} 次时间同步尝试...", i));
 
       let sync_result = Cmd::new("w32tm").args(["/resync", "/force", "/nowait"]).a_output().await?;
 
@@ -73,7 +73,7 @@ pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
       }
 
       if i < 3 {
-        println!("同步失败，等待重试...");
+        crate::wp("同步失败，等待重试...");
         tokio::time::sleep(Duration::from_secs(2)).await;
       }
     }
@@ -92,7 +92,7 @@ pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
     match Cmd::new("sudo").args(["chronyd", "-q", &format!("server {}", server)]).a_output().await {
       Ok(output) => Ok(output.stdout),
       Err(_) => {
-        println!("chronyd 失败，尝试使用 ntpdate...");
+        crate::wp("chronyd 失败，尝试使用 ntpdate...");
         let _ = Cmd::new("sudo").args(["systemctl", "stop", "systemd-timesyncd"]).a_output().await?;
 
         let res = Cmd::new("sudo").args(["ntpdate", server]).a_output().await?;

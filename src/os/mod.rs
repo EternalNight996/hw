@@ -34,7 +34,7 @@ impl OS {
         HardwareType::CPU => Some(self.query_cpu(&sensor_types, &hwt)),
         HardwareType::RAM => Some(self.query_memory(&sensor_types, &hwt)),
         _ => {
-          println!("OS HW type {} is not supported", hwt);
+          crate::dp(format!("OS HW type {} is not supported", hwt));
           None
         }
       })
@@ -106,7 +106,7 @@ impl OS {
           }])
         }
         _ => {
-          println!("OS Sensor type {} is not supported", st);
+          crate::dp(format!("OS Sensor type {} is not supported", st));
           None
         }
       })
@@ -168,7 +168,7 @@ impl OS {
           Some(res)
         }
         _ => {
-          println!("OS Sensor type {} is not supported", st);
+          crate::dp(format!("OS Sensor type {} is not supported", st));
           None
         }
       })

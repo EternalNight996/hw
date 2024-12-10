@@ -16,10 +16,13 @@ async fn main() -> e_utils::AnyResult<()> {
       Ok(v) => {
         res.content = v;
         res.status = true;
+        hw::p(format!("\n{}", res.to_str()?));
       }
-      Err(e) => res.content = e.to_string(),
+      Err(e) => {
+        res.content = e.to_string();
+        hw::ep(format!("\n{}", res.to_str()?));
+      }
     }
-    println!("\n{}", res.to_str()?);
     return Ok(());
   }
   #[cfg(not(feature = "cli"))]

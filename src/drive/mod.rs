@@ -19,7 +19,7 @@ pub async fn drive_query<T: AsRef<str>>(
     let filter: Vec<String> = filter.into_iter().map(|x| x.as_ref().to_string()).collect();
     return match task {
       "scan" => pnputil_scan(),
-      "add-file" => {
+      "add-folder" => {
         let mut outres = String::new();
         let target = args.get(0).ok_or("Args Error Target 1 ")?;
         for x in e_utils::fs::tree_folder(&target)?
@@ -35,10 +35,10 @@ pub async fn drive_query<T: AsRef<str>>(
         }
         Ok(outres)
       }
-      "add" => return pnputil_add_driver(filter),
-      "delete" => return pnputil_delete_driver(args.clone()),
+      "add" => return pnputil_add_driver(args),
+      "delete" => return pnputil_delete_driver(args),
       "delete-find" => {
-        let list = crate::drive::findnodes(&args, &filter, is_full)?;
+        let list = crate::drive::findnodes(&filter, is_full)?;
         let mut nodes = vec![];
         for node in &list {
           let inf_path: std::path::PathBuf = (&node.inf_file).into();
@@ -55,15 +55,15 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string_pretty(&nodes)?)
       }
       "print" => {
-        let list = crate::drive::findnodes(&args, &filter, is_full)?;
+        let list = crate::drive::findnodes(&filter, is_full)?;
         let count = list.len();
         for node in &list {
-          println!("{}", serde_json::to_string_pretty(&node)?);
+          crate::p(serde_json::to_string_pretty(&node)?);
         }
         Ok(format!("COUNT: {count}"))
       }
       "nodes" => {
-        let list = crate::drive::findnodes(&args, &filter, is_full)?;
+        let list = crate::drive::findnodes(&filter, is_full)?;
         Ok(serde_json::to_string_pretty(&list)?)
       }
       "restart" => {

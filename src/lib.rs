@@ -23,3 +23,4 @@ pub mod common;
 pub mod os_more;
 pub mod share;
 pub mod wmic;
+pub use share::{ep, p, wp,dp};

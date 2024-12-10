@@ -45,7 +45,7 @@ async fn main() -> e_utils::AnyResult<()> {
     } else {
       tester.core.results.res = "PASS".to_string();
     }
-    println!("{}", tester.get_test_summary());
+    hw::p(tester.get_test_summary());
   }
   Ok(())
 }

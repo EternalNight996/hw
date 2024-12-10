@@ -486,7 +486,7 @@ async fn main() -> e_utils::AnyResult<()> {
     }
     Err(e) => res.content = e.to_string(),
   }
-  println!("\n{}", res.to_str()?);
+  hw::share::p(res.to_str()?);
   Ok(())
 }
 ```

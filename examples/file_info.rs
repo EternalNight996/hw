@@ -6,11 +6,11 @@ async fn main() -> e_utils::AnyResult<()> {
     // 复制文件到指定目录
     let src = "target/debug/hw.exe";
     let to = "target/debug/_libs";
-    println!("{}", file_info_query("copy-lib", &[src, to], &[], false).await?);
+    hw::p(file_info_query("copy-lib", &[src, to]).await?);
     // 打印文件信息
-    println!("{}", file_info_query("print", &[src], &[], false).await?);
+    hw::p(file_info_query("print", &[src]).await?);
     // 打印文件节点
-    println!("{}", file_info_query("nodes", &[src], &[], false).await?);
+    hw::p(file_info_query("nodes", &[src]).await?);
   }
   Ok(())
 }

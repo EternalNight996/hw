@@ -19,7 +19,7 @@ impl AIDA64 {
   pub async fn a_query(&self, hw_type: HardwareType, stype: SensorType) -> AnyResult<Vec<Sensor>> {
     let query = format!("{}{}", Self::SENSOR_QUERY, Self::build_query_conditions(&hw_type, &stype));
     let src_sensors: Vec<AIDA64Sensor> = self.get().async_raw_query(&query).await?;
-    println!("Found {} src sensors", src_sensors.len());
+    crate::dp(format!("Found {} src sensors", src_sensors.len()));
     let sensors = convert_sensors(src_sensors);
     if sensors.is_empty() {
       return Err(format!("No sensors found for {} {}", hw_type.to_string(), stype.to_string()).into());
@@ -30,7 +30,7 @@ impl AIDA64 {
   pub fn query(&self, hw_type: HardwareType, stype: SensorType) -> AnyResult<Vec<Sensor>> {
     let query = format!("{}{}", Self::SENSOR_QUERY, Self::build_query_conditions(&hw_type, &stype));
     let src_sensors: Vec<AIDA64Sensor> = self.get().raw_query(&query)?;
-    println!("Found {} src sensors", src_sensors.len());
+    crate::dp(format!("Found {} src sensors", src_sensors.len()));
     let sensors = convert_sensors(src_sensors);
     if sensors.is_empty() {
       return Err(format!("No sensors found for {} {}", hw_type.to_string(), stype.to_string()).into());
@@ -155,11 +155,11 @@ impl HardwareMonitor for AIDA64 {
         .map(|v| v.Value != 0.0)
         .unwrap_or(false)
       {
-        println!("Loading... ({}%/{}%)", count, count);
-        println!("AIDA64 ready");
+        crate::dp(format!("Loading... ({}%/{}%)", count, count));
+        crate::dp("AIDA64 ready");
         return Ok(());
       }
-      println!("Loading... ({}%/{}%)", i, count);
+      crate::dp(format!("Loading... ({}%/{}%)", i, count));
       std::thread::sleep(std::time::Duration::from_millis(200));
     }
     Err("AIDA64 load timeout".into())
