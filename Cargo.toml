@@ -80,14 +80,12 @@ hw = { path = "./" }
 [package]
 name = "hw"
 version = "0.1.3"
-authors = [
-    "Eternal Night <EternalNight996@gmail.com, EternalNightYeah2@yeah.net>",
-]
+authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"
 license-file = "LICENSE"
 homepage = "https://gitee.com/eternalnight996"
-description = "MII - Machine Internal Inspection"
+description = "强大而统一的跨平台硬件监控工具"
 documentation = "https://docs.rs/hw"
 keywords = ["hardware", "monitor", "system", "sensors", "hw"]
 categories = [
@@ -97,5 +95,5 @@ categories = [
     "os",
     "command-line-utilities",
 ]
-include = ["src/", "*.md", "*LICENSE*", "Cargo.toml", "COPYRIGHT", "build.rs"]
+include = ["src/", "*.md", "LICENSE", "Cargo.toml", "COPYRIGHT", "build.rs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
