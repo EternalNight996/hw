@@ -1,62 +1,76 @@
-[Your Company Name]
-[Your Company Address]
-[City, State, Zip Code]
-[Email Address]
-[Phone Number]
-[Website]
+MIT License 开源许可证
+===========================================
 
-SOFTWARE PROPRIETARY LICENSE AGREEMENT
+Copyright (c) 2024 梦游企业 (Mengyou Enterprise)
+版权所有 (c) 2024 梦游企业
 
-This Software Proprietary License Agreement (the "Agreement") is entered into by and between [Your Company Name], a legal entity, and the licensee, [Licensee Name], a legal entity.
+授权条款
+-------------------------------------------
 
-1. LICENSE GRANT
+【English Version】
 
-1.1 License Scope. Subject to the terms and conditions of this Agreement, [Your Company Name] grants to [Licensee Name] a [non-exclusive/exclusive] license to use the software [Software Name] (the "Software").
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-1.2 Permitted Use. [Licensee Name] may use the Software for [specified purposes, e.g., internal business operations].
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-1.3 Source Code. This license does not grant [Licensee Name] access to the source code of the Software.
+【中文版本】
 
-2. USE RESTRICTIONS
+特此免费授予任何获得本软件及其相关文档文件（以下简称"软件"）副本的人不受限制地处理本软件的权利，
+包括但不限于使用、复制、修改、合并、发布、分发、再许可和/或出售该软件副本，
+以及允许获得该软件的人这样做，但须遵守以下条件：
 
-2.1 [Licensee Name] shall not modify, create derivative works, reverse engineer, or decompile the Software.
+在所有副本或重要部分的软件中都必须包含上述版权声明和本许可声明。
 
-2.2 [Licensee Name] shall not distribute, sublicense, or transfer the Software or any rights granted under this Agreement to any third party.
+免责声明
+-------------------------------------------
 
-3. INTELLECTUAL PROPERTY
+【English Version】
 
-3.1 Ownership. [Your Company Name] retains all right, title, and interest in and to the Software, including all intellectual property rights.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-4. SUPPORT AND MAINTENANCE
+【中文版本】
 
-4.1 [Your Company Name] may, but is not obligated to, provide support and maintenance services to [Licensee Name].
+本软件按"原样"提供，不提供任何形式的明示或暗示的保证，
+包括但不限于对适销性、特定用途的适用性和非侵权性的保证。
+在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，
+无论是因软件或软件的使用或其他交易而产生的合同、侵权或其他行为。
 
-5. FEES
+使用说明
+-------------------------------------------
 
-5.1 License Fees. [Licensee Name] agrees to pay [Your Company Name] the applicable license fees for the use of the Software as specified in Exhibit A.
+本开源许可证赋予您以下权利：
 
-6. TERMINATION
+1. 【自由使用】
+   - 可以自由使用、复制和分发代码
+   - 可以修改源代码用于自己的项目
+   - 可以将代码用于商业用途
 
-6.1 Term. This Agreement shall commence on the Effective Date and continue until terminated.
+2. 【版权保护】
+   - 必须在所有副本中包含原始版权声明
+   - 必须在所有副本中包含本许可证文本
+   - 不得删除或修改任何版权信息
 
-6.2 Termination for Cause. Either party may terminate this Agreement for cause upon written notice if the other party breaches any material term of this Agreement.
+3. 【免责说明】
+   - 本软件不提供任何形式的保证
+   - 作者不承担任何因使用本软件产生的责任
+   - 使用者需自行承担使用风险
 
-7. MISCELLANEOUS
-
-7.1 Governing Law. This Agreement shall be governed by and construed in accordance with the laws of [applicable jurisdiction].
-
-7.2 Entire Agreement. This Agreement constitutes the entire understanding between the parties and supersedes all prior negotiations, understandings, and agreements.
-
-IN WITNESS WHEREOF, the parties hereto have executed this Software Proprietary License Agreement effective as of the Effective Date.
-
-[Your Company Name]
-By: ____________________________________
-[Authorized Signatory]
-
-[Date]
-
-[Licensee Name]
-By: ____________________________________
-[Authorized Signatory]
-
-[Date]
+4. 【开源友好】
+   - 支持开源社区发展
+   - 鼓励代码共享和改进
+   - 适用于商业和非商业项目
+-------------------------------------------
+梦游企业 (Mengyou Enterprise)
+Copyright © 2024 All Rights Reserved.

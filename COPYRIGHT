@@ -1,12 +1,40 @@
-Copyrights in the Rand project are retained by their contributors. No
-copyright assignment is required to contribute to the Rand project.
+版权声明 (Copyright Notice)
+===========================================
 
-For full authorship information, see the version control history.
+版权所有 (c) 2024 梦游企业 (Mengyou Enterprise)
 
-Except as otherwise noted (below and/or in individual files), Rand is
-licensed under the Apache License, Version 2.0 <LICENSE-APACHE> or
-<http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-<LICENSET> or <http://opensource.org/licenses/MIT>, at your option.
+版权归属 (Copyright Ownership)
+-------------------------------------------
+本项目的版权由其贡献者保留。向本项目贡献代码不需要转让版权。
+贡献者信息可在版本控制历史中查看。
 
-The Rand project includes code from the Rust project
-published under these same licenses.
+Copyrights are retained by their contributors. No copyright assignment 
+is required to contribute to this project. For full authorship information, 
+see the version control history.
+
+许可证选择 (License Options)
+-------------------------------------------
+除非另有说明（在下方或个别文件中注明），本项目采用 MIT 许可证
+<LICENSE> 或 <http://opensource.org/licenses/MIT>。
+
+Except as otherwise noted (below and/or in individual files), this project
+is licensed under the MIT license <LICENSE> or 
+<http://opensource.org/licenses/MIT>.
+
+代码来源 (Code Sources)
+-------------------------------------------
+本项目可能包含来自其他开源项目的代码，这些代码均遵循其原有的许可证条款。
+
+This project may include code from other open source projects, 
+all published under their respective licenses.
+
+补充说明 (Additional Notes)
+-------------------------------------------
+1. 【版权保护】所有源代码的版权归原作者所有
+2. 【自由使用】允许任何人使用、修改和分发代码
+3. 【许可证】必须保留原有的许可证和版权信息
+4. 【贡献者】欢迎社区贡献，保留贡献者权益
+
+-------------------------------------------
+梦游企业 (Mengyou Enterprise)
+Copyright © 2024 All Rights Reserved.
