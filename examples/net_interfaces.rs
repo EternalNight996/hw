@@ -1,8 +1,8 @@
-use hw::os_more::{query_os_more, Type};
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
   #[cfg(feature = "network")]
   {
+    use hw::os_more::{query_os_more, Type};
     // -- 条件
     // "~Less100" 速度小于100
     // "~100" 速度大于等于100

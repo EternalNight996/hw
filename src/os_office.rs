@@ -5,10 +5,12 @@ use std::{
 };
 use strum::*;
 
-use crate::os_system::ActiveLocalType;
+use crate::share::ActiveLocalType;
 
 pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::AnyResult<String> {
-  #[cfg(target_os = "windows")]
+  #[cfg(not(all(target_os = "windows", feature = "os-office")))]
+  return Err("OS Office not supported".into());
+  #[cfg(all(target_os = "windows", feature = "os-office"))]
   {
     let v1 = args.get(0).map(AsRef::as_ref).unwrap_or_default();
     let version = OfficeVersion::from_str(v1).unwrap_or(OfficeVersion::None);
@@ -33,8 +35,7 @@ pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::
       _ => Err("Task Error".into()),
     };
   }
-  #[cfg(not(feature = "windows"))]
-  Err("OS System not supported".into())
+
 }
 
 /// Office激活版本

@@ -168,7 +168,12 @@ _copy-resources:
     @if [ -f "git_history.txt" ]; then \
         just copy "git_history.txt" "{{out_dir}}/" ; \
     fi
-
+    @if [ -f "readme.pdf" ]; then \
+        just copy "readme.pdf" "{{out_dir}}/user_guide.pdf" ; \
+    fi
+    @if [ -f "readme.zh.pdf" ]; then \
+        just copy "readme.zh.pdf" "{{out_dir}}/用户手册.pdf" ; \
+    fi
 
 # 复制依赖
 copy-lib src="" target="" ignore="":

@@ -2,7 +2,7 @@
 
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
-  #[cfg(feature = "drive")]
+  #[cfg(not(all(target_os = "windows", feature = "drive")))]
   {
     use hw::drive::drive_query;
 

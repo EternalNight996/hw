@@ -1,8 +1,8 @@
-use hw::os_more::{query_os_more, Type};
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
   #[cfg(feature = "system")]
   {
+    use hw::os_more::{query_os_more, Type};
     let empty: Vec<String> = vec![];
     hw::p(query_os_more(&[Type::CpuName], &empty, &[], false).await?.join("\n"));
     hw::p(query_os_more(&[Type::MemoryTotal], &empty, &[], false).await?.join("\n"));

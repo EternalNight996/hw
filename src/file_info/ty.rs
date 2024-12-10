@@ -1,5 +1,6 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
+use e_utils::cmd::ExeType;
 use goblin::elf::header::*;
 use goblin::mach::cputype::*;
 use goblin::pe::header::*;
@@ -80,145 +81,35 @@ impl PlatformType {
   }
 }
 
-/// Application type enumeration
-#[derive(Default, Clone, Copy, Debug, Display, PartialEq, EnumString, VariantArray, Deserialize, Serialize)]
-#[repr(u8)]
-pub enum ExeType {
-  /// Windows executable file
-  #[strum(to_string = "Windows Executable")]
-  Exe,
-  /// DOS program file
-  #[strum(to_string = "DOS Program")]
-  Com,
-  /// Batch file
-  #[strum(to_string = "Batch File")]
-  Bat,
-  /// Cmd file
-  #[default]
-  #[strum(to_string = "Cmd Command")]
-  Cmd,
-  /// Cmd file
-  #[strum(to_string = "Cmd File")]
-  CmdFile,
-  /// Visual Basic Script file
-  #[strum(to_string = "VBScript")]
-  Vbs,
-  /// PowerShell script file
-  #[strum(to_string = "PowerShell Script")]
-  Ps1,
-  /// Dynamic Link Library file
-  #[strum(to_string = "Dynamic Link Library")]
-  Dll,
-  /// Shell script file
-  #[strum(to_string = "Shell Script")]
-  ShellScript,
-  /// macOS application bundle
-  #[strum(to_string = "macOS Application")]
-  MacOSApp,
-  /// Linux Executable
-  #[strum(to_string = "Linux Executable")]
-  LinuxExecutable,
-  /// Linux Shared Object
-  #[strum(to_string = "Linux Shared Object")]
-  LinuxSharedObject,
-  /// Linux Relocatable Object
-  #[strum(to_string = "Linux Relocatable Object")]
-  LinuxRelocatable,
-  /// Linux Core Dump
-  #[strum(to_string = "Linux Core Dump")]
-  LinuxCoreDump,
-  /// Android Executable
-  #[strum(to_string = "Android Executable")]
-  AndroidExecutable,
-  /// Android Shared Object
-  #[strum(to_string = "Android Shared Object")]
-  AndroidSharedObject,
-  /// Android Application Package
-  #[strum(to_string = "Android Application Package")]
-  AndroidApk,
-  /// iOS Application
-  #[strum(to_string = "iOS Application")]
-  IosApp,
-  /// Other application types
-  #[strum(to_string = "未知")]
-  Unknown,
-}
-impl ExeType {
+pub struct ExeTypeEx(pub ExeType);
+impl ExeTypeEx {
   pub fn from_linux(t: u16, is_lib: bool) -> Self {
-    match t {
-      goblin::elf::header::ET_EXEC => ExeType::LinuxExecutable,
+    Self(match t {
+      goblin::elf::header::ET_EXEC => ExeType::LinuxExe,
       goblin::elf::header::ET_DYN => {
         if is_lib {
-          ExeType::LinuxSharedObject
+          ExeType::So
         } else {
-          ExeType::LinuxExecutable
+          ExeType::LinuxExe
         }
       }
-      goblin::elf::header::ET_REL => ExeType::LinuxRelocatable,
-      goblin::elf::header::ET_CORE => ExeType::LinuxCoreDump,
-      _ => ExeType::Unknown,
-    }
+      goblin::elf::header::ET_REL => ExeType::Unknown,
+      goblin::elf::header::ET_CORE => ExeType::Unknown,
+      _ => ExeType::LinuxExe,
+    })
   }
   pub fn from_android(t: u16, is_lib: bool) -> Self {
-    match t {
-      goblin::elf::header::ET_EXEC => ExeType::AndroidExecutable,
+    Self(match t {
+      goblin::elf::header::ET_EXEC => ExeType::AndroidApk,
       goblin::elf::header::ET_DYN => {
         if is_lib {
-          ExeType::AndroidSharedObject
+          ExeType::So
         } else {
-          ExeType::AndroidExecutable // 可能是位置无关的可执行文件
+          ExeType::AndroidApk // 可能是位置无关的可执行文件
         }
       }
-      _ => ExeType::Unknown,
-    }
-  }
-  pub fn from_target(p: impl AsRef<Path>) -> Self {
-    match p
-      .as_ref()
-      .extension()
-      .and_then(|x| x.to_str())
-      .unwrap_or_default()
-      .to_lowercase()
-      .as_str()
-    {
-      "exe" => ExeType::Exe,
-      "dll" => ExeType::Dll,
-      "com" => ExeType::Com,
-      "bat" => ExeType::Bat,
-      "cmd" => ExeType::CmdFile,
-      "vbs" => ExeType::Vbs,
-      "ps1" => ExeType::Ps1,
-      "sh" => ExeType::ShellScript,
-      "app" => ExeType::MacOSApp,
-      "apk" => ExeType::AndroidApk,
-      "ipa" => ExeType::IosApp,
-      "so" => ExeType::LinuxSharedObject,
-      "dylib" => ExeType::Dll,
-      _ => ExeType::Unknown,
-    }
-  }
-  pub fn to_extension(&self) -> &'static str {
-    match self {
-      ExeType::Exe => "exe",
-      ExeType::Dll => "dll",
-      ExeType::Com => "com",
-      ExeType::Bat => "bat",
-      ExeType::CmdFile => "cmd",
-      ExeType::Vbs => "vbs",
-      ExeType::Ps1 => "ps1",
-      ExeType::ShellScript => "sh",
-      ExeType::MacOSApp => "app",
-      ExeType::AndroidApk => "apk",
-      ExeType::IosApp => "ipa",
-      ExeType::LinuxSharedObject => "so",
-      ExeType::LinuxRelocatable => "o",
-      ExeType::LinuxCoreDump => "core",
-      ExeType::AndroidSharedObject => "so",
-      ExeType::LinuxExecutable => "",
-      ExeType::AndroidExecutable => "",
-      ExeType::Cmd => "",
-      ExeType::Unknown => "",
-    }
+      _ => ExeType::So,
+    })
   }
 }
 /// Instruction Set Architecture (ISA)

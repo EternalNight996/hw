@@ -22,21 +22,30 @@ pub enum Type {
   Desktop,
   Drive,
 }
-
+#[allow(unused)]
 pub async fn query_os_more<T: AsRef<str>>(infos: &[Type], args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<Vec<String>> {
   let mut results = vec![];
   for info in infos {
-    let res = system_query(info)?;
-    if !res.is_empty() {
-      results.push(format!("{}={}", info, res));
+    #[cfg(feature = "system")]
+    {
+      let res = system_query(info)?;
+      if !res.is_empty() {
+        results.push(format!("{}={}", info, res));
+      }
     }
-    let res = user_query(info, args, filter)?;
-    if !res.is_empty() {
-      results.push(format!("{}={}", info, res));
+    #[cfg(feature = "user")]
+    {
+      let res = user_query(info, args, filter)?;
+      if !res.is_empty() {
+        results.push(format!("{}={}", info, res));
+      }
     }
-    let res = network_query(info, args, filter, is_full).await?;
-    if !res.is_empty() {
-      results.push(format!("{}={}", info, res));
+    #[cfg(feature = "network")]
+    {
+      let res = network_query(info, args, filter, is_full).await?;
+      if !res.is_empty() {
+        results.push(format!("{}={}", info, res));
+      }
     }
   }
   if results.is_empty() {
@@ -49,193 +58,185 @@ pub mod network {
   pub const MAC_CHECKS: [&str; 4] = ["00-00-00-00-00-00", "88-88-88-88-87-88", "88-88-88-88-88-88", "TO BE FILLED BY O.E.M."];
 }
 /// 网络查询
+#[cfg(feature = "network")]
 pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<String> {
-  #[cfg(not(feature = "network"))]
-  return Ok(String::new());
-  #[cfg(feature = "network")]
-  {
-    let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
-    let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
-    match info {
-      super::Type::NetInterface => {
-        return match task {
-          "old" => Ok(serde_json::to_string_pretty(
-            &sysinfo::Networks::new_with_refreshed_list()
-              .iter()
-              .map(|(k, _)| k.clone())
-              .collect::<Vec<_>>(),
-          )?),
-          "print" => {
-            if is_full {
-              let ifaces = crate::os_more::net_interface::get_interfaces();
-              let count = ifaces.len();
-              for iface in ifaces {
-                crate::p(serde_json::to_string_pretty(&iface)?)
-              }
-              Ok(format!("Count: {}", count))
-            } else {
-              let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
-              let count = ifaces.len();
-              for iface in ifaces {
-                crate::p(serde_json::to_string_pretty(&iface)?)
-              }
-              Ok(format!("Count: {}", count))
+  let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
+  let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
+  match info {
+    super::Type::NetInterface => {
+      return match task {
+        "old" => Ok(serde_json::to_string_pretty(
+          &sysinfo::Networks::new_with_refreshed_list()
+            .iter()
+            .map(|(k, _)| k.clone())
+            .collect::<Vec<_>>(),
+        )?),
+        "print" => {
+          if is_full {
+            let ifaces = crate::os_more::net_interface::get_interfaces();
+            let count = ifaces.len();
+            for iface in ifaces {
+              crate::p(serde_json::to_string_pretty(&iface)?)
             }
-          }
-          "check-mac" => {
+            Ok(format!("Count: {}", count))
+          } else {
             let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
-            // Check each interface's MAC address
-            for iface in &ifaces {
-              let ref mac = iface.mac_addr;
-              // Check against invalid MAC patterns
-              if network::MAC_CHECKS.contains(&mac.as_str()) {
-                return Err(format!("FAIL:{} ->  {} 未烧录MAC地址", iface.friendly_name, mac).into());
-              }
-              // Check for duplicate MACs
-              let find_repect = ifaces.iter().find(|i| &i.mac_addr == mac && i.friendly_name != iface.friendly_name);
+            let count = ifaces.len();
+            for iface in ifaces {
+              crate::p(serde_json::to_string_pretty(&iface)?)
+            }
+            Ok(format!("Count: {}", count))
+          }
+        }
+        "check-mac" => {
+          let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
+          // Check each interface's MAC address
+          for iface in &ifaces {
+            let ref mac = iface.mac_addr;
+            // Check against invalid MAC patterns
+            if network::MAC_CHECKS.contains(&mac.as_str()) {
+              return Err(format!("FAIL:{} ->  {} 未烧录MAC地址", iface.friendly_name, mac).into());
+            }
+            // Check for duplicate MACs
+            let find_repect = ifaces.iter().find(|i| &i.mac_addr == mac && i.friendly_name != iface.friendly_name);
 
-              if let Some(repeat_mac) = find_repect {
-                return Err(format!("FAIL: {} 重复MAC地址: {}", repeat_mac.friendly_name, mac).into());
-              }
-              crate::dp(format!("PASS: INTERFACE: {} MAC: {}", iface.friendly_name, mac));
+            if let Some(repeat_mac) = find_repect {
+              return Err(format!("FAIL: {} 重复MAC地址: {}", repeat_mac.friendly_name, mac).into());
             }
-            Ok(serde_json::to_string_pretty(&ifaces)?)
+            crate::dp(format!("PASS: INTERFACE: {} MAC: {}", iface.friendly_name, mac));
           }
-          "nodes" => {
-            if is_full {
-              Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces())?)
-            } else {
-              Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces_simple(
-                filter_refs,
-              ))?)
-            }
+          Ok(serde_json::to_string_pretty(&ifaces)?)
+        }
+        "nodes" => {
+          if is_full {
+            Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces())?)
+          } else {
+            Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces_simple(
+              filter_refs,
+            ))?)
           }
-          _ => Ok(String::new()),
-        };
-      }
-      super::Type::NetManage => {
-        return match task {
-          "dhcp" => {
-            let mut new = vec![];
-            for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
-              let ip_res = crate::os_more::net_manage::set_ip_dhcp(&iface.friendly_name).await?;
-              let dns_res = crate::os_more::net_manage::set_dns_dhcp(&iface.friendly_name).await?;
-              new.push(serde_json::json!({
-                "name": iface.friendly_name,
-                "type": iface.if_type,
-                "dnsRes": dns_res,
-                "ipRes": ip_res
-              }));
-            }
-            Ok(serde_json::to_string_pretty(&new)?)
-          }
-          "set-ip" => {
-            let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
-            let ip = args.get(2).ok_or("Args Error IP 1 ")?.as_ref();
-            let netmask = args.get(3).ok_or("Args Error Netmask 2 ")?.as_ref();
-            let gateway = args.get(4).map(AsRef::as_ref);
-            Ok(crate::os_more::net_manage::set_static_ip(&iface, &ip, &netmask, gateway).await?)
-          }
-          "set-dns" => {
-            let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
-            let primary_dns = args.get(2).ok_or("Args Error Primary DNS 1 ")?.as_ref();
-            let secondary_dns = args.get(3).map(AsRef::as_ref);
-            Ok(crate::os_more::net_manage::set_static_dns(&iface, &primary_dns, secondary_dns).await?)
-          }
-          "sync-datetime" => {
-            let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
-            Ok(crate::os_more::net_manage::sync_datetime(&arg).await?)
-          }
-          "ping" => {
-            let source = args.get(1).ok_or("Args Error Source 0 ")?.as_ref();
-            let target = args.get(2).ok_or("Args Error Target 1 ")?.as_ref();
-            let count = args.get(3).ok_or("Args Error Count 2 ")?.as_ref();
-            let res = crate::os_more::net_manage::ping(&source, &target, &count).await?;
-            crate::p(res);
-            Ok("PASS".to_string())
-          }
-          "ping-nodes" => {
-            let target = args.get(1).ok_or("Args Error Target 1 ")?.as_ref();
-            let count = args.get(2).ok_or("Args Error Count 2 ")?.as_ref();
-            #[cfg(target_os = "windows")]
-            let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
-            #[cfg(not(target_os = "windows"))]
-            let faces = vec![];
-            if faces.is_empty() {
-              return Err("No interfaces found".into());
-            }
-            // 创建一个异步任务列表
-            let handles: Vec<_> = faces
-              .iter()
-              .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, count).await })
-              .collect();
-            // 并发执行所有任务并处理结果
-            let results = futures::future::try_join_all(handles).await?;
-            // 将所有响应合并为一个字符串
-            let response = results.join("\n");
-            crate::p(response);
-            Ok("PASS".to_string())
-          }
-          _ => Ok(String::new()),
-        };
-      }
-      _ => Ok(String::new()),
+        }
+        _ => Ok(String::new()),
+      };
     }
+    super::Type::NetManage => {
+      return match task {
+        "dhcp" => {
+          let mut new = vec![];
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+            let ip_res = crate::os_more::net_manage::set_ip_dhcp(&iface.friendly_name).await?;
+            let dns_res = crate::os_more::net_manage::set_dns_dhcp(&iface.friendly_name).await?;
+            new.push(serde_json::json!({
+              "name": iface.friendly_name,
+              "type": iface.if_type,
+              "dnsRes": dns_res,
+              "ipRes": ip_res
+            }));
+          }
+          Ok(serde_json::to_string_pretty(&new)?)
+        }
+        "set-ip" => {
+          let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
+          let ip = args.get(2).ok_or("Args Error IP 1 ")?.as_ref();
+          let netmask = args.get(3).ok_or("Args Error Netmask 2 ")?.as_ref();
+          let gateway = args.get(4).map(AsRef::as_ref);
+          Ok(crate::os_more::net_manage::set_static_ip(&iface, &ip, &netmask, gateway).await?)
+        }
+        "set-dns" => {
+          let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
+          let primary_dns = args.get(2).ok_or("Args Error Primary DNS 1 ")?.as_ref();
+          let secondary_dns = args.get(3).map(AsRef::as_ref);
+          Ok(crate::os_more::net_manage::set_static_dns(&iface, &primary_dns, secondary_dns).await?)
+        }
+        "sync-datetime" => {
+          let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
+          Ok(crate::os_more::net_manage::sync_datetime(&arg).await?)
+        }
+        "ping" => {
+          let source = args.get(1).ok_or("Args Error Source 0 ")?.as_ref();
+          let target = args.get(2).ok_or("Args Error Target 1 ")?.as_ref();
+          let count = args.get(3).ok_or("Args Error Count 2 ")?.as_ref();
+          let res = crate::os_more::net_manage::ping(&source, &target, &count).await?;
+          crate::p(res);
+          Ok("PASS".to_string())
+        }
+        "ping-nodes" => {
+          let target = args.get(1).ok_or("Args Error Target 1 ")?.as_ref();
+          let count = args.get(2).ok_or("Args Error Count 2 ")?.as_ref();
+          #[cfg(target_os = "windows")]
+          let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
+          #[cfg(not(target_os = "windows"))]
+          let faces = vec![];
+          if faces.is_empty() {
+            return Err("No interfaces found".into());
+          }
+          // 创建一个异步任务列表
+          let handles: Vec<_> = faces
+            .iter()
+            .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, count).await })
+            .collect();
+          // 并发执行所有任务并处理结果
+          let results = futures::future::try_join_all(handles).await?;
+          // 将所有响应合并为一个字符串
+          let response = results.join("\n");
+          crate::p(response);
+          Ok("PASS".to_string())
+        }
+        _ => Ok(String::new()),
+      };
+    }
+    _ => Ok(String::new()),
   }
 }
+#[cfg(feature = "user")]
 pub fn user_query<T: AsRef<str>>(info: &Type, args: &[T], filter: &[T]) -> e_utils::AnyResult<String> {
-  #[cfg(not(feature = "user"))]
-  return Ok(String::new());
-  #[cfg(feature = "user")]
-  {
-    let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
-    match info {
-      super::Type::UserNames => {
-        let users = sysinfo::Users::new_with_refreshed_list()
-          .list()
-          .iter()
-          .map(|user| user.id().to_string())
-          .collect::<Vec<String>>()
-          .join(",");
-        Ok(users)
-      }
-      super::Type::Desktop => {
-        let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
-        let attr_filter = args.get(1).and_then(|v| v.as_ref().parse::<u32>().ok()).filter(|&v| v > 0);
-        let query_user = args.get(2).map(AsRef::as_ref);
-        return match task {
-          "print" => {
-            let mut items = crate::os_more::desktop::get_desktop_items(query_user, attr_filter, &filter_refs);
-            items.dedup_by_key(|v| v.path.clone());
-            let count = items.len();
-            for item in &items {
-              let is_dir = if item.is_dir { "目录" } else { "" };
-              let is_hidden = if item.is_hidden { "隐藏" } else { "" };
-              crate::p(format!(
-                "[{}] 用户[{}] 属性[{}] {} {}",
-                item.path.display(),
-                item.uname,
-                item.attribute,
-                is_dir,
-                is_hidden
-              ));
-            }
-            Ok(format!("Count: {count}"))
-          }
-          "nodes" => {
-            let mut items = crate::os_more::desktop::get_desktop_items(query_user, attr_filter, &filter_refs);
-            items.dedup_by_key(|v| v.path.clone());
-            Ok(serde_json::to_string_pretty(&items)?)
-          }
-          _ => Ok(String::new()),
-        };
-      }
-      _ => Ok(String::new()),
+  let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
+  match info {
+    super::Type::UserNames => {
+      let users = sysinfo::Users::new_with_refreshed_list()
+        .list()
+        .iter()
+        .map(|user| user.id().to_string())
+        .collect::<Vec<String>>()
+        .join(",");
+      Ok(users)
     }
+    super::Type::Desktop => {
+      let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
+      let attr_filter = args.get(1).and_then(|v| v.as_ref().parse::<u32>().ok()).filter(|&v| v > 0);
+      let query_user = args.get(2).map(AsRef::as_ref);
+      return match task {
+        "print" => {
+          let mut items = crate::os_more::desktop::get_desktop_items(query_user, attr_filter, &filter_refs);
+          items.dedup_by_key(|v| v.path.clone());
+          let count = items.len();
+          for item in &items {
+            let is_dir = if item.is_dir { "目录" } else { "" };
+            let is_hidden = if item.is_hidden { "隐藏" } else { "" };
+            crate::p(format!(
+              "[{}] 用户[{}] 属性[{}] {} {}",
+              item.path.display(),
+              item.uname,
+              item.attribute,
+              is_dir,
+              is_hidden
+            ));
+          }
+          Ok(format!("Count: {count}"))
+        }
+        "nodes" => {
+          let mut items = crate::os_more::desktop::get_desktop_items(query_user, attr_filter, &filter_refs);
+          items.dedup_by_key(|v| v.path.clone());
+          Ok(serde_json::to_string_pretty(&items)?)
+        }
+        _ => Ok(String::new()),
+      };
+    }
+    _ => Ok(String::new()),
   }
 }
+#[cfg(feature = "system")]
 pub fn system_query(info: &super::Type) -> e_utils::Result<String> {
-  #[cfg(feature = "system")]
   {
     match info {
       super::Type::CpuName => system::cpu_name(),

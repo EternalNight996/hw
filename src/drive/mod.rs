@@ -1,19 +1,20 @@
 pub mod ty;
 pub use ty::*;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "drive"))]
 pub mod win;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "drive"))]
 pub use win::*;
 
+#[allow(unused)]
 pub async fn drive_query<T: AsRef<str>>(
   task: &str,
   args: impl IntoIterator<Item = T>,
   filter: impl IntoIterator<Item = T>,
   is_full: bool,
 ) -> e_utils::AnyResult<String> {
-  #[cfg(not(target_os = "windows"))]
+  #[cfg(not(all(target_os = "windows", feature = "drive")))]
   return Err("Not Windows".into());
-  #[cfg(target_os = "windows")]
+  #[cfg(all(target_os = "windows", feature = "drive"))]
   {
     let args: Vec<String> = args.into_iter().map(|x| x.as_ref().to_string()).collect();
     let filter: Vec<String> = filter.into_iter().map(|x| x.as_ref().to_string()).collect();

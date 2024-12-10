@@ -1,50 +1,38 @@
-<img src="assets/icon.ico" alt=""/>
+<div align="center">
+  <img src="assets/icon.ico" alt="HW Monitor" width="120"/>
+  <h1>HW Monitor</h1>
+  <p><strong>强大而统一的跨平台硬件监控工具</strong></p>
+</div>
 
-### 📄 [English](readme.md)  | 📄  [中文](readme.zh.md)
-[![Test Status](https://github.com/rust-random/rand/workflows/Tests/badge.svg?event=push)](https://github.com/eternalnight996/hw/actions) [![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://doc.rust-lang.org/book/) [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw) [![API](https://docs.rs/hw/badge.svg)](https://docs.rs/rand)
+<div align="center">
+  
+[![Test Status](https://github.com/rust-random/rand/workflows/Tests/badge.svg?event=push)](https://github.com/eternalnight996/hw/actions)[![Book](https://img.shields.io/badge/book-master-yellow.svg)](https://doc.rust-lang.org/book/)[![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw)
+[![API](https://docs.rs/hw/badge.svg)](https://docs.rs/rand)
+[![Rust Version](https://img.shields.io/badge/rust-1.70+-blue.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-# 一个强大的跨平台硬件监控工具
+[English](readme.md) | 简体中文
 
-## 📝 项目介绍
+</div>
 
-**集成多种硬件监控后端，提供统一的命令行接口**
-这是一个用 Rust 编写的硬件监控工具，支持多种监控后端和传感器类型。它可以：
+## ✨ 特性一览
 
-- 实时监控系统硬件状态
-- 支持多种硬件监控后端
-  - OpenHardwareMonitor (Windows)
-  - AIDA64 (Windows)
-  - sysinfo (跨平台)
-- 提供丰富的监控指标
-  - CPU (频率、温度、负载、功耗)
-  - GPU (NVIDIA/AMD 显卡状态)
-  - 内存使用情况
-  - 硬盘状态
-  - 主板传感器
-  - 风扇转速
-- 统一的命令行接口
-  - 简单直观的命令参数
-  - 灵活的数据查询
-  - 支持数据导出
-  - 阈值告警功能
+- 🔄 **多后端集成** - 支持 OpenHardwareMonitor、AIDA64、sysinfo 等多种监控方案
+- 🌍 **跨平台支持** - 完整支持 Windows，基础支持 Linux/MacOS
+- 📊 **丰富的监控指标** - CPU、GPU、内存、硬盘、主板等全方位监控
+- ⚡ **实时数据采集** - 毫秒级的硬件状态监控
+- 🔌 **统一接口** - 简洁的命令行工具与 Rust API
+- 🛠 **可扩展架构** - 轻松扩展新的监控后端
+- 📈 **性能优化** - 低资源占用，高效数据处理
 
-## 💡 主要特性
+## 🚀 快速开始
 
-- **多后端支持**: 集成多种硬件监控解决方案，适应不同场景需求
-- **跨平台兼容**: 通过 sysinfo 提供基础的跨平台支持
-- **丰富的传感器**: 支持温度、频率、负载等多种传感器类型
-- **实时监控**: 提供实时的硬件状态监控和数据采集
-- **统一接口**: 简化的命令行接口，统一的数据格式
-- **可扩展性**: 模块化设计，易于扩展新的监控后端
-- **性能优化**: 低资源占用，高效的数据采集和处理
-
-## 快速开始
-
-**Cargo 安装示例:**
+### 通过 Cargo 安装
 ```bash
 cargo install hw
 ```
-**just 安装示例:**
+
+### 从源码构建
 ```bash
 git clone https://github.com/eternalnight996/hw.git
 cd hw
@@ -577,7 +565,7 @@ hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
     <td>SmallData</td>
     <td>B</td>
     <td>{value} B</td>
-    <td>小数据包</td>
+    <td>小数据��</td>
   </tr>
   <tr>
     <td>GBSmallData</td>
@@ -744,7 +732,7 @@ hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
 ---
 ## 🙋 参考项目与资料
 - [Open Hardware Monitor 官方文档](https://openhardwaremonitor.org/)
-- [Open Hardware Monitor 官方文档](https://openhardwaremonitor.org/)
+- [AIDA64 官方文档](https://www.aida64.com)
 - [sysinfo Crates官方](https://crates.io/crates/sysinfo)
 
 ---
@@ -752,3 +740,27 @@ hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
 
 [LICENSE](LICENSE)
 [COPYRIGHT](COPYRIGHT)
+
+## 🤝 参与贡献
+
+我们欢迎任何形式的贡献！
+
+- 提交 Issue 报告 bug 或提出新功能建议
+- 提交 Pull Request 改进代码
+- 完善项目文档
+- 分享使用经验
+
+在提交 PR 之前，请确保：
+1. 代码符合项目规范
+2. 添加必要的测试
+3. 更新相关文档
+
+## 📜 开源协议
+
+本项目采用 [MIT](LICENSE-MIT) 和 [Apache 2.0](LICENSE-APACHE) 双重协议。
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by eternalnight996 and contributors.</sub>
+</div>

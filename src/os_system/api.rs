@@ -2,10 +2,12 @@ use std::{fs, io::Write as _, path::Path};
 
 use e_utils::{cmd::Cmd, parse::MyParseFormat as _, regex::Regex};
 
-use super::ActiveLocalType;
+use crate::share::ActiveLocalType;
 
 pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::AnyResult<String> {
-  #[cfg(target_os = "windows")]
+  #[cfg(not(all(target_os = "windows", feature = "os-system")))]
+  return Err("OS System not supported".into());
+  #[cfg(all(target_os = "windows", feature = "os-system"))]
   {
     return match task {
       "check-with-cache" => {
@@ -38,8 +40,6 @@ pub async fn os_system_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::
       _ => Err("Task Error".into()),
     };
   }
-  #[cfg(not(feature = "windows"))]
-  Err("OS System not supported".into())
 }
 
 /// # 检查OS是否激活
