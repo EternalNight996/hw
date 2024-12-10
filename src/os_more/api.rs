@@ -97,6 +97,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
               if let Some(repeat_mac) = find_repect {
                 return Err(format!("FAIL: {} 重复MAC地址: {}", repeat_mac.friendly_name, mac).into());
               }
+              crate::dp(format!("PASS: INTERFACE: {} MAC: {}", iface.friendly_name, mac));
             }
             Ok(serde_json::to_string_pretty(&ifaces)?)
           }

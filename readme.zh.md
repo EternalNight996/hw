@@ -302,8 +302,26 @@ hw --api Drive --task add-folder --args D:\\drives /install
 
 ```
 ### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
+```bash
+# 同步时间
+hw --api OSMore --task NetManage --args sync-datetime time.windows.com
+```
 ### [15. 📖 点击Rust调用网络接口](examples/net_interfaces.rs)
+```bash
+# "~Less100" 速度小于100
+# "~100" 速度大于等于100
+# "~1000" 速度大于等于1000
+# "~Big1000" 速度大于等于10000
+# "~is_connected" 正在连接
+# "~has_dhcp_ip" 有DHCP IP
 
+# 检查MAC重复和初始化
+hw --api OSMore --task NetInterface --args check-mac "*I225-V #1" -- ~has_dhcp_ip
+# 网络接口
+hw --api OSMore --task NetInterface --args print  -- ~has_dhcp_ip
+# 网络接口节点
+hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
+```
 
 ---
 ## 🚀 开发进度
