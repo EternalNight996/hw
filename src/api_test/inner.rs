@@ -1,3 +1,4 @@
+#![allow(unused)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 use std::sync::{
@@ -7,6 +8,7 @@ use std::sync::{
 
 use e_utils::once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 use strum::*;
 
 // 全局负载控制器
@@ -108,6 +110,9 @@ impl LoadController {
   pub fn auto_fix_load(&self, load: f64) {
     let current = load.clamp(0.0, 100.0) as u64;
     self.current_load.store(current, Ordering::Release);
+    if load == 100.0 {
+      return;
+    }
     // 获取目标负载和当前负载
     let target = self.loaded.load(Ordering::Acquire);
     // 只有当负载差异超过5%时才调整
@@ -115,14 +120,14 @@ impl LoadController {
       let current_iters = self.current_iterations.load(Ordering::Acquire);
       let new_iters = if current < target {
         // 当前负载小于目标负载，增加迭代次数
-        (current_iters as f64 * 1.299) as u64
+        (current_iters as f64 * 1.1) as u64
       } else {
         // 当前负载大于目标负载，减少迭代次数
-        (current_iters as f64 * 0.7) as u64
+        (current_iters as f64 * 0.9) as u64
       };
 
       // 确保迭代次数在合理范围内
-      let new_iters = new_iters.clamp(1000, 1_000_000);
+      let new_iters = new_iters.clamp(u64::MIN, u64::MAX);
       self.current_iterations.store(new_iters, Ordering::Release);
     }
   }
@@ -141,12 +146,7 @@ impl LoadController {
   }
   /// 启动负载
   #[cfg(feature = "system")]
-  pub fn spawn_load(
-    core_count: usize,
-    hw_type: &HardwareType,
-    s_type: &SensorType,
-    loaded: f64,
-  ) -> e_utils::Result<Vec<std::thread::JoinHandle<()>>> {
+  pub fn spawn_load(core_count: usize, hw_type: &HardwareType, s_type: &SensorType, loaded: f64) -> e_utils::Result<Vec<std::thread::JoinHandle<()>>> {
     LOAD_CONTROLLER.set_loaded(loaded);
     if matches!(
       (hw_type, s_type),
@@ -174,56 +174,91 @@ impl LoadController {
 /// 生成CPU负载的线程
 #[cfg(feature = "system")]
 fn spawn_cpu_load(core_count: usize) -> Vec<std::thread::JoinHandle<()>> {
-  use std::time::{Duration, Instant};
-  const ADJUST_INTERVAL: Duration = Duration::from_secs(1);
-  const MIN_SLEEP_DURATION: Duration = Duration::from_millis(1);
+  const ADJUST_INTERVAL: Duration = Duration::from_millis(100);
+  const MIN_SLEEP_DURATION: Duration = Duration::from_millis(100);
 
   (0..core_count)
-    .map(|_| {
+    .map(|core_id| {
       let running = LOAD_CONTROLLER.running.clone();
       let total_iterations = LOAD_CONTROLLER.total_iterations.clone();
 
-      std::thread::spawn(move || {
-        let mut sys = sysinfo::System::new();
-        let mut last_adjust = Instant::now();
+      // 使用 tracing 或 log 替代 println
+      crate::dp(format!("核心 {} - 初始化", core_id));
 
-        while running.load(Ordering::SeqCst) {
-          let start_time = Instant::now();
+      std::thread::Builder::new()
+        .name(format!("cpu-load-{}", core_id)) // 命名线程
+        .spawn(move || {
+          let mut sys = sysinfo::System::new();
+          let mut last_adjust = Instant::now();
 
-          // 执行CPU密集计算
-          perform_cpu_work(LOAD_CONTROLLER.get_iterations(), &total_iterations);
+          while running.load(Ordering::Relaxed) {
+            // 使用 Relaxed 提高性能
+            let start_time = Instant::now();
 
-          // 定期调整负载
-          if start_time.duration_since(last_adjust) >= ADJUST_INTERVAL {
-            adjust_load(&mut sys);
-            last_adjust = start_time;
+            // 获取并限制迭代次数
+            let iterations = LOAD_CONTROLLER.get_iterations();
+
+            // 执行CPU密集计算
+            perform_cpu_work(iterations, &total_iterations);
+
+            // 定期调整负载
+            if start_time.duration_since(last_adjust) >= ADJUST_INTERVAL {
+              adjust_load(&mut sys);
+              last_adjust = Instant::now(); // 使用当前时间而不是开始时间
+            }
+
+            // 动态调整休眠时间
+            if let Some(sleep_time) = MIN_SLEEP_DURATION.checked_sub(start_time.elapsed()) {
+              std::thread::sleep(sleep_time);
+            }
           }
 
-          // 动态调整休眠时间
-          if let Some(sleep_time) = MIN_SLEEP_DURATION.checked_sub(start_time.elapsed()) {
-            std::thread::sleep(sleep_time);
-          }
-        }
-      })
+          crate::dp(format!("核心 {} - 线程结束", core_id));
+        })
+        .expect("线程创建失败")
     })
     .collect()
 }
+
 /// 调整负载
 #[cfg(feature = "system")]
 fn adjust_load(sys: &mut sysinfo::System) {
   sys.refresh_cpu_specifics(sysinfo::CpuRefreshKind::nothing().with_cpu_usage());
-  let cpu_load = sys.global_cpu_usage();
-  LOAD_CONTROLLER.auto_fix_load(cpu_load as f64);
+  let cpu_load = (sys.global_cpu_usage() as f64).round().clamp(0.0, 100.0); // 限制范围
+  LOAD_CONTROLLER.auto_fix_load(cpu_load);
 }
+
 /// CPU密集计算
-#[inline]
-#[allow(unused)]
+#[inline(never)]
 fn perform_cpu_work(iterations: u64, total_iterations: &AtomicU64) {
-  let mut x: f64 = 0.0;
-  for _ in 0..iterations {
-    x += (x + 1.0_f64).sqrt();
+  const MAX_X: f64 = f64::MAX; // 添加最大值限制
+  let mut x = std::hint::black_box(0.0_f64);
+  let mut overflow_check = 0;
+
+  for i in 0..iterations {
+    // 添加溢出检查
+    x = std::hint::black_box({
+      let new_x = (x.sin() + 1.0).sqrt() + (i as f64).cos() * std::f64::consts::PI;
+      if new_x.is_finite() && new_x.abs() < MAX_X {
+        new_x
+      } else {
+        overflow_check += 1;
+        0.0
+      }
+    });
+
+    // 检查是否有太多溢出
+    if overflow_check > iterations / 2 {
+      crate::wp("CPU负载检测到过多的数值溢出");
+      break;
+    }
+
+    // 使用 Release 序提高性能
+    std::sync::atomic::fence(Ordering::Release);
   }
-  total_iterations.fetch_add(1, Ordering::SeqCst);
+
+  // 使用 Relaxed 序提高性能
+  total_iterations.fetch_add(iterations, Ordering::Relaxed);
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
