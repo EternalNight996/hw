@@ -195,6 +195,12 @@ hw --api AIDA64 --task check --args CPU Voltage
 hw --api OSMore --task OsFullVersion 
 # Get Memory Size
 hw --api OSMore --task MemoryTotal 
+# Get CPU Name
+hw --api OSMore --task CpuName
+# Get Host Name
+hw --api OSMore --task HostName
+# Get OS Version
+hw --api OSMore --task OsVersion
 ```
 
 ### [6. 📖 Click for Rust Microsoft Office Usage](examples/os_office.rs)
@@ -318,7 +324,15 @@ hw --api OSMore --task NetInterface --args print  -- ~has_dhcp_ip
 # Network Interface Nodes
 hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
 ```
-
+### [16. 📖 Click for Rust Disk Usage](examples/disk.rs)
+```bash
+# Get Disk Data
+hw --api Disk --task data --args C:
+# Get Disk Mount Tree
+hw --api Disk --task mount-tree --args C:
+# Check Disk Load
+hw --api Disk --task check-load --args 10 90
+```
 ---
 ## 🚀 Development Progress
 <table>

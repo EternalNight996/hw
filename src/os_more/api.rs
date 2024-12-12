@@ -108,9 +108,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           if is_full {
             Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces())?)
           } else {
-            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces_simple(
-              filter_refs,
-            ))?)
+            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces_simple(filter_refs))?)
           }
         }
         _ => Ok(String::new()),

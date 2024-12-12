@@ -97,40 +97,167 @@ pub enum SensorType {
   Unknown,
 }
 ```
------------------------------------------------------------
---args {HardwareType} {SensorType}
-  1.HardwareType (硬件类型)默认所有
-  2.SensorType（传感器类型）默认所有
---api:  `OHM` `AIDA64` `OS`(sysinfo Rust)
-  1.OHM（https://openhardwaremonitor.org/） OpenHardwareMonitor开源硬件监控支持windows
-  2.AIDA64（OpenHardwareMonitor） 只支持windows
-  3.OS（use rust lib of sysinfo） Rust中sysinfo库支持跨平台
---task: `print` `check` `data`
-  1.print（just print data）
-  2.check（check value）
-  3.data（return data）
--- {次数} {测试值} {误差范围+-} {负载0~100只支持CPU Clock}
 
-# Example
------------------------------------------------------------
-# Cmd Example OHM
-```sh
-  # 打印所有的OHM接口的数据
-hw --api OHM --task data
-  # 测试OHM的CPU主频 5次 允许1000~5000的范围值 负载100
+### [1. 📖 点击Rust调用CLI](examples/cli.rs)
+### [2. 📖 点击Rust调用OHM 获取CPU主频](examples/ohm_cpu_clock.rs)
+### OpenHardwareMonitor 监控
+![OHM监控界面](assets/screen/OHM.png)
+**CPU Clock监控示例**
+
+1. **data命令** - 仅返回当前值
+```bash
+hw --api OS --task data --args CPU Clock
+```
+
+```bash
+# CPU温度监控
+hw --api OHM --task check --args CPU Temperature
+
+# CPU频率测试 (5次, 目标3000MHz, 误差±2000MHz, 100%负载)
 hw --api OHM --task check --args CPU Clock -- 5 3000 2000 100
-  # 测试OHM的风扇转速 5次 允许1000~5000的范围值 不支持负载
+
+# 风扇转速测试 (5次, 目标3000RPM, 误差±2000RPM)
 hw --api OHM --task check --args ALL Fan -- 5 3000 2000
 ```
 
-# Cmd Example AIDA64
-```sh
-  # 打印所有的AIDA64接口的数据
-hw --api AIDA64 --task data
-  # 测试AIDA64的CPU主频 5次 允许1000~5000的范围值 负载100
-hw --api AIDA64 --task check --args CPU Clock -- 5 3000 2000 100
-  # 测试AIDA64的风扇转速 5次 允许1000~5000的范围值 不支持负载
-hw --api AIDA64 --task check --args ALL Fan -- 5 3000 2000
+### [3.📖 点击Rust调用OS 获取CPU主频](examples/os_cpu_clock.rs)
+### sysinfo 监控
+![系统监控界面](assets/screen/OS.png)
+```bash
+# 系统整体状态
+hw --api OS --task print
+
+# CPU负载监控
+hw --api OS --task check --args CPU Load
+```
+
+### [4.📖 点击Rust调用AIDA64 获取CPU主频](examples/aida64_cpu_voltage.rs)
+### AIDA64 监控
+![AIDA64监控界面](assets/screen/AIDA64.png)
+```bash
+# 内存使用率监控
+hw --api AIDA64 --task check --args RAM Load
+
+# CPU核心电压监控
+hw --api AIDA64 --task check --args CPU Voltage
+```
+### [5. 📖 点击Rust调用OSMore](examples/os_more_base.rs)
+```bash
+# 获取系统完整信息
+hw --api OSMore --task OsFullVersion 
+# 获取内存大小
+hw --api OSMore --task MemoryTotal 
+# 获取计算机名
+hw --api OSMore --task HostName
+# 获取OS版本
+hw --api OSMore --task OsVersion
+```
+### [6. 📖 点击Rust调用微软OFFICE](examples/os_office.rs)
+```bash
+# 获取Office版本
+hw --api OSOffice --task check-with-cache --args V2016 test
+```
+### [7. 📖 点击Rust调用微软系统激活](examples/os_system.rs)
+```bash
+# 激活系统
+hw --api OSSystem --task active --args XXXXX-XXXXX-XXXXX-XXXXX-XXXXX activation_temp
+# 检查系统激活状态并查询激活码缓存
+hw --api OSSystem --task check-with-cache --args activation_temp
+```
+### [8. 📖 点击Rust调用导出DLL|SO动态链接库](examples/file_info.rs)
+```bash
+# 导出DLL|SO动态链接库
+hw --api FileInfo --task copy-lib --args target/debug/hw.exe target/debug/_libs
+# 打印文件节点
+hw --api FileInfo --task print --args target/debug/hw.exe
+# 打印文件节点
+hw --api FileInfo --task nodes --args target/debug/hw.exe
+```
+### [9. 📖 点击Rust调用PING](examples/ping.rs)
+```bash
+# 测试PING
+hw --api OSMore --task NetManage  --args ping 127.0.0.1 baidu.com 3
+# 测试PING节点
+hw --api OSMore --task NetManage --args ping-nodes baidu.com 3 -- ~is_connected Ethernet
+```
+### [10. 📖 点击Rust调用设置DHCP](examples/dhcp.rs)
+```bash
+# 设置DHCP ~is_connected 是指正在连接的网卡
+hw --api OSMore --task NetManage --args dhcp -- ~is_connected
+```
+### [11. 📖 点击Rust调用设置静态IP](examples/static_ip.rs)
+```bash
+# 设置静态IP
+hw --api OSMore --task NetManage  --args set-ip 192.168.1.100 255.255.255.0 192.168.1.1 -- "以太网"
+# 设置DNS Ethernet=类型 "以太网"=名称   ~is_connected=网卡
+hw --api OSMore --task NetManage  --args set-dns 223.5.5.5 114.114.114.114 "以太网" Ethernet  ~is_connected
+```
+### [12. 📖 点击Rust调用桌面](examples/desktop.rs)
+```bash
+# 桌面节点
+hw --api OSMore --task Desktop --args nodes
+# 打印
+hw --api OSMore --task Desktop --args print
+```
+### [13. 📖 点击Rust调用驱动](examples/drive.rs)
+```bash
+# 扫描驱动
+hw --api Drive --task scan
+# 驱动打印
+hw --api Drive --task print -- =net "*I225-V #6"
+hw --api Drive --task print -- "@pci*" "*I225-V #6"
+hw --api Drive --task print -- "@pci*" "PCI*" "*E0276CFFFFEEA86B00"
+  # --full 完整数据 但更消耗资源，建议加=和@去筛选
+hw --api Drive --task print --full -- =net "*I225-V #6" 
+# 驱动节点
+hw --api Drive --task nodes -- =net
+# 导出驱动
+hw --api Drive --task export --args oem6.inf D:\\drives
+hw --api Drive --task export --args oem*.inf .
+# 重启驱动
+hw --api Drive --task restart -- =net "Intel(R) Ethernet Controller (3) I225-V #5"
+hw --api Drive --task restart -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 启用驱动
+hw --api Drive --task enable -- =net "Intel(R) Ethernet Controller (3) I225-V #5"
+# 禁用驱动
+hw --api Drive --task disable -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 删除驱动
+hw --api Drive --task delete -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E0276CFFFFEEA86A00"
+# 增加驱动
+hw --api Drive --task add  --args D:\\drives\\oem6.inf /install
+# 增加驱动文件夹
+hw --api Drive --task add-folder --args D:\\drives /install
+
+```
+### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
+```bash
+# 同步时间
+hw --api OSMore --task NetManage --args sync-datetime time.windows.com
+```
+### [15. 📖 点击Rust调用网络接口](examples/net_interfaces.rs)
+```bash
+# "~Less100" 速度小于100
+# "~100" 速度大于等于100
+# "~1000" 速度大于等于1000
+# "~Big1000" 速度大于等于10000
+# "~is_connected" 正在连接
+# "~has_dhcp_ip" 有DHCP IP
+
+# 检查MAC重复和初始化
+hw --api OSMore --task NetInterface --args check-mac "*I225-V #1" -- ~has_dhcp_ip
+# 网络接口
+hw --api OSMore --task NetInterface --args print  -- ~has_dhcp_ip
+# 网络接口节点
+hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
+```
+### [16. 📖 点击Rust调用磁盘](examples/disk.rs)
+```bash
+# 获取磁盘数据
+hw --api Disk --task data --args C:
+# 获取磁盘挂载树
+hw --api Disk --task mount-tree --args C:
+# 检查磁盘负载
+hw --api Disk --task check-load --args 10 90
 ```
 -----------------------------------------------------------
 

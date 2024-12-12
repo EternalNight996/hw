@@ -196,6 +196,10 @@ hw --api AIDA64 --task check --args CPU Voltage
 hw --api OSMore --task OsFullVersion 
 # 获取内存大小
 hw --api OSMore --task MemoryTotal 
+# 获取计算机名
+hw --api OSMore --task HostName
+# 获取OS版本
+hw --api OSMore --task OsVersion
 ```
 ### [6. 📖 点击Rust调用微软OFFICE](examples/os_office.rs)
 ```bash
@@ -310,7 +314,15 @@ hw --api OSMore --task NetInterface --args print  -- ~has_dhcp_ip
 # 网络接口节点
 hw --api OSMore --task NetInterface --args nodes  -- ~has_dhcp_ip
 ```
-
+### [16. 📖 点击Rust调用磁盘](examples/disk.rs)
+```bash
+# 获取磁盘数据
+hw --api Disk --task data --args C:
+# 获取磁盘挂载树
+hw --api Disk --task mount-tree --args C:
+# 检查磁盘负载
+hw --api Disk --task check-load --args 10 90
+```
 ---
 ## 🚀 开发进度
 <table>
