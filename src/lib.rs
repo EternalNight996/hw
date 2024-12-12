@@ -11,12 +11,11 @@
   clippy::module_inception,
   clippy::needless_doctest_main
 )]
-#![warn(missing_debug_implementations, missing_docs, rust_2018_idioms, unreachable_pub)]
 #![deny(unused_must_use)]
 #![doc(test(no_crate_inject, attr(deny(warnings, rust_2018_idioms), allow(dead_code, unused_variables))))]
+// #![warn(missing_debug_implementations, missing_docs, rust_2018_idioms, unreachable_pub)]
+
 #[cfg(all(feature = "aida64", target_os = "windows"))]
-
-
 pub mod aida64;
 pub mod drive;
 pub mod file_info;

@@ -8,14 +8,19 @@ use e_utils::AnyResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wmi::{COMLibrary, Variant, WMIConnection};
+
+/// 原始查询结果
 pub type RawQuery = HashMap<String, Variant>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+/// AIDA64
 pub struct AIDA64(WMIConnection);
 impl AIDA64 {
+  /// 获取WMI连接
   pub fn get(&self) -> &WMIConnection {
     &self.0
   }
+  /// 异步查询
   pub async fn a_query(&self, hw_type: HardwareType, stype: SensorType) -> AnyResult<Vec<Sensor>> {
     let query = format!("{}{}", Self::SENSOR_QUERY, Self::build_query_conditions(&hw_type, &stype));
     let src_sensors: Vec<AIDA64Sensor> = self.get().async_raw_query(&query).await?;
@@ -27,6 +32,7 @@ impl AIDA64 {
 
     Ok(sensors)
   }
+  /// 同步查询
   pub fn query(&self, hw_type: HardwareType, stype: SensorType) -> AnyResult<Vec<Sensor>> {
     let query = format!("{}{}", Self::SENSOR_QUERY, Self::build_query_conditions(&hw_type, &stype));
     let src_sensors: Vec<AIDA64Sensor> = self.get().raw_query(&query)?;
@@ -68,10 +74,7 @@ impl AIDA64 {
       // S类型需要额外的Label条件
       SensorType::Clock => (
         Some("S".into()),
-        vec!["Label LIKE '%Core #%'", "Label LIKE '%Clock%'"]
-          .into_iter()
-          .map(String::from)
-          .collect(),
+        vec!["Label LIKE '%Core #%'", "Label LIKE '%Clock%'"].into_iter().map(String::from).collect(),
       ),
       SensorType::ClockAverage => (Some("S".into()), vec!["Label = 'CPU Clock'"].into_iter().map(String::from).collect()),
       SensorType::Load => (
@@ -82,31 +85,19 @@ impl AIDA64 {
           .collect(),
       ),
       SensorType::FSB => (Some("S".into()), vec!["Label LIKE '%FSB%'"].into_iter().map(String::from).collect()),
-      SensorType::Multiplexer => (
-        Some("S".into()),
-        vec!["Label LIKE '%Multiplier%'"].into_iter().map(String::from).collect(),
-      ),
+      SensorType::Multiplexer => (Some("S".into()), vec!["Label LIKE '%Multiplier%'"].into_iter().map(String::from).collect()),
       SensorType::DataRate => (
         Some("S".into()),
-        vec!["Label LIKE '%Rate%' OR Label LIKE '%Speed%'"]
-          .into_iter()
-          .map(String::from)
-          .collect(),
+        vec!["Label LIKE '%Rate%' OR Label LIKE '%Speed%'"].into_iter().map(String::from).collect(),
       ),
       SensorType::Data | SensorType::GBData => (Some("S".into()), vec!["Label LIKE '%Memory%'"].into_iter().map(String::from).collect()),
       SensorType::Flow => (Some("S".into()), vec!["Label LIKE '%Flow%'"].into_iter().map(String::from).collect()),
       SensorType::Control => (Some("S".into()), vec!["Label LIKE '%Control%'"].into_iter().map(String::from).collect()),
       SensorType::Level => (Some("S".into()), vec!["Label LIKE '%Level%'"].into_iter().map(String::from).collect()),
-      SensorType::Throughput => (
-        Some("S".into()),
-        vec!["Label LIKE '%Throughput%'"].into_iter().map(String::from).collect(),
-      ),
+      SensorType::Throughput => (Some("S".into()), vec!["Label LIKE '%Throughput%'"].into_iter().map(String::from).collect()),
       SensorType::SmallData | SensorType::GBSmallData => (Some("S".into()), vec!["Label LIKE '%Small%'"].into_iter().map(String::from).collect()),
       SensorType::ALL => (None, vec![]),
-      SensorType::Unknown => (
-        None,
-        vec!["Type NOT IN ('S', 'T', 'F', 'V', 'P')"].into_iter().map(String::from).collect(),
-      ),
+      SensorType::Unknown => (None, vec!["Type NOT IN ('S', 'T', 'F', 'V', 'P')"].into_iter().map(String::from).collect()),
     }
   }
 
@@ -169,12 +160,17 @@ impl HardwareMonitor for AIDA64 {
 /// 表示 OpenHardwareMonitor WMI 提供程序中的传感器
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct AIDA64Sensor {
+  /// 传感器ID
   pub ID: String,
+  /// 传感器值
   pub Value: String,
+  /// 传感器标签
   pub Label: String,
+  /// 传感器类型
   pub Type: String,
 }
 impl AIDA64Sensor {
+  /// 解析传感器类型
   pub fn parse_sensor_type(&self) -> SensorType {
     match self.Type.as_bytes().first().copied().unwrap_or(b'X') {
       b'T' => SensorType::Temperature,
@@ -219,6 +215,7 @@ impl AIDA64Sensor {
     }
   }
 
+  /// 解析硬件类型
   pub fn parse_hardware_type(&self) -> HardwareType {
     if self.Label.contains("CPU") {
       HardwareType::CPU
@@ -240,16 +237,12 @@ impl AIDA64Sensor {
       HardwareType::ALL
     }
   }
-
+  /// 转换为Sensor
   pub fn to_sensor(&self) -> Sensor {
     let stype = self.parse_sensor_type();
     let hardware_type = self.parse_hardware_type();
 
-    let value = if self.Value == "TRIAL" {
-      0.0
-    } else {
-      self.Value.parse().unwrap_or_default()
-    };
+    let value = if self.Value == "TRIAL" { 0.0 } else { self.Value.parse().unwrap_or_default() };
 
     Sensor {
       Name: self.Label.clone(),
@@ -265,8 +258,8 @@ impl AIDA64Sensor {
     }
   }
 }
-// 批量转换优化
 #[inline]
+/// 批量转换
 pub fn convert_sensors(aida_sensors: Vec<AIDA64Sensor>) -> Vec<Sensor> {
   aida_sensors.into_iter().map(|s| s.to_sensor()).collect()
 }

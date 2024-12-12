@@ -3,11 +3,14 @@ use crate::api_test::{HardwareType, Sensor, SensorType};
 use crate::share::bytes_to_gib;
 pub use sysinfo::*;
 
+/// OS
+#[derive(Debug)]
 pub struct OS(System);
 impl OS {
   pub fn new() -> Self {
     Self(System::new())
   }
+  /// 获取系统
   pub fn get_mut(&mut self) -> &mut System {
     &mut self.0
   }

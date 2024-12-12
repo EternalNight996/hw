@@ -11,10 +11,13 @@ use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use strum::*;
 
-// 全局负载控制器
+/// 全局负载控制器
 pub static LOAD_CONTROLLER: Lazy<LoadController> = Lazy::new(|| LoadController::new(50));
+/// 扩展1
 pub const EXTEND1: i32 = 0x1;
 
+#[doc(hidden)]
+#[derive(Debug)]
 pub enum Inner {
   #[cfg(all(feature = "ohm", target_os = "windows"))]
   OHM(crate::ohm::OHM),
@@ -30,6 +33,7 @@ pub enum Inner {
   Disk,
 }
 impl Inner {
+  /// 从API创建Inner
   #[cfg(feature = "cli")]
   pub fn from_api(api: crate::OptsApi) -> e_utils::AnyResult<Self> {
     use crate::{wmic::HardwareMonitor as _, OptsApi};

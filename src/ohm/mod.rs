@@ -9,9 +9,11 @@ use std::{collections::HashMap, str::FromStr as _};
 use wmi::{COMLibrary, Variant, WMIConnection};
 pub type RawQuery = HashMap<String, Variant>;
 
-#[derive(Clone)]
+/// OHM
+#[derive(Clone, Debug)]
 pub struct OHM(WMIConnection);
 impl OHM {
+  /// 获取WMI连接
   pub fn get(&self) -> &WMIConnection {
     &self.0
   }
@@ -31,6 +33,7 @@ impl OHM {
       format!("AND SensorType='{}'", sensor_type)
     }
   }
+  /// 异步查询
   pub async fn a_query(&self, hw_type: HardwareType, sensor_type: SensorType) -> AnyResult<Vec<Sensor>> {
     // 查询硬件
     let hws = self
@@ -59,6 +62,7 @@ impl OHM {
     }
     Ok(sensors)
   }
+  /// 同步查询
   pub fn query(&self, hw_type: HardwareType, sensor_type: SensorType) -> AnyResult<Vec<Sensor>> {
     // 查询硬件
     let hws = self
