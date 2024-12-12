@@ -38,6 +38,8 @@ async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
 }
 
 pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
+  #[cfg(not(windows))]
+  return Err("不支持的系统".into());
   #[cfg(windows)]
   {
     ensure_windows_time_service().await?;
@@ -59,45 +61,24 @@ pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
 
     // 尝试同步时间，最多重试3次
     for i in 1..=3 {
-      crate::wp(format!("正在进行第 {} 次时间同步尝试...", i));
+      crate::wp(format!("正在进行第 {i} 次时间同步尝试连接 {server}..."));
 
-      let sync_result = Cmd::new("w32tm").args(["/resync", "/force", "/nowait"]).a_output().await?;
-
+      let sync_result = Cmd::new("w32tm").args(["/resync", "/force"]).a_output().await?;
       if sync_result.status.success()
         && (sync_result.stdout.contains("成功")
           || sync_result.stdout.contains("success")
           || sync_result.stdout.contains("已成功完成")
           || sync_result.stdout.is_empty())
       {
-        return Ok("时间同步成功".to_string());
+        return Ok(format!("时间同步{server}成功",));
       }
 
       if i < 3 {
         crate::wp("同步失败，等待重试...");
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
       }
     }
 
     Err("时间同步失败，请检查网络连接".into())
-  }
-
-  #[cfg(target_os = "macos")]
-  {
-    let res = Cmd::new("sudo").args(["sntp", "-sS", server]).a_output().await?;
-    Ok(res.stdout)
-  }
-
-  #[cfg(all(unix, not(target_os = "macos")))]
-  {
-    match Cmd::new("sudo").args(["chronyd", "-q", &format!("server {}", server)]).a_output().await {
-      Ok(output) => Ok(output.stdout),
-      Err(_) => {
-        crate::wp("chronyd 失败，尝试使用 ntpdate...");
-        let _ = Cmd::new("sudo").args(["systemctl", "stop", "systemd-timesyncd"]).a_output().await?;
-
-        let res = Cmd::new("sudo").args(["ntpdate", server]).a_output().await?;
-        Ok(res.stdout)
-      }
-    }
   }
 }

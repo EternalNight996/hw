@@ -224,9 +224,9 @@ hw --api FileInfo --task nodes --args target/debug/hw.exe
 ### [9. 📖 Click for Rust PING Usage](examples/ping.rs)
 ```bash
 # Test PING
-hw --api NetManage --task ping --args 127.0.0.1 baidu.com 3
+hw --api OSMore --task NetManage  --args ping 127.0.0.1 baidu.com 
 # Test PING Nodes
-hw --api NetManage --task ping-nodes --args baidu.com 3
+hw --api OSMore --task NetManage --args ping-nodes baidu.com 3 -- ~is_connected Ethernet
 ```
 
 ### [10. 📖 Click for Rust Set DHCP Usage](examples/dhcp.rs)
@@ -238,9 +238,9 @@ hw --api OSMore --task NetManage --args dhcp -- ~is_connected
 ### [11. 📖 Click for Rust Set Static IP Usage](examples/static_ip.rs)
 ```bash
 # Set Static IP
-hw --api OSMore --task NetManage  --args set-ip "Ethernet" 192.168.1.100 255.255.255.0 192.168.1.1
+hw --api OSMore --task NetManage  --args set-ip 192.168.1.100 255.255.255.0 192.168.1.1 -- "以太网"
 # Set DNS
-hw --api OSMore --task NetManage  --args set-dns "Ethernet" 223.5.5.5 114.114.114.114
+hw --api OSMore --task NetManage  --args set-dns 223.5.5.5 114.114.114.114 "以太网" Ethernet  ~is_connected
 ```
 
 ### [12. 📖 Click for Rust Desktop Usage](examples/desktop.rs)

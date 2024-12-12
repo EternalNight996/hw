@@ -221,9 +221,9 @@ hw --api FileInfo --task nodes --args target/debug/hw.exe
 ### [9. 📖 点击Rust调用PING](examples/ping.rs)
 ```bash
 # 测试PING
-hw --api NetManage --task ping --args 127.0.0.1 baidu.com 3
+hw --api OSMore --task NetManage  --args ping 127.0.0.1 baidu.com 3
 # 测试PING节点
-hw --api NetManage --task ping-nodes --args baidu.com 3
+hw --api OSMore --task NetManage --args ping-nodes baidu.com 3 -- ~is_connected Ethernet
 ```
 ### [10. 📖 点击Rust调用设置DHCP](examples/dhcp.rs)
 ```bash
@@ -233,9 +233,9 @@ hw --api OSMore --task NetManage --args dhcp -- ~is_connected
 ### [11. 📖 点击Rust调用设置静态IP](examples/static_ip.rs)
 ```bash
 # 设置静态IP
-hw --api OSMore --task NetManage  --args set-ip "以太网" 192.168.1.100 255.255.255.0 192.168.1.1
-# 设置DNS
-hw --api OSMore --task NetManage  --args set-dns "以太网" 223.5.5.5 114.114.114.114
+hw --api OSMore --task NetManage  --args set-ip 192.168.1.100 255.255.255.0 192.168.1.1 -- "以太网"
+# 设置DNS Ethernet=类型 "以太网"=名称   ~is_connected=网卡
+hw --api OSMore --task NetManage  --args set-dns 223.5.5.5 114.114.114.114 "以太网" Ethernet  ~is_connected
 ```
 ### [12. 📖 点击Rust调用桌面](examples/desktop.rs)
 ```bash
