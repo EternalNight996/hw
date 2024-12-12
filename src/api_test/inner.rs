@@ -27,6 +27,7 @@ pub enum Inner {
   FileInfo,
   OSSystem,
   OSOffice,
+  Disk,
 }
 impl Inner {
   #[cfg(feature = "cli")]
@@ -50,6 +51,7 @@ impl Inner {
       OptsApi::FileInfo => Ok(Self::FileInfo),
       OptsApi::OSSystem => Ok(Self::OSSystem),
       OptsApi::OSOffice => Ok(Self::OSOffice),
+      OptsApi::Disk => Ok(Self::Disk),
     }
   }
 }

@@ -65,7 +65,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
   match info {
     super::Type::NetInterface => {
       return match task {
-        "old" => Ok(serde_json::to_string_pretty(
+        "old" => Ok(serde_json::to_string(
           &sysinfo::Networks::new_with_refreshed_list().iter().map(|(k, _)| k.clone()).collect::<Vec<_>>(),
         )?),
         "print" => {
@@ -73,14 +73,14 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             let ifaces = crate::os_more::net_interface::get_interfaces();
             let count = ifaces.len();
             for iface in ifaces {
-              crate::p(serde_json::to_string_pretty(&iface)?)
+              crate::p(serde_json::to_string(&iface)?)
             }
             Ok(format!("Count: {}", count))
           } else {
             let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
             let count = ifaces.len();
             for iface in ifaces {
-              crate::p(serde_json::to_string_pretty(&iface)?)
+              crate::p(serde_json::to_string(&iface)?)
             }
             Ok(format!("Count: {}", count))
           }
@@ -102,13 +102,13 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             }
             crate::dp(format!("PASS: INTERFACE: {} MAC: {}", iface.friendly_name, mac));
           }
-          Ok(serde_json::to_string_pretty(&ifaces)?)
+          Ok(serde_json::to_string(&ifaces)?)
         }
         "nodes" => {
           if is_full {
-            Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces())?)
+            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces())?)
           } else {
-            Ok(serde_json::to_string_pretty(&crate::os_more::net_interface::get_interfaces_simple(
+            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces_simple(
               filter_refs,
             ))?)
           }
@@ -130,7 +130,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
               "ipRes": ip_res
             }));
           }
-          Ok(serde_json::to_string_pretty(&new)?)
+          Ok(serde_json::to_string(&new)?)
         }
         "set-ip" => {
           let mut new = vec![];
@@ -146,7 +146,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
               "ipRes": res
             }));
           }
-          Ok(serde_json::to_string_pretty(&new)?)
+          Ok(serde_json::to_string(&new)?)
         }
         "set-dns" => {
           let mut new = vec![];
@@ -161,7 +161,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
               "ipRes": ""
             }));
           }
-          Ok(serde_json::to_string_pretty(&new)?)
+          Ok(serde_json::to_string(&new)?)
         }
         "sync-datetime" => {
           let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
@@ -242,7 +242,7 @@ pub fn user_query<T: AsRef<str>>(info: &Type, args: &[T], filter: &[T]) -> e_uti
         "nodes" => {
           let mut items = crate::os_more::desktop::get_desktop_items(query_user, attr_filter, &filter_refs);
           items.dedup_by_key(|v| v.path.clone());
-          Ok(serde_json::to_string_pretty(&items)?)
+          Ok(serde_json::to_string(&items)?)
         }
         _ => Ok(String::new()),
       };

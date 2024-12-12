@@ -80,6 +80,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
     Inner::FileInfo => return crate::file_info::file_info_query(&op.task, &op.args).await,
     Inner::OSSystem => return crate::os_system::os_system_query(&op.task, &op.args).await,
     Inner::OSOffice => return crate::os_office::os_office_query(&op.task, &op.args).await,
+    Inner::Disk => return crate::disk::disk_query(&op.task, &op.args, &op.command, op.full).await,
   };
   if tester.core.results.data.is_empty() && tester.core.is_check {
     tester.core.results.res = "FAIL".to_string();

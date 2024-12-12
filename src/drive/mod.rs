@@ -53,19 +53,19 @@ pub async fn drive_query<T: AsRef<str>>(
           }
           nodes.push(node)
         }
-        Ok(serde_json::to_string_pretty(&nodes)?)
+        Ok(serde_json::to_string(&nodes)?)
       }
       "print" => {
         let list = crate::drive::findnodes(&filter, is_full)?;
         let count = list.len();
         for node in &list {
-          crate::p(serde_json::to_string_pretty(&node)?);
+          crate::p(serde_json::to_string(&node)?);
         }
         Ok(format!("COUNT: {count}"))
       }
       "nodes" => {
         let list = crate::drive::findnodes(&filter, is_full)?;
-        Ok(serde_json::to_string_pretty(&list)?)
+        Ok(serde_json::to_string(&list)?)
       }
       "restart" => {
         let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_restart)?;
@@ -74,7 +74,7 @@ pub async fn drive_query<T: AsRef<str>>(
             break;
           }
         }
-        Ok(serde_json::to_string_pretty(&status_list)?)
+        Ok(serde_json::to_string(&status_list)?)
       }
       "enable" => {
         let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_enable)?;
@@ -83,7 +83,7 @@ pub async fn drive_query<T: AsRef<str>>(
             return Err("Enable Error: not runing".into());
           }
         }
-        Ok(serde_json::to_string_pretty(&status_list)?)
+        Ok(serde_json::to_string(&status_list)?)
       }
       "disable" => {
         let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_disable)?;
@@ -92,7 +92,7 @@ pub async fn drive_query<T: AsRef<str>>(
             return Err("Disable Error: not disabled".into());
           }
         }
-        Ok(serde_json::to_string_pretty(&status_list)?)
+        Ok(serde_json::to_string(&status_list)?)
       }
       "remove" => {
         let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_remove)?;
@@ -101,7 +101,7 @@ pub async fn drive_query<T: AsRef<str>>(
             return Err("Remove Error: not none".into());
           }
         }
-        Ok(serde_json::to_string_pretty(&status_list)?)
+        Ok(serde_json::to_string(&status_list)?)
       }
       "export" => Ok(crate::drive::pnputil_export_driver(args.clone())?),
       _ => crate::drive::devcon(args),

@@ -16,6 +16,9 @@ pub mod cli;
 #[cfg(feature = "cli")]
 pub use cli::*;
 
+#[cfg(feature = "disk")]
+pub mod disk;
+
 pub mod api_test;
 pub mod common;
 pub mod os_more;

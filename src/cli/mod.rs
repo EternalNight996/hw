@@ -17,7 +17,8 @@ arg_enum! {
         Drive,
         FileInfo,
         OSSystem,
-        OSOffice
+        OSOffice,
+        Disk,
     }
 }
 
