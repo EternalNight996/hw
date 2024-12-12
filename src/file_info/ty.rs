@@ -7,7 +7,7 @@ use goblin::pe::header::*;
 use serde::{Deserialize, Serialize};
 use strum::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Type {
   pub fname: String,
   pub cwd: Option<String>,

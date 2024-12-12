@@ -66,10 +66,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
     super::Type::NetInterface => {
       return match task {
         "old" => Ok(serde_json::to_string_pretty(
-          &sysinfo::Networks::new_with_refreshed_list()
-            .iter()
-            .map(|(k, _)| k.clone())
-            .collect::<Vec<_>>(),
+          &sysinfo::Networks::new_with_refreshed_list().iter().map(|(k, _)| k.clone()).collect::<Vec<_>>(),
         )?),
         "print" => {
           if is_full {
@@ -136,17 +133,35 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           Ok(serde_json::to_string_pretty(&new)?)
         }
         "set-ip" => {
-          let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
-          let ip = args.get(2).ok_or("Args Error IP 1 ")?.as_ref();
-          let netmask = args.get(3).ok_or("Args Error Netmask 2 ")?.as_ref();
-          let gateway = args.get(4).map(AsRef::as_ref);
-          Ok(crate::os_more::net_manage::set_static_ip(&iface, &ip, &netmask, gateway).await?)
+          let mut new = vec![];
+          let ip = args.get(1).ok_or("Args Error IP 1 ")?.as_ref();
+          let netmask = args.get(2).ok_or("Args Error Netmask 2 ")?.as_ref();
+          let gateway = args.get(3).map(AsRef::as_ref);
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+            let res = crate::os_more::net_manage::set_static_ip(&iface.friendly_name, &ip, &netmask, gateway).await?;
+            new.push(serde_json::json!({
+              "name": iface.friendly_name,
+              "type": iface.if_type,
+              "dnsRes": "",
+              "ipRes": res
+            }));
+          }
+          Ok(serde_json::to_string_pretty(&new)?)
         }
         "set-dns" => {
-          let iface = args.get(1).ok_or("Args Error Interface 0 ")?.as_ref();
-          let primary_dns = args.get(2).ok_or("Args Error Primary DNS 1 ")?.as_ref();
-          let secondary_dns = args.get(3).map(AsRef::as_ref);
-          Ok(crate::os_more::net_manage::set_static_dns(&iface, &primary_dns, secondary_dns).await?)
+          let mut new = vec![];
+          let primary_dns = args.get(1).ok_or("Args Error Primary DNS 1 ")?.as_ref();
+          let secondary_dns = args.get(2).map(AsRef::as_ref);
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+            let res = crate::os_more::net_manage::set_static_dns(&iface.friendly_name, &primary_dns, secondary_dns).await?;
+            new.push(serde_json::json!({
+              "name": iface.friendly_name,
+              "type": iface.if_type,
+              "dnsRes": res,
+              "ipRes": ""
+            }));
+          }
+          Ok(serde_json::to_string_pretty(&new)?)
         }
         "sync-datetime" => {
           let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
@@ -282,11 +297,7 @@ pub mod system {
   pub fn cpu_name() -> e_utils::Result<String> {
     let mut system = sysinfo::System::new();
     system.refresh_cpu_frequency();
-    system
-      .cpus()
-      .first()
-      .map(|cpu| cpu.brand().to_string())
-      .ok_or("CPU 产品名称获取失败".into())
+    system.cpus().first().map(|cpu| cpu.brand().to_string()).ok_or("CPU 产品名称获取失败".into())
   }
   /// 获取内存总量
   pub fn memory_total() -> e_utils::Result<f64> {
