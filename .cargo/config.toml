@@ -1,0 +1,68 @@
+# # 你可以设置其他的 Cargo 选项
+# [build]
+# target = "x86_64-pc-windows-msvc" # 默认构建目标
+# # jobs = 1          
+# [target.x86_64-pc-windows-msvc]
+# rustflags = ["-C", "target-feature=+crt-static"]
+# # linker = "link.exe"                              # 使用的链接器
+# # runner = "cmd.exe"                               # 用于运行可执行文件的包装器
+
+# # 你可以添加其他目标的配置
+# [target.x86_64-pc-windows-gnu]
+# rustflags = ["-C", "target-feature=+crt-static"]
+# # linker = "gcc"                                   # 使用的链接器
+# # runner = "cmd.exe"                               # 用于运行可执行文件的包装器
+
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = ["-C", "target-feature=+crt-static"]
+# # linker = "gcc"                                   # 使用的链接器
+# # runner = "bash"                                  # 用于运行可执行文件的包装器
+
+[profile.dev]
+# 保持最小优化级别以获得更好的编译速度
+opt-level = 0
+# 启用增量编译
+incremental = true
+# 增加并行编译单元数
+codegen-units = 256
+# 禁用一些开发中不太需要的检查来加快编译
+debug = 1                # 减少调试信息但仍保留基本信息
+debug-assertions = false # 禁用调试断言
+overflow-checks = false  # 禁用溢出检查
+# 其他优化选项
+lto = false      # 禁用链接时优化
+panic = 'unwind' # 使用展开而不是中止
+rpath = false    # 禁用 rpath
+strip = false    # 开发时不剥离符号
+# 可选：为特定依赖项设置更高的优化级别
+[profile.dev.package."*"]
+opt-level = 1 # 为所有依赖使用稍高的优化级别
+
+# 对于一些需要性能的关键依赖，可以单独设置更高的优化级别
+[profile.dev.package.regex]
+opt-level = 3
+[profile.dev.package.sqlx-macros]
+opt-level = 3
+
+
+[profile.release]
+# 核心优化设置
+opt-level = 3     # 最大性能优化
+lto = "fat"       # 完整链接时优化
+codegen-units = 1 # 单元最大化优化
+panic = 'abort'   # 最小化panic处理
+# 完全禁用调试
+debug = false
+debug-assertions = false
+overflow-checks = false
+incremental = false
+# 二进制优化
+strip = "symbols" # 更激进的符号剥离
+rpath = false
+# 额外的优化设置
+[profile.release.package."*"]
+opt-level = 3 # 为所有依赖启用最高优化
+# 可选：为特定包启用更激进的优化
+[profile.release.build-override]
+opt-level = 3
+
