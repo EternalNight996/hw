@@ -18,20 +18,7 @@ pub struct Type {
   pub is_64: bool,
   pub libs: Vec<Dependency>,
 }
-impl Default for Type {
-  fn default() -> Self {
-    Type {
-      cwd: Some("#origin#/plugins".to_string()),
-      fname: Default::default(),
-      exe_type: Default::default(),
-      architecture: Default::default(),
-      platform: Default::default(),
-      is_lib: Default::default(),
-      is_64: Default::default(),
-      libs: Default::default(),
-    }
-  }
-}
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub struct ImportedFunction {
   pub name: String,
