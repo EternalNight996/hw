@@ -72,14 +72,14 @@ sysinfo = { version = "0.33", default-features = false }
 libc = { version = "0.2", optional = true }
 futures = { version = "0.3", optional = true }
 goblin = { version = "0.9", optional = true }
-e-log = { version = "0.2", optional = true }
+e-log = { version = "0.3", optional = true }
 
 [dev-dependencies]
 hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"

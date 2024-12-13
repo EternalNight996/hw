@@ -19,13 +19,15 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let pid = crate::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
+      let pids = crate::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
       crate::ohm::OHM::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      crate::common::process::kill(pid)?;
+      for pid in pids {
+        crate::common::process::kill(pid)?;
+      }
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
         handle.join().unwrap();
@@ -38,13 +40,15 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let pid = crate::common::process::run("AIDA64.exe", std::env::current_dir()?)?;
+      let pids = crate::common::process::run("AIDA64.exe", std::env::current_dir()?)?;
       crate::aida64::AIDA64::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await?;
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      crate::common::process::kill(pid)?;
+      for pid in pids {
+        crate::common::process::kill(pid)?;
+      }
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
         handle.join().unwrap();

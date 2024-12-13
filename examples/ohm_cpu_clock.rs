@@ -28,12 +28,14 @@ async fn main() -> e_utils::AnyResult<()> {
         is_data: true,
       },
     };
-    let pid = hw::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
+    let pids = hw::common::process::run("OpenHardwareMonitor.exe", std::env::current_dir()?)?;
     hw::ohm::OHM::test(100)?;
     tester.core.core_count = tester.inner.get_cpu_core_count().await?;
     let load_handles = tester.spawn_load()?;
     let res = tester.run().await;
-    hw::common::process::kill(pid)?;
+    for pid in pids {
+      hw::common::process::kill(pid)?;
+    }
     LOAD_CONTROLLER.stop_running();
     for handle in load_handles {
       handle.join().unwrap();
