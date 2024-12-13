@@ -30,7 +30,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       }
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
-        handle.join().unwrap();
+        handle.join().map_err(|_| "OHM线程错误")?;
       }
       tester = res?;
     }
@@ -51,7 +51,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       }
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
-        handle.join().unwrap();
+        handle.join().map_err(|_| "OHM线程错误")?;
       }
       tester = res?;
     }
@@ -66,7 +66,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let res = tester.run().await;
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
-        handle.join().unwrap();
+        handle.join().map_err(|_| "OHM线程错误")?;
       }
       tester = res?;
     }
