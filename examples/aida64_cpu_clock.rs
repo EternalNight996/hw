@@ -33,9 +33,7 @@ async fn main() -> e_utils::AnyResult<()> {
     tester.core.core_count = tester.inner.get_cpu_core_count().await?;
     let load_handles = tester.spawn_load()?;
     let res = tester.run().await;
-    for pid in pids {
-      hw::common::process::kill(pid)?;
-    }
+    hw::common::process::kill(pids)?;
     LOAD_CONTROLLER.stop_running();
     for handle in load_handles {
       handle.join().unwrap();

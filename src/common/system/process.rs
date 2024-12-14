@@ -11,10 +11,12 @@ pub fn kill_name(name: impl AsRef<std::ffi::OsStr>) -> AnyResult<()> {
   Ok(())
 }
 
-pub fn kill(pid: Pid) -> AnyResult<()> {
+pub fn kill(pids: Vec<Pid>) -> AnyResult<()> {
   let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_cmd(UpdateKind::OnlyIfNotSet)));
-  if let Some(process) = sys.process(pid) {
-    process.kill();
+  for pid in pids {
+    if let Some(process) = sys.process(pid) {
+      process.kill();
+    }
   }
   Ok(())
 }

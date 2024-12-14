@@ -25,9 +25,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      for pid in pids {
-        crate::common::process::kill(pid)?;
-      }
+      crate::common::process::kill(pids)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
         handle.join().map_err(|_| "OHM线程错误")?;
@@ -46,9 +44,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      for pid in pids {
-        crate::common::process::kill(pid)?;
-      }
+      crate::common::process::kill(pids)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
       for handle in load_handles {
         handle.join().map_err(|_| "OHM线程错误")?;

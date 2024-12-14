@@ -139,10 +139,10 @@ impl HardwareMonitor for AIDA64 {
   }
   fn test(count: u64) -> AnyResult<()> {
     for i in 1..=count {
-      if Self::new()?
-        .query(HardwareType::CPU, SensorType::Clock)
+      if Self::new()
+        .inspect_err(|e| crate::wp(e.to_string()))
         .ok()
-        .and_then(|v| v.first().cloned())
+        .and_then(|v| v.query(HardwareType::CPU, SensorType::Clock).ok().and_then(|v| v.first().cloned()))
         .map(|v| v.Value != 0.0)
         .unwrap_or(false)
       {
