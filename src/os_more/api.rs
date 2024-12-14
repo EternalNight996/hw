@@ -175,18 +175,22 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
         }
         "ping-nodes" => {
           let target = args.get(1).ok_or("Args Error Target 1 ")?.as_ref();
-          let count = args.get(2).ok_or("Args Error Count 2 ")?.as_ref();
+          let secs = args.get(2).ok_or("Args Error run time secs 2 ")?.as_ref();
+          let count: usize = args.get(3).and_then(|v| v.as_ref().parse::<usize>().ok()).unwrap_or(0);
           #[cfg(target_os = "windows")]
           let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
           #[cfg(not(target_os = "windows"))]
           let faces = vec![];
           if faces.is_empty() {
             return Err("No interfaces found".into());
+          } else if count > 0 && count != faces.len() {
+            return Err(format!("正确网口数量:{} 实际网口数量:{}", count, faces.len()).into());
           }
+
           // 创建一个异步任务列表
           let handles: Vec<_> = faces
             .iter()
-            .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, count).await })
+            .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, secs).await })
             .collect();
           // 并发执行所有任务并处理结果
           let results = futures::future::try_join_all(handles).await?;
