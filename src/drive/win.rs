@@ -42,6 +42,57 @@ pub fn devcon_parse_driver_nodes(info: DriveInfo, node_data: &str) -> Vec<DriveN
   }
   drive_info_list
 }
+/// # DevCon 数据处理 Vec<DriveInfo>
+pub fn devcon_parse_driver_status(output: &str) -> Vec<DriveInfo> {
+  let mut drives = Vec::new();
+  let mut current_drive = None;
+
+  for line in output.lines() {
+    if line.is_empty() || line.contains("matching device(s) found") {
+      continue;
+    }
+
+    // 如果行不以空格开始，则为新设备ID
+    if !line.starts_with(' ') {
+      // 保存之前的设备信息（如果有）
+      if let Some(drive) = current_drive.take() {
+        drives.push(drive);
+      }
+      // 创建新的设备信息
+      current_drive = Some(DriveInfo {
+        id: line.to_string(),
+        driver_descript: String::new(),
+        status: DriveStatusType::None,
+      });
+      continue;
+    }
+
+    // 处理设备详情行
+    if let Some(drive) = &mut current_drive {
+      if line.starts_with("    Name:") {
+        drive.driver_descript = line.trim_start_matches("    Name:").trim().to_string();
+      }
+
+      // 更新设备状态
+      if line.contains("Driver is running") {
+        drive.status = DriveStatusType::Runing;
+      } else if line.contains("Device is currently stopped") {
+        drive.status = DriveStatusType::Stopped;
+      } else if line.contains("Device is disabled") {
+        drive.status = DriveStatusType::Disabled;
+      } else if line.contains("Device is hidden") {
+        drive.status = DriveStatusType::Hidden;
+      }
+    }
+  }
+
+  // 添加最后一个设备
+  if let Some(drive) = current_drive {
+    drives.push(drive);
+  }
+
+  drives
+}
 
 /// # DevCon 数据处理 Vec<DriveInfo >
 pub fn devcon_parse_driver_class(output: &str) -> Vec<DriveInfo> {
@@ -51,7 +102,11 @@ pub fn devcon_parse_driver_class(output: &str) -> Vec<DriveInfo> {
       if let Some((k, v)) = line.split_once(':') {
         let id = k.trim().to_string();
         let driver_descript = v.trim().to_string();
-        nline.push(DriveInfo { id, driver_descript });
+        nline.push(DriveInfo {
+          id,
+          driver_descript,
+          status: DriveStatusType::None,
+        });
       }
     }
   }
@@ -258,16 +313,54 @@ where
 pub fn findnodes(filters: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
   let mut filters = filters.clone();
   let _fk = filters.get(0).cloned().unwrap_or_default();
-  let fk = if _fk.starts_with("=") || _fk.starts_with("@") {
-    _fk.as_str()
-  } else {
-    "*"
-  };
+  let fk = if _fk.starts_with("=") || _fk.starts_with("@") { _fk.as_str() } else { "*" };
   if fk != "*" {
     filters.remove(0);
   }
   // Early return for empty filters to avoid unnecessary processing
   let devcon_class = devcon_parse_driver_class(&devcon(vec!["findall", fk])?);
+
+  // Pre-check if filters is empty to avoid repeated checks
+  let filters_empty = filters.is_empty();
+  let devcon_node_list = if is_full {
+    devcon_class
+      .iter()
+      .flat_map(|dclass| {
+        let nodes = match devcon_drive_node(dclass.clone()) {
+          Ok(nodes) if !nodes.is_empty() => nodes,
+          _ => vec![DriveNodeInfo::from(dclass.clone())],
+        };
+        nodes.into_iter()
+      })
+      .filter(|x| {
+        filters_empty || {
+          // Short-circuit evaluation to avoid unnecessary regex checks
+          is_filter(&x.id, &filters) || is_filter(&x.driver_descript, &filters)
+        }
+      })
+      .collect()
+  } else {
+    devcon_class
+      .into_iter()
+      .map(DriveNodeInfo::from)
+      .filter(|x| filters_empty || is_filter(&x.id, &filters) || is_filter(&x.driver_descript, &filters))
+      .collect()
+  };
+
+  Ok(devcon_node_list)
+}
+
+/// 查找驱动节点
+/// devcon -> https://learn.microsoft.com/zh-cn/windows-hardware/drivers/devtest/devcon-findall
+pub fn findnodes_status(filters: &Vec<String>, is_full: bool) -> e_utils::AnyResult<Vec<DriveNodeInfo>> {
+  let mut filters = filters.clone();
+  let _fk = filters.get(0).cloned().unwrap_or_default();
+  let fk = if _fk.starts_with("=") || _fk.starts_with("@") { _fk.as_str() } else { "*" };
+  if fk != "*" {
+    filters.remove(0);
+  }
+  // Early return for empty filters to avoid unnecessary processing
+  let devcon_class = devcon_parse_driver_status(&devcon(vec!["status", fk])?);
 
   // Pre-check if filters is empty to avoid repeated checks
   let filters_empty = filters.is_empty();

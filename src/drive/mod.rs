@@ -19,6 +19,27 @@ pub async fn drive_query<T: AsRef<str>>(
     let args: Vec<String> = args.into_iter().map(|x| x.as_ref().to_string()).collect();
     let filter: Vec<String> = filter.into_iter().map(|x| x.as_ref().to_string()).collect();
     return match task {
+      "check-status" => {
+        let res = pnputil_scan()?;
+        crate::p(res);
+        let list = crate::drive::findnodes_status(&filter, is_full)?;
+        for node in list.iter() {
+          println!("\n{:#?}\n", node);
+        }
+        Ok(format!("COUNT: {}", list.len()))
+      }
+      "nodes-status" => {
+        let list = crate::drive::findnodes_status(&filter, is_full)?;
+        Ok(serde_json::to_string(&list)?)
+      }
+      "print-status" => {
+        let list = crate::drive::findnodes_status(&filter, is_full)?;
+        let count = list.len();
+        for node in &list {
+          crate::p(serde_json::to_string(&node)?);
+        }
+        Ok(format!("COUNT: {count}"))
+      }
       "scan" => pnputil_scan(),
       "add-folder" => {
         let mut outres = String::new();
