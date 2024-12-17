@@ -14,7 +14,7 @@ pub async fn file_info_query<T: AsRef<str>>(task: &str, args: impl IntoIterator<
         Ok(crate::file_info::lib_copy(src, to).map(|v| format!("Copy count {}", v))?)
       }
       "print" => {
-        let res = serde_json::to_string(&crate::file_info::a_open(src).await?)?;
+        let res = serde_json::to_string_pretty(&crate::file_info::a_open(src).await?)?;
         crate::p(&res);
         return Ok(res);
       }

@@ -58,11 +58,11 @@ pub async fn drive_query<T: AsRef<str>>(
         if is_full {
           let list = crate::drive::findnodes_full(list, &filter)?;
           for node in &list {
-            crate::p(serde_json::to_string(&node)?);
+            crate::p(serde_json::to_string_pretty(&node)?);
           }
         } else {
           for node in &list {
-            crate::p(serde_json::to_string(&node)?);
+            crate::p(serde_json::to_string_pretty(&node)?);
           }
         }
         Ok(format!("COUNT: {count}"))
@@ -113,11 +113,11 @@ pub async fn drive_query<T: AsRef<str>>(
         if is_full {
           let list = crate::drive::findnodes_full(list, &filter)?;
           for node in &list {
-            crate::p(serde_json::to_string(&node)?);
+            crate::p(serde_json::to_string_pretty(&node)?);
           }
         } else {
           for node in &list {
-            crate::p(serde_json::to_string(&node)?);
+            crate::p(serde_json::to_string_pretty(&node)?);
           }
         }
         Ok(format!("COUNT: {count}"))

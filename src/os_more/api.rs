@@ -73,14 +73,14 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             let ifaces = crate::os_more::net_interface::get_interfaces();
             let count = ifaces.len();
             for iface in ifaces {
-              crate::p(serde_json::to_string(&iface)?)
+              crate::p(serde_json::to_string_pretty(&iface)?)
             }
             Ok(format!("Count: {}", count))
           } else {
             let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
             let count = ifaces.len();
             for iface in ifaces {
-              crate::p(serde_json::to_string(&iface)?)
+              crate::p(serde_json::to_string_pretty(&iface)?)
             }
             Ok(format!("Count: {}", count))
           }
