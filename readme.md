@@ -266,21 +266,6 @@ hw --api Drive --task print -- "@pci*" "*I225-V #6"
 hw --api Drive --task print -- "@pci*" "PCI*" "*E0276CFFFFEEA86B00"
   # --full Complete data but more resource consuming, recommended to use = and @ for filtering
 hw --api Drive --task print --full -- =net "*I225-V #6" 
-  {
-  "id": "PCI\\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\\E0276CFFFFEEA86B00",
-  "drive_node": "1:",
-  "name": "Intel(R) Ethernet Controller (3) I225-V #6",
-  "inf_file": "c:\\drivers\\lan.intel\\pro2500\\e2f68.inf",
-  "inf_section": "E15F3_3.10.0.1..17763",
-  "driver_descript": "Intel(R) Ethernet Controller (3) I225-V #6",
-  "manufacturer_name": "Intel",
-  "provider_name": "Intel",
-  "driver_date": "2021/1/6",
-  "driver_version": "1.0.2.13",
-  "driver_node_rank": "16719872",
-  "driver_node_flags": "00003044",
-  "signed": false
-  }
 # Drive Nodes
 hw --api Drive --task nodes -- =net
 # Export Drive
@@ -299,6 +284,16 @@ hw --api Drive --task delete -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E
 hw --api Drive --task add  --args D:\\drives\\oem6.inf /install
 # Add Drive Folder
 hw --api Drive --task add-folder --args D:\\drives /install
+# Check Drive Status
+hw --api Drive --task check-status
+# Print Drive Status
+hw --api Drive --task print-status
+# Print Drive Status Full
+hw --api Drive --task print-status --full
+# Print Drive Status Nodes
+hw --api Drive --task print-status --nodes
+# Print Drive Status Nodes Full
+hw --api Drive --task print-status --nodes --full
 ```
 
 ### [14. 📖 Click for Rust Sync Time Usage](examples/sync_datetime.rs)

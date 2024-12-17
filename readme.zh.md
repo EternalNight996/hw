@@ -255,21 +255,6 @@ hw --api Drive --task print -- "@pci*" "*I225-V #6"
 hw --api Drive --task print -- "@pci*" "PCI*" "*E0276CFFFFEEA86B00"
   # --full 完整数据 但更消耗资源，建议加=和@去筛选
 hw --api Drive --task print --full -- =net "*I225-V #6" 
-  {
-  "id": "PCI\\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\\E0276CFFFFEEA86B00",
-  "drive_node": "1:",
-  "name": "Intel(R) Ethernet Controller (3) I225-V #6",
-  "inf_file": "c:\\drivers\\lan.intel\\pro2500\\e2f68.inf",
-  "inf_section": "E15F3_3.10.0.1..17763",
-  "driver_descript": "Intel(R) Ethernet Controller (3) I225-V #6",
-  "manufacturer_name": "Intel",
-  "provider_name": "Intel",
-  "driver_date": "2021/1/6",
-  "driver_version": "1.0.2.13",
-  "driver_node_rank": "16719872",
-  "driver_node_flags": "00003044",
-  "signed": false
-  }
 # 驱动节点
 hw --api Drive --task nodes -- =net
 # 导出驱动
@@ -288,7 +273,16 @@ hw --api Drive --task delete -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E
 hw --api Drive --task add  --args D:\\drives\\oem6.inf /install
 # 增加驱动文件夹
 hw --api Drive --task add-folder --args D:\\drives /install
-
+# 检查驱动状态
+hw --api Drive --task check-status
+# 检查驱动状态并打印
+hw --api Drive --task print-status
+# 检查驱动状态并打印完整
+hw --api Drive --task print-status --full
+# 检查驱动状态并打印节点
+hw --api Drive --task print-status --nodes
+# 检查驱动状态并打印节点完整
+hw --api Drive --task print-status --nodes --full
 ```
 ### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
 ```bash
