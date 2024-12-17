@@ -7,18 +7,12 @@ pub enum DriveStatusType {
   Runing,
   Disabled,
   Stopped,
+  Error,
   Hidden,
   #[default]
   None,
 }
-/// # 驱动状态
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
-pub struct DriveStatus {
-  pub id: String,
-  pub name: String,
-  pub status: DriveStatusType,
-  pub content: String,
-}
+
 /// # 驱动信息
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DriveInfo {
@@ -26,7 +20,6 @@ pub struct DriveInfo {
   pub driver_descript: String,
   pub status: DriveStatusType,
 }
-
 
 /// # 驱动Node信息
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]

@@ -20,23 +20,50 @@ pub async fn drive_query<T: AsRef<str>>(
     let filter: Vec<String> = filter.into_iter().map(|x| x.as_ref().to_string()).collect();
     return match task {
       "check-status" => {
-        let res = pnputil_scan()?;
-        crate::p(res);
-        let list = crate::drive::findnodes_status(&filter, is_full)?;
-        for node in list.iter() {
-          println!("\n{:#?}\n", node);
+        let _ = pnputil_scan()?;
+        let list = crate::drive::findnodes_status(&filter)?;
+        let mut err = 0;
+        let mut ok = 0;
+        for node in list.into_iter() {
+          if node.status == DriveStatusType::Error || node.status == DriveStatusType::None || node.status == DriveStatusType::Disabled {
+            err += 1;
+            if is_full {
+              crate::ep(format!("{err}. Err: {:#?}\n", crate::drive::findnodes_full(vec![node], &filter)?));
+            } else {
+              crate::ep(format!("{err}. Err: {:#?}\n", node));
+            }
+          } else {
+            ok += 1;
+          }
         }
-        Ok(format!("COUNT: {}", list.len()))
+        let msg = format!("PASS: {ok}; FAIL: {err}");
+        if err > 0 {
+          Err(msg.into())
+        } else {
+          Ok(msg)
+        }
       }
       "nodes-status" => {
-        let list = crate::drive::findnodes_status(&filter, is_full)?;
-        Ok(serde_json::to_string(&list)?)
+        let list = crate::drive::findnodes_status(&filter)?;
+        if is_full {
+          let list = crate::drive::findnodes_full(list, &filter)?;
+          Ok(serde_json::to_string(&list)?)
+        } else {
+          Ok(serde_json::to_string(&list)?)
+        }
       }
       "print-status" => {
-        let list = crate::drive::findnodes_status(&filter, is_full)?;
+        let list = crate::drive::findnodes_status(&filter)?;
         let count = list.len();
-        for node in &list {
-          crate::p(serde_json::to_string(&node)?);
+        if is_full {
+          let list = crate::drive::findnodes_full(list, &filter)?;
+          for node in &list {
+            crate::p(serde_json::to_string(&node)?);
+          }
+        } else {
+          for node in &list {
+            crate::p(serde_json::to_string(&node)?);
+          }
         }
         Ok(format!("COUNT: {count}"))
       }
@@ -60,7 +87,7 @@ pub async fn drive_query<T: AsRef<str>>(
       "add" => return pnputil_add_driver(args),
       "delete" => return pnputil_delete_driver(args),
       "delete-find" => {
-        let list = crate::drive::findnodes(&filter, is_full)?;
+        let list = crate::drive::findnodes_full(crate::drive::findnodes(&filter)?, &filter)?;
         let mut nodes = vec![];
         for node in &list {
           let inf_path: std::path::PathBuf = (&node.inf_file).into();
@@ -68,7 +95,11 @@ pub async fn drive_query<T: AsRef<str>>(
           let mut new_args = args.clone();
           new_args.insert(0, fname.to_string());
           let _dres = crate::drive::pnputil_delete_driver(new_args)?;
-          let status = crate::drive::devcon_status(&node.id)?;
+          let _ = crate::drive::pnputil_scan()?;
+          let status = crate::drive::findnodes_status(&vec![node.id.clone()])?
+            .get(0)
+            .cloned()
+            .ok_or("Get Status Error")?;
           if status.status != DriveStatusType::None {
             return Err("Delete Error: not null".into());
           }
@@ -77,19 +108,31 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&nodes)?)
       }
       "print" => {
-        let list = crate::drive::findnodes(&filter, is_full)?;
+        let list = crate::drive::findnodes(&filter)?;
         let count = list.len();
-        for node in &list {
-          crate::p(serde_json::to_string(&node)?);
+        if is_full {
+          let list = crate::drive::findnodes_full(list, &filter)?;
+          for node in &list {
+            crate::p(serde_json::to_string(&node)?);
+          }
+        } else {
+          for node in &list {
+            crate::p(serde_json::to_string(&node)?);
+          }
         }
         Ok(format!("COUNT: {count}"))
       }
       "nodes" => {
-        let list = crate::drive::findnodes(&filter, is_full)?;
-        Ok(serde_json::to_string(&list)?)
+        let list = crate::drive::findnodes(&filter)?;
+        if is_full {
+          let list = crate::drive::findnodes_full(list, &filter)?;
+          Ok(serde_json::to_string(&list)?)
+        } else {
+          Ok(serde_json::to_string(&list)?)
+        }
       }
       "restart" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_restart)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_restart)?;
         for status in &status_list {
           if status.status == DriveStatusType::Runing {
             break;
@@ -98,7 +141,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "enable" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_enable)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_enable)?;
         for status in &status_list {
           if status.status != DriveStatusType::Runing {
             return Err("Enable Error: not runing".into());
@@ -107,7 +150,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "disable" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_disable)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_disable)?;
         for status in &status_list {
           if status.status != DriveStatusType::Disabled {
             return Err("Disable Error: not disabled".into());
@@ -116,7 +159,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "remove" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, is_full, crate::drive::pnputil_remove)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_remove)?;
         for status in &status_list {
           if status.status != DriveStatusType::None {
             return Err("Remove Error: not none".into());

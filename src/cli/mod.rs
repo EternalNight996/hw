@@ -227,7 +227,16 @@ hw --api Drive --task delete -- "@PCI\VEN_8086&DEV_15F3&SUBSYS_00008086&REV_03\E
 hw --api Drive --task add  --args D:\\drives\\oem6.inf /install
 # 增加驱动文件夹
 hw --api Drive --task add-folder --args D:\\drives /install
-
+# 检查驱动状态
+hw --api Drive --task check-status
+# 检查驱动状态并打印
+hw --api Drive --task print-status
+# 检查驱动状态并打印完整
+hw --api Drive --task print-status --full
+# 检查驱动状态并打印节点
+hw --api Drive --task print-status --nodes
+# 检查驱动状态并打印节点完整
+hw --api Drive --task print-status --nodes --full
 ```
 ### [14. 📖 点击Rust调用同步时间](examples/sync_datetime.rs)
 ```bash
