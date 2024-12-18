@@ -2,7 +2,6 @@
 root_dir := justfile_directory()
 os := os_family()
 arch := arch()
-scripts_dir :=  "C:/scripts" / os
 project := "hw"
 base_dir := root_dir / "target"
 release_dir := base_dir / "release"
@@ -10,13 +9,14 @@ out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
 features := "build,built"
 ignore_lib := "shell32.dll KERNEL32.DLL ntdll.dll USER32.dll GDI32.dll ADVAPI32.dll WS2_32.dll ole32.dll OLEAUT32.dll SHLWAPI.dll COMCTL32.dll COMDLG32.dll VERSION.dll WINMM.dll IMM32.dll MSIMG32.dll"
-
+# 项目配置
+scripts_dir := if os == "windows" { "C:/scripts" } else { "/usr/local/scripts" }
 
 # 运行开发版本（带参数）
 set positional-arguments
 
 # 默认任务
-default: clean init build zip-package
+default: clean init build-all zip-package
 
 # 帮助信息
 help:
@@ -53,9 +53,15 @@ init: clean
     mkdir -p "{{release_dir}}"
     mkdir -p "{{out_dir}}"
     mkdir -p "{{artifact_dir}}"
-
 # 构建主程序
 build:
+    @echo "=== Building release version ==="
+    cargo build --release --features {{features}}
+    # 打开输出目录
+    just open "{{release_dir}}"
+
+# 构建主程序与资源
+build-all:
     @echo "=== Building release version ==="
     cargo build --release --features {{features}}
     @echo "=== Copying and compressing executable ==="
@@ -139,7 +145,7 @@ _copy-exe:
 # UPX压缩
 _compress-exe:
     @if [ -f "{{scripts_dir}}/upx.exe" ]; then \
-        "{{scripts_dir}}/upx.exe" --best --lzma "{{out_dir}}/{{project}}.exe"; \
+        "{{scripts_dir}}/upx.exe" --ultra-brute --lzma "{{out_dir}}/{{project}}.exe"; \
     fi
 
 # 复制资源文件
@@ -155,6 +161,9 @@ _copy-resources:
     fi
     @if [ -f "LICENSE" ]; then \
         just copy "LICENSE" "{{out_dir}}/" ; \
+    fi
+    @if [ -f "COPYRIGHT" ]; then \
+        just copy "COPYRIGHT" "{{out_dir}}/" ; \
     fi
     @if [ -f "readme.md" ]; then \
         just copy "readme.md" "{{out_dir}}/" ; \
@@ -177,6 +186,16 @@ _copy-resources:
 
 # 复制依赖
 copy-lib src="" target="" ignore="":
+    @if [ "{{os}}" = "windows" ] && [ -f "{{scripts_dir}}/hw.exe" ]; then \
+        "{{scripts_dir}}/hw.exe" --api fileinfo --task copy-lib --args "{{src}}" "{{target}}" ; \
+        if [ -n "{{ignore}}" ]; then \
+            for file in {{ignore}}; do \
+                if [ -f "{{target}}/$file" ]; then \
+                    just remove "{{target}}/$file" ; \
+                fi \
+            done \
+        fi \
+    fi
     @if [ "{{os}}" = "windows" ] && [ -f "{{scripts_dir}}/e-app-fileinfo.exe" ]; then \
         "{{scripts_dir}}/e-app-fileinfo.exe" --api fileinfo --task copy-lib --args "{{src}}" "{{target}}" ; \
         if [ -n "{{ignore}}" ]; then \
