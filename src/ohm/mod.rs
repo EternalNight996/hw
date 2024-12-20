@@ -13,6 +13,7 @@ pub type RawQuery = HashMap<String, Variant>;
 #[derive(Clone, Debug)]
 pub struct OHM(WMIConnection);
 impl OHM {
+  pub const OHM_EXE: &'static str = "OpenHardwareMonitor.exe";
   /// 获取WMI连接
   pub fn get(&self) -> &WMIConnection {
     &self.0

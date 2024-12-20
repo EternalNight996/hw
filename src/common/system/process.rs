@@ -1,18 +1,34 @@
 use std::{path::Path, time::Duration};
 
 use e_utils::{cmd::Cmd, AnyResult};
-use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind};
+use sysinfo::{Pid, ProcessesToUpdate, System};
 
 pub fn kill_name(name: impl AsRef<std::ffi::OsStr>) -> AnyResult<()> {
-  let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_cmd(UpdateKind::OnlyIfNotSet)));
-  for process in sys.processes_by_name(name.as_ref()) {
-    process.kill();
+  let name = name.as_ref().to_ascii_lowercase();
+  let mut sys = System::new();
+  sys.refresh_processes(ProcessesToUpdate::All, true);
+  for (_pid, process) in sys.processes() {
+    if process.name().to_ascii_lowercase() == name {
+      process.kill();
+    }
   }
   Ok(())
 }
-
+pub fn query_name(name: impl AsRef<std::ffi::OsStr>) -> AnyResult<Vec<Pid>> {
+  let name = name.as_ref().to_ascii_lowercase();
+  let mut sys = System::new();
+  sys.refresh_processes(ProcessesToUpdate::All, true);
+  let mut pids: Vec<Pid> = vec![];
+  for (pid, process) in sys.processes() {
+    if process.name().to_ascii_lowercase() == name {
+      pids.push(*pid);
+    }
+  }
+  Ok(pids)
+}
 pub fn kill(pids: Vec<Pid>) -> AnyResult<()> {
-  let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing().with_cmd(UpdateKind::OnlyIfNotSet)));
+  let mut sys = System::new();
+  sys.refresh_processes(ProcessesToUpdate::All, true);
   for pid in pids {
     if let Some(process) = sys.process(pid) {
       process.kill();
@@ -23,27 +39,14 @@ pub fn kill(pids: Vec<Pid>) -> AnyResult<()> {
 
 /// Run
 pub fn run(name: &str, cwd: impl AsRef<Path>) -> AnyResult<Vec<Pid>> {
-  let mut sys = System::new();
-  let _ = sys.refresh_processes(ProcessesToUpdate::All, true);
-  let pids: Vec<Pid> = sys.processes_by_name(name.as_ref()).map(|v| v.pid()).collect();
+  let pids: Vec<Pid> = query_name(name)?;
   if !pids.is_empty() {
     crate::dp(format!("{} is already running with PIDs: {:?}", name, pids,));
     return Ok(pids);
   } else {
-    let pid = Cmd::new(name).cwd(cwd).a_spawn()?.id().map(Pid::from_u32);
+    let _pid = Cmd::new(name).cwd(cwd).a_spawn()?.id().map(Pid::from_u32);
     for i in 0..10 {
-      let _ = sys.refresh_processes(ProcessesToUpdate::All, true);
-      match pid {
-        Some(id) => match sys.process(id) {
-          Some(_) => {
-            crate::p(format!("Started {} with PID: {}", name, id));
-            return Ok(vec![id]);
-          }
-          None => {}
-        },
-        None => {}
-      }
-      let pids: Vec<Pid> = sys.processes_by_name(name.as_ref()).map(|v| v.pid()).collect();
+      let pids: Vec<Pid> = query_name(name)?;
       if !pids.is_empty() {
         return Ok(pids);
       }
