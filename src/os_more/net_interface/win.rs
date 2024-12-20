@@ -18,29 +18,35 @@ use super::get_local_ipaddr;
 /// // 状态过滤
 /// "~is_connected" => x.is_connected(),
 /// "~has_dhcp_ip" => x.has_dhcp_ip(),
-pub fn get_interfaces_simple(filter: Vec<&str>) -> Vec<InterfaceSimple> {
+pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<InterfaceSimple>> {
   // 如果没有过滤条件，直接返回所有接口
-  if filter.is_empty() {
-    return get_interfaces().iter().map(|x| x.to_simple()).collect();
-  }
-  get_interfaces()
-    .iter()
-    .filter(|x| {
-      filter.iter().all(|f| match *f {
-        // 速度过滤（从小到大排序，避免重复计算）
-        "~Less100" => x.speed() < 100,
-        "~100" => x.speed() >= 100,
-        "~1000" => x.speed() >= 1000,
-        "~Big1000" => x.speed() >= 10000,
-        // 状态过滤
-        "~is_connected" => x.is_connected(),
-        "~has_dhcp_ip" => x.has_dhcp_ip(),
-        // 类型匹配和正则匹配
-        f => f == &x.if_type.to_string() || regex2(&x.friendly_name, f).0,
+  let res: Vec<InterfaceSimple> = if filter.is_empty() {
+    get_interfaces().iter().map(|x| x.to_simple()).collect()
+  } else {
+    get_interfaces()
+      .iter()
+      .filter(|x| {
+        filter.iter().all(|f| match *f {
+          // 速度过滤（从小到大排序，避免重复计算）
+          "~Less100" => x.speed() < 100,
+          "~100" => x.speed() >= 100,
+          "~1000" => x.speed() >= 1000,
+          "~Big1000" => x.speed() >= 10000,
+          // 状态过滤
+          "~is_connected" => x.is_connected(),
+          "~has_dhcp_ip" => x.has_dhcp_ip(),
+          // 类型匹配和正则匹配
+          f => f == &x.if_type.to_string() || regex2(&x.friendly_name, f).0,
+        })
       })
-    })
-    .map(|x| x.to_simple())
-    .collect()
+      .map(|x| x.to_simple())
+      .collect()
+  };
+  if res.is_empty() {
+    Err("No interfaces found".into())
+  } else {
+    Ok(res)
+  }
 }
 // Get network interfaces using the IP Helper API
 // Reference: https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses

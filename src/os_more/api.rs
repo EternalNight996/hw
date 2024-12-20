@@ -77,7 +77,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             }
             Ok(format!("Count: {}", count))
           } else {
-            let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
+            let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
             let count = ifaces.len();
             for iface in ifaces {
               crate::p(serde_json::to_string_pretty(&iface)?)
@@ -86,7 +86,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           }
         }
         "check-mac" => {
-          let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
+          let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
           // Check each interface's MAC address
           for iface in &ifaces {
             let ref mac = iface.mac_addr;
@@ -108,7 +108,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           if is_full {
             Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces())?)
           } else {
-            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces_simple(filter_refs))?)
+            Ok(serde_json::to_string(&crate::os_more::net_interface::get_interfaces_simple(filter_refs)?)?)
           }
         }
         _ => Ok(String::new()),
@@ -118,7 +118,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
       return match task {
         "dhcp" => {
           let mut new = vec![];
-          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs)? {
             let ip_res = crate::os_more::net_manage::set_ip_dhcp(&iface.friendly_name).await?;
             let dns_res = crate::os_more::net_manage::set_dns_dhcp(&iface.friendly_name).await?;
             new.push(serde_json::json!({
@@ -135,7 +135,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           let ip = args.get(1).ok_or("Args Error IP 1 ")?.as_ref();
           let netmask = args.get(2).ok_or("Args Error Netmask 2 ")?.as_ref();
           let gateway = args.get(3).map(AsRef::as_ref);
-          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs)? {
             let res = crate::os_more::net_manage::set_static_ip(&iface.friendly_name, &ip, &netmask, gateway).await?;
             new.push(serde_json::json!({
               "name": iface.friendly_name,
@@ -150,7 +150,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           let mut new = vec![];
           let primary_dns = args.get(1).ok_or("Args Error Primary DNS 1 ")?.as_ref();
           let secondary_dns = args.get(2).map(AsRef::as_ref);
-          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs) {
+          for iface in crate::os_more::net_interface::get_interfaces_simple(filter_refs)? {
             let res = crate::os_more::net_manage::set_static_dns(&iface.friendly_name, &primary_dns, secondary_dns).await?;
             new.push(serde_json::json!({
               "name": iface.friendly_name,
@@ -178,12 +178,10 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           let secs = args.get(2).ok_or("Args Error run time secs 2 ")?.as_ref();
           let count: usize = args.get(3).and_then(|v| v.as_ref().parse::<usize>().ok()).unwrap_or(0);
           #[cfg(target_os = "windows")]
-          let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs);
+          let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
           #[cfg(not(target_os = "windows"))]
           let faces = vec![];
-          if faces.is_empty() {
-            return Err("No interfaces found".into());
-          } else if count > 0 && count != faces.len() {
+          if count > 0 && count != faces.len() {
             return Err(format!("正确网口数量:{} 实际网口数量:{}", count, faces.len()).into());
           }
 
