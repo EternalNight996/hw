@@ -7,7 +7,6 @@ base_dir := root_dir / "target"
 release_dir := base_dir / "release"
 out_dir := release_dir / "out"
 artifact_dir := release_dir / "artifact"
-features := "build,built"
 ignore_lib := "shell32.dll KERNEL32.DLL ntdll.dll USER32.dll GDI32.dll ADVAPI32.dll WS2_32.dll ole32.dll OLEAUT32.dll SHLWAPI.dll COMCTL32.dll COMDLG32.dll VERSION.dll WINMM.dll IMM32.dll MSIMG32.dll"
 # 项目配置
 scripts_dir := if os == "windows" { "C:/scripts" } else { "/usr/local/scripts" }
@@ -53,17 +52,28 @@ init: clean
     mkdir -p "{{release_dir}}"
     mkdir -p "{{out_dir}}"
     mkdir -p "{{artifact_dir}}"
+    
 # 构建主程序
 build:
     @echo "=== Building release version ==="
-    cargo build --release --features {{features}}
+    cargo build --release
     # 打开输出目录
     just open "{{release_dir}}"
-
+# 构建主程序
+build-fast:
+    @echo "=== Building release version ==="
+    cargo build --release
+    mkdir -p "{{out_dir}}"
+    @echo "=== Copying and compressing executable ==="
+    just _copy-exe
+    just _compress-exe
+    just copy-lib "{{out_dir}}/{{project}}.exe" "{{out_dir}}" "{{ignore_lib}}"
+    # 打开输出目录
+    just open "{{out_dir}}"
 # 构建主程序与资源
 build-all:
     @echo "=== Building release version ==="
-    cargo build --release --features {{features}}
+    cargo build --release
     @echo "=== Copying and compressing executable ==="
     just _copy-exe
     just _compress-exe
