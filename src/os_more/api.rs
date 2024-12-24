@@ -92,15 +92,30 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
             let ref mac = iface.mac_addr;
             // Check against invalid MAC patterns
             if network::MAC_CHECKS.contains(&mac.as_str()) {
-              return Err(format!("FAIL:{} ->  {} 未烧录MAC地址", iface.friendly_name, mac).into());
+              return Err(
+                format!(
+                  "FAIL MAC地址未烧录{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
+                  mac, iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status
+                )
+                .into(),
+              );
             }
             // Check for duplicate MACs
             let find_repect = ifaces.iter().find(|i| &i.mac_addr == mac && i.friendly_name != iface.friendly_name);
 
             if let Some(repeat_mac) = find_repect {
-              return Err(format!("FAIL: {} 重复MAC地址: {}", repeat_mac.friendly_name, mac).into());
+              return Err(
+                format!(
+                  "FAIL {}重复MAC地址{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
+                  repeat_mac.friendly_name, mac, iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status
+                )
+                .into(),
+              );
             }
-            crate::dp(format!("PASS: INTERFACE: {} MAC: {}", iface.friendly_name, mac));
+            crate::dp(format!(
+              "PASS, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}, SPEED={}",
+              iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status, iface.speed_mb
+            ));
           }
           Ok(serde_json::to_string(&ifaces)?)
         }
