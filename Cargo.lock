@@ -363,9 +363,9 @@ dependencies = [
 
 [[package]]
 name = "e-utils"
-version = "0.4.11"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7f06425365b6f5c74837cd29a153875d59cdc5649c9586729dac68e1bef7ce7"
+checksum = "977c0bf0cc1949d46018cc5293a6c02d367a827414d6a7ddac21394cd3c8b4e9"
 dependencies = [
  "async-trait",
  "chrono",
