@@ -56,13 +56,13 @@ init: clean
 # 构建主程序
 build:
     @echo "=== Building release version ==="
-    cargo build --release
+    cargo build --release --features "build"
     # 打开输出目录
     just open "{{release_dir}}"
 # 构建主程序
 build-fast:
     @echo "=== Building release version ==="
-    cargo build --release
+    cargo build --release --features "build"
     mkdir -p "{{out_dir}}"
     @echo "=== Copying and compressing executable ==="
     just _copy-exe
@@ -73,7 +73,7 @@ build-fast:
 # 构建主程序与资源
 build-all:
     @echo "=== Building release version ==="
-    cargo build --release
+    cargo build --release --features "build"
     @echo "=== Copying and compressing executable ==="
     just _copy-exe
     just _compress-exe
