@@ -86,7 +86,11 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           }
         }
         "check-mac" => {
+          let count = args.get(1).and_then(|x| x.as_ref().parse::<usize>().ok()).unwrap_or(0);
           let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
+          if count != ifaces.len() {
+            return Err(format!("正确网口数量:{} 实际网口数量:{}", count, ifaces.len()).into());
+          }
           // Check each interface's MAC address
           for iface in &ifaces {
             let ref mac = iface.mac_addr;
