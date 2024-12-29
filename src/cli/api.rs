@@ -25,8 +25,10 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      crate::common::process::kill_name(crate::ohm::OHM::OHM_EXE)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
+      crate::common::process::kill_name(crate::ohm::OHM::OHM_EXE)?;
+      crate::ohm::OHM::stop()?;
+      crate::ohm::OHM::clean()?;
       for handle in load_handles {
         handle.join().map_err(|_| "OHM线程错误")?;
       }
@@ -44,8 +46,10 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       let load_handles = tester.spawn_load().unwrap_or_default();
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
-      crate::common::process::kill_name(crate::aida64::AIDA64::AIDA64_EXE)?;
       crate::api_test::LOAD_CONTROLLER.stop_running();
+      crate::common::process::kill_name(crate::aida64::AIDA64::AIDA64_EXE)?;
+      crate::aida64::AIDA64::stop()?;
+      crate::aida64::AIDA64::clean()?;
       for handle in load_handles {
         handle.join().map_err(|_| "OHM线程错误")?;
       }

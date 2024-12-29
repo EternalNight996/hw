@@ -26,4 +26,6 @@ pub trait HardwareMonitor: Sized {
     type SensorType;
     fn new() -> AnyResult<Self>;
     fn test(timeout: u64) -> AnyResult<()>;
+    fn stop() -> AnyResult<()>;
+    fn clean() -> AnyResult<()>;
 }

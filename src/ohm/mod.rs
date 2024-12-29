@@ -4,7 +4,10 @@ use crate::{
   api_test::{HardwareType, Sensor, SensorType},
   wmic::{Hardware, HardwareMonitor},
 };
-use e_utils::AnyResult;
+use e_utils::{
+  cmd::{Cmd, ExeType},
+  AnyResult,
+};
 use std::{collections::HashMap, str::FromStr as _};
 use wmi::{COMLibrary, Variant, WMIConnection};
 pub type RawQuery = HashMap<String, Variant>;
@@ -120,5 +123,24 @@ impl HardwareMonitor for OHM {
       std::thread::sleep(std::time::Duration::from_millis(200));
     }
     Err("OpenHardwareMonitor load timeout".into())
+  }
+  fn stop() -> AnyResult<()> {
+    if cfg!(target_os = "windows") {
+      let res = Cmd::new("sc")
+        .set_type(ExeType::Cmd)
+        .args(&["config", "WinRing0_1_2_0", "start=", "disabled"])
+        .output()?;
+      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] disable: {}", res.stdout));
+      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["stop", "WinRing0_1_2_0"]).output()?;
+      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] stop: {}", res.stdout));
+    }
+    Ok(())
+  }
+  fn clean() -> AnyResult<()> {
+    if cfg!(target_os = "windows") {
+      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["delete", "WinRing0_1_2_0"]).output()?;
+      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] delete: {}", res.stdout));
+    }
+    Ok(())
   }
 }

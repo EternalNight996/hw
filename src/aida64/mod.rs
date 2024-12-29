@@ -4,7 +4,7 @@ use crate::{
   api_test::{HardwareType, Sensor, SensorType},
   wmic::HardwareMonitor,
 };
-use e_utils::AnyResult;
+use e_utils::{cmd::{Cmd, ExeType}, AnyResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wmi::{COMLibrary, Variant, WMIConnection};
@@ -155,6 +155,25 @@ impl HardwareMonitor for AIDA64 {
       std::thread::sleep(std::time::Duration::from_millis(200));
     }
     Err("AIDA64 load timeout".into())
+  }
+  fn stop() -> AnyResult<()> {
+    if cfg!(target_os = "windows") {
+      let res = Cmd::new("sc")
+        .set_type(ExeType::Cmd)
+        .args(&["config", "AIDA64Driver", "start=", "disabled"])
+        .output()?;
+      crate::dp(format!("AIDA64 [AIDA64Driver kerneld.*] disable: {}", res.stdout));
+      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["stop", "AIDA64Driver"]).output()?;
+      crate::dp(format!("AIDA64 [AIDA64Driver kerneld.*] stop: {}", res.stdout));
+    }
+    Ok(())
+  }
+  fn clean() -> AnyResult<()> {
+    if cfg!(target_os = "windows") {
+      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["delete", "AIDA64Driver"]).output()?;
+      crate::dp(format!("AIDA64 [AIDA64Driver kerneld.*]  delete: {}", res.stdout));
+    }
+    Ok(())
   }
 }
 
