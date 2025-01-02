@@ -1,6 +1,10 @@
 #[allow(unused)]
 use crate::api_test::{HardwareType, Sensor, SensorType};
 use crate::share::bytes_to_gib;
+use e_utils::{
+  cmd::{Cmd, ExeType},
+  AnyRes as _,
+};
 pub use sysinfo::*;
 
 /// OS
@@ -122,25 +126,35 @@ impl OS {
       .flat_map(|st| match st {
         SensorType::Clock => {
           self.0.refresh_cpu_specifics(CpuRefreshKind::nothing().with_frequency());
+          let cpu_res = self.0.cpus().iter().map(|cpu| cpu.frequency());
+          let max_speed = cpu_res.max().unwrap_or(0);
+          let frequency = Cmd::new(&format!(
+            "$ProcessorPerformance = (Get-Counter -Counter \"\\Processor Information(_Total)\\% Processor Performance\").CounterSamples.CookedValue; \
+           $CurrentClockSpeed = {}*($ProcessorPerformance/100); \
+           $CurrentClockSpeed",
+            max_speed
+          ))
+          .set_type(ExeType::PowerShell)
+          .output()
+          .and_then(|v| v.stdout.parse::<f64>().any())
+          .unwrap_or(0.0);
+          self.0.refresh_cpu_specifics(CpuRefreshKind::nothing().with_frequency());
           let res: Vec<Sensor> = self
             .0
             .cpus()
             .iter()
             .enumerate()
-            .map(|(i, cpu)| {
-              let value = cpu.frequency() as f64;
-              Sensor {
-                Name: cpu.name().into(),
-                Identifier: cpu.vendor_id().into(),
-                _SensorType: st.to_string(),
-                SensorType: st.clone(),
-                Parent: parent.to_string(),
-                Value: value,
-                Min: value,
-                Max: value,
-                Index: i as i32,
-                data: value.to_string(),
-              }
+            .map(|(i, cpu)| Sensor {
+              Name: cpu.name().into(),
+              Identifier: cpu.vendor_id().into(),
+              _SensorType: st.to_string(),
+              SensorType: st.clone(),
+              Parent: parent.to_string(),
+              Value: frequency,
+              Min: frequency,
+              Max: frequency,
+              Index: i as i32,
+              data: frequency.to_string(),
             })
             .collect();
           Some(res)
