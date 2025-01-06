@@ -19,7 +19,10 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let _pids = crate::common::process::run(crate::ohm::OHM::OHM_EXE, std::env::current_dir()?)?;
+      let pids = crate::common::process::run(crate::ohm::OHM::OHM_EXE, std::env::current_dir()?)?;
+      if pids.is_empty() {
+        return Err(format!("Task {} is empty", crate::ohm::OHM::OHM_EXE).into());
+      }
       crate::ohm::OHM::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
       let load_handles = tester.spawn_load().unwrap_or_default();
@@ -40,7 +43,10 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let _pids = crate::common::process::run(crate::aida64::AIDA64::AIDA64_EXE, std::env::current_dir()?)?;
+      let pids = crate::common::process::run(crate::aida64::AIDA64::AIDA64_EXE, std::env::current_dir()?)?;
+      if pids.is_empty() {
+        return Err(format!("Task {} is empty", crate::aida64::AIDA64::AIDA64_EXE).into());
+      }
       crate::aida64::AIDA64::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
       let load_handles = tester.spawn_load().unwrap_or_default();

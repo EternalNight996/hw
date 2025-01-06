@@ -108,16 +108,30 @@ impl HardwareMonitor for OHM {
   }
   fn test(count: u64) -> AnyResult<()> {
     for i in 1..=count {
-      if Self::new()
-        .inspect_err(|e| crate::wp(e.to_string()))
-        .ok()
-        .and_then(|v| v.query(HardwareType::CPU, SensorType::Clock).ok().and_then(|v| v.first().cloned()))
-        .map(|v| v.Value != 0.0)
-        .unwrap_or(false)
-      {
-        crate::dp(format!("Loading... ({}%/{}%)", count, count));
-        crate::dp("OpenHardwareMonitor ready");
-        return Ok(());
+      match Self::new() {
+        Ok(api) => {
+          let has_value = [
+            (HardwareType::CPU, SensorType::Clock),
+            (HardwareType::ALL, SensorType::Temperature),
+            (HardwareType::ALL, SensorType::Fan),
+          ]
+          .into_iter()
+          .any(|(hw_type, sensor_type)| {
+            api
+              .query(hw_type, sensor_type)
+              .ok()
+              .and_then(|v| v.first().cloned())
+              .map(|v| v.Value != 0.0)
+              .unwrap_or(false)
+          });
+
+          if has_value {
+            crate::dp(format!("Loading... ({}%/{}%)", count, count));
+            crate::dp("OpenHardwareMonitor ready");
+            return Ok(());
+          }
+        }
+        Err(e) => crate::wp(e.to_string()),
       }
       crate::dp(format!("Loading... ({}%/{}%)", i, count));
       std::thread::sleep(std::time::Duration::from_millis(200));

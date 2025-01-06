@@ -44,7 +44,7 @@ pub fn run(name: &str, cwd: impl AsRef<Path>) -> AnyResult<Vec<Pid>> {
     crate::dp(format!("{} is already running with PIDs: {:?}", name, pids,));
     return Ok(pids);
   } else {
-    let _pid = Cmd::new(name).cwd(cwd).a_spawn()?.id().map(Pid::from_u32);
+    let _pid = Cmd::new(name).flags(0).cwd(cwd).a_spawn()?.id().map(Pid::from_u32);
     for i in 0..10 {
       let pids: Vec<Pid> = query_name(name)?;
       if !pids.is_empty() {
