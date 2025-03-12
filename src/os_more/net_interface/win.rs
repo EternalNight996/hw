@@ -1,3 +1,5 @@
+use super::get_local_ipaddr;
+use super::ty::{allocate, deallocate, htonl, Gateway, Interface, InterfaceSimple, InterfaceStatus, InterfaceType, Ipv4Net, Ipv6Net, MacAddr};
 use core::ffi::c_void;
 use e_utils::regex::regex2;
 use libc::{c_char, strlen, wchar_t, wcslen};
@@ -7,10 +9,6 @@ use windows::Win32::{
   NetworkManagement::IpHelper::{GetAdaptersAddresses, SendARP, AF_INET, AF_INET6, AF_UNSPEC, GAA_FLAG_INCLUDE_GATEWAYS, IP_ADAPTER_ADDRESSES_LH},
   Networking::WinSock::{SOCKADDR_IN, SOCKADDR_IN6},
 };
-
-use super::ty::{allocate, deallocate, htonl, Gateway, Interface, InterfaceSimple, InterfaceStatus, InterfaceType, Ipv4Net, Ipv6Net, MacAddr};
-
-use super::get_local_ipaddr;
 ///  "~Less100" => x.speed() < 100,
 /// "~100" => x.speed() >= 100,
 /// "~1000" => x.speed() >= 1000,
@@ -20,28 +18,133 @@ use super::get_local_ipaddr;
 /// "~has_dhcp_ip" => x.has_dhcp_ip(),
 pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<InterfaceSimple>> {
   // 如果没有过滤条件，直接返回所有接口
-  let res: Vec<InterfaceSimple> = if filter.is_empty() {
-    get_interfaces().iter().map(|x| x.to_simple()).collect()
-  } else {
-    get_interfaces()
-      .iter()
-      .filter(|x| {
-        filter.iter().all(|f| match *f {
-          // 速度过滤（从小到大排序，避免重复计算）
-          "~Less100" => x.speed() < 100,
-          "~100" => x.speed() >= 100,
-          "~1000" => x.speed() >= 1000,
-          "~Big1000" => x.speed() >= 10000,
-          // 状态过滤
+  if filter.is_empty() {
+    let interfaces = get_interfaces();
+    let result = interfaces.iter().map(|x| x.to_simple()).collect::<Vec<_>>();
+    return if result.is_empty() { Err("No interfaces found".into()) } else { Ok(result) };
+  }
+
+  // 获取接口列表一次，避免重复调用
+  let interfaces = get_interfaces();
+
+  // 预处理过滤条件，分离特殊过滤器和正则表达式
+  let mut speed_filters = Vec::new();
+  let mut status_filters = Vec::new();
+  let mut type_filters = Vec::new();
+  let mut regex_filters = Vec::new();
+  let has_auto_filter = filter.contains(&"~auto");
+
+  // 预先计算所有接口类型的字符串表示，避免重复转换
+  let interface_types: Vec<String> = interfaces.iter().map(|x| x.if_type.to_string()).collect();
+
+  for &f in &filter {
+    if f == "~auto" {
+      // 已经单独处理了
+      continue;
+    } else if f.starts_with("~Less") || f == "~100" || f == "~1000" || f == "~Big1000" {
+      // 速度过滤器
+      speed_filters.push(f);
+    } else if f == "~is_connected" || f == "~has_dhcp_ip" {
+      // 状态过滤器
+      status_filters.push(f);
+    } else if interface_types.contains(&f.to_string()) {
+      // 如果是接口类型，加入类型过滤器
+      type_filters.push(f);
+    } else {
+      // 否则视为正则表达式，但不预编译
+      regex_filters.push(f);
+    }
+  }
+
+  // 预编译 auto 过滤器的常量
+  let auto_excluded = ["vEthernet", "虚拟"];
+  let auto_included = ["以太网", "Ethernet", "WLAN", "Wi-Fi", "无线", "Bluetooth", "蓝牙"];
+
+  // 使用 with_capacity 预分配内存
+  let mut res = Vec::with_capacity(interfaces.len());
+
+  for x in &interfaces {
+    let if_type_str = &interface_types[interfaces.iter().position(|i| std::ptr::eq(i, x)).unwrap()];
+
+    // 如果有类型过滤器且匹配，则直接通过
+    if !type_filters.is_empty() && type_filters.contains(&if_type_str.as_str()) {
+      res.push(x.to_simple());
+      continue;
+    }
+
+    let friendly_name = &x.friendly_name;
+
+    // 单独处理 auto 过滤器（包含多个字符串比较）
+    if has_auto_filter {
+      if auto_excluded.iter().any(|&s| friendly_name.contains(s)) || !auto_included.iter().any(|&s| friendly_name.contains(s)) {
+        continue;
+      }
+    }
+
+    // 检查速度过滤器（需要计算速度）
+    if !speed_filters.is_empty() {
+      // 只在有速度过滤器时计算速度
+      let speed = x.speed();
+
+      let mut passes_speed = true;
+      for &f in &speed_filters {
+        let passes = match f {
+          "~Less100" => speed < 100,
+          "~100" => speed >= 100,
+          "~1000" => speed >= 1000,
+          "~Big1000" => speed >= 10000,
+          _ => true,
+        };
+        if !passes {
+          passes_speed = false;
+          break;
+        }
+      }
+      if !passes_speed {
+        continue;
+      }
+    }
+
+    // 检查状态过滤器
+    if !status_filters.is_empty() {
+      let mut passes_status = true;
+      for &f in &status_filters {
+        let passes = match f {
           "~is_connected" => x.is_connected(),
           "~has_dhcp_ip" => x.has_dhcp_ip(),
-          // 类型匹配和正则匹配
-          f => f == &x.if_type.to_string() || regex2(&x.friendly_name, f).0,
-        })
-      })
-      .map(|x| x.to_simple())
-      .collect()
-  };
+          _ => true,
+        };
+        if !passes {
+          passes_status = false;
+          break;
+        }
+      }
+      if !passes_status {
+        continue;
+      }
+    }
+
+    // 如果没有正则表达式过滤器，且通过了其他过滤器，则通过
+    if regex_filters.is_empty() {
+      res.push(x.to_simple());
+      continue;
+    }
+
+    // 最后检查正则表达式（最耗性能的操作）
+    // 只要有一个正则表达式匹配就通过
+    let mut passes_regex = false;
+    for pattern in &regex_filters {
+      if regex2(pattern, friendly_name).0 {
+        passes_regex = true;
+        break;
+      }
+    }
+
+    if passes_regex {
+      res.push(x.to_simple());
+    }
+  }
+
   if res.is_empty() {
     Err("No interfaces found".into())
   } else {
