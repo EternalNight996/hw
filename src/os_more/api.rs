@@ -60,6 +60,8 @@ pub mod network {
 /// 网络查询
 #[cfg(feature = "network")]
 pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<String> {
+    use crate::os_more::net_interface::InterfaceSimple;
+
   let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
   let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
   match info {
@@ -88,14 +90,30 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
         "check-mac" => {
           let count = args.get(1).and_then(|x| x.as_ref().parse::<usize>().ok()).unwrap_or(0);
           let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
+
+          // 提前检查数量
           if count > 0 && count != ifaces.len() {
             return Err(format!("正确网口数量:{} 实际网口数量:{}", count, ifaces.len()).into());
           }
-          // Check each interface's MAC address
+
+          // 使用 HashSet 加速 MAC 检查
+          use std::collections::{HashMap, HashSet};
+
+          // 预编译无效 MAC 模式到 HashSet
+          let mac_checks: HashSet<&str> = network::MAC_CHECKS.into();
+
+          // 构建 MAC 地址映射表 (MAC -> 接口列表)
+          let mut mac_map: HashMap<&str, Vec<&InterfaceSimple>> = HashMap::new();
           for iface in &ifaces {
-            let ref mac = iface.mac_addr;
-            // Check against invalid MAC patterns
-            if network::MAC_CHECKS.contains(&mac.as_str()) {
+            mac_map.entry(&iface.mac_addr).or_default().push(iface);
+          }
+
+          // 单次遍历检查所有接口
+          for iface in &ifaces {
+            let mac = &iface.mac_addr;
+
+            // 检查无效 MAC（O(1) 时间）
+            if mac_checks.contains(mac.as_str()) {
               return Err(
                 format!(
                   "FAIL MAC地址未烧录{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
@@ -104,18 +122,22 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
                 .into(),
               );
             }
-            // Check for duplicate MACs
-            let find_repect = ifaces.iter().find(|i| &i.mac_addr == mac && i.friendly_name != iface.friendly_name);
 
-            if let Some(repeat_mac) = find_repect {
-              return Err(
-                format!(
-                  "FAIL {}重复MAC地址{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
-                  repeat_mac.friendly_name, mac, iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status
-                )
-                .into(),
-              );
+            // 检查重复 MAC（O(1) 时间）
+            if let Some(entries) = mac_map.get(mac.as_str()) {
+              if entries.iter().any(|e| e.friendly_name != iface.friendly_name) {
+                let repeat_mac = entries.iter().find(|e| e.friendly_name != iface.friendly_name).unwrap();
+                return Err(
+                  format!(
+                    "FAIL {}重复MAC地址{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
+                    repeat_mac.friendly_name, mac, iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status
+                  )
+                  .into(),
+                );
+              }
             }
+
+            // 延迟日志输出到检查通过后
             crate::dp(format!(
               "PASS, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}, SPEED={}",
               iface.friendly_name, mac, iface.if_type, iface.ipv4, iface.network_status, iface.speed_mb
