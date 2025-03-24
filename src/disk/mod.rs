@@ -7,6 +7,8 @@ pub async fn disk_query<T: AsRef<str>>(task: &str, args: &[T], filter: &[T]) -> 
     let filters: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
     let disks = sysinfo::Disks::new_with_refreshed_list();
     match task {
+      "new-data" => Ok(serde_json::to_string(&disk_data_no_filters(&disks))?),
+      "count" => Ok(serde_json::to_string(&disk_data_no_filters(&disks).len())?),
       "data" => Ok(serde_json::to_string(&disk_data(&disks, &filters))?),
       "mount-tree" => Ok(serde_json::to_string(&disk_mount_points(&disks, &filters)?)?),
       "check-load" => {
@@ -14,7 +16,7 @@ pub async fn disk_query<T: AsRef<str>>(task: &str, args: &[T], filter: &[T]) -> 
         let end = args[1].parse::<f64>()?;
         Ok(serde_json::to_string(&disk_check_load(&disks, start, end)?)?)
       }
-      _ => todo!(),
+      _ => Err("Not supported".into()),
     }
   }
 }
@@ -43,7 +45,20 @@ mod api {
       Err(errors.join(", "))
     }
   }
-
+  /// 获取所有磁盘数据
+  pub fn disk_data_no_filters(slf: &sysinfo::Disks) -> Vec<(String, String, String, String)> {
+    slf
+      .iter()
+      .map(|disk| {
+        (
+          disk.mount_point().display().to_string(),
+          disk.name().to_string_lossy().to_string(),
+          disk.file_system().to_string_lossy().to_string(),
+          disk.kind().to_string(),
+        )
+      })
+      .collect()
+  }
   /// 获取所有磁盘数据
   pub fn disk_data(slf: &sysinfo::Disks, filters: &[&str]) -> Vec<(String, String, String, String)> {
     slf
