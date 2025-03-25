@@ -60,7 +60,7 @@ pub mod network {
 /// 网络查询
 #[cfg(feature = "network")]
 pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<String> {
-    use crate::os_more::net_interface::InterfaceSimple;
+  use crate::os_more::net_interface::InterfaceSimple;
 
   let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
   let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
@@ -204,13 +204,21 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
         }
         "sync-datetime" => {
           let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
-          Ok(crate::os_more::net_manage::sync_datetime(&arg).await?)
+          let is_register = if args.get(2).map(AsRef::as_ref).unwrap_or("0") == "1" { true } else { false };
+          Ok(crate::os_more::net_manage::sync_datetime(&arg, is_register).await?)
         }
         "ping" => {
-          let source = args.get(1).ok_or("Args Error Source 0 ")?.as_ref();
-          let target = args.get(2).ok_or("Args Error Target 1 ")?.as_ref();
-          let count = args.get(3).ok_or("Args Error Count 2 ")?.as_ref();
-          let res = crate::os_more::net_manage::ping(&source, &target, &count).await?;
+          let source = args.get(1).ok_or("Args Error Source 1 ")?.as_ref();
+          let target = args.get(2).ok_or("Args Error Target 2 ")?.as_ref();
+          let count = args.get(3).ok_or("Args Error Count 3 ")?.as_ref();
+          let fail_count = args
+            .get(4)
+            .ok_or("Args Error Repeat 4 ")
+            .map(AsRef::as_ref)
+            .unwrap_or_default()
+            .parse::<usize>()
+            .unwrap_or(3);
+          let res = crate::os_more::net_manage::ping(&source, &target, &count, fail_count).await?;
           crate::p(res);
           Ok("PASS".to_string())
         }
@@ -218,6 +226,13 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           let target = args.get(1).ok_or("Args Error Target 1 ")?.as_ref();
           let secs = args.get(2).ok_or("Args Error run time secs 2 ")?.as_ref();
           let count: usize = args.get(3).and_then(|v| v.as_ref().parse::<usize>().ok()).unwrap_or(0);
+          let fail_count = args
+            .get(4)
+            .ok_or("Args Error Repeat 4 ")
+            .map(AsRef::as_ref)
+            .unwrap_or_default()
+            .parse::<usize>()
+            .unwrap_or(3);
           #[cfg(target_os = "windows")]
           let faces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
           #[cfg(not(target_os = "windows"))]
@@ -229,7 +244,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           // 创建一个异步任务列表
           let handles: Vec<_> = faces
             .iter()
-            .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, secs).await })
+            .map(|face| async move { crate::os_more::net_manage::ping(&face.ipv4, target, secs, fail_count).await })
             .collect();
           // 并发执行所有任务并处理结果
           let results = futures::future::try_join_all(handles).await?;

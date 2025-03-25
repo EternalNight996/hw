@@ -37,12 +37,14 @@ async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
   Ok(())
 }
 
-pub async fn sync_datetime(server: &str) -> e_utils::AnyResult<String> {
+pub async fn sync_datetime(server: &str, is_register: bool) -> e_utils::AnyResult<String> {
   #[cfg(not(windows))]
   return Err("不支持的系统".into());
   #[cfg(windows)]
   {
-    ensure_windows_time_service().await?;
+    if is_register {
+      ensure_windows_time_service().await?;
+    }
 
     let config_result = Cmd::new("w32tm")
       .args([
