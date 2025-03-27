@@ -90,7 +90,7 @@ hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.30"
+version = "0.1.31"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"
