@@ -33,7 +33,7 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
   // 快速路径：检查是否只有一个 "~auto" 过滤器，这是最常见的情况
   if filter.len() == 1 && filter[0] == "~auto" {
     // 只检查包含的类型，不再检查排除的类型
-    let auto_included = ["以太网", "Ethernet", "WLAN", "Wi-Fi", "无线", "Bluetooth", "蓝牙"];
+    let auto_included = ["EtherCAT","LAN","以太网", "Ethernet", "WLAN", "Wi-Fi", "无线", "Bluetooth", "蓝牙"];
 
     let mut res = Vec::with_capacity(interfaces.len());
     for x in &interfaces {
@@ -95,7 +95,7 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
   }
 
   // 只保留 auto_included，去掉 auto_excluded
-  let auto_included = ["以太网", "Ethernet", "WLAN", "Wi-Fi", "无线", "Bluetooth", "蓝牙"];
+  let auto_included = ["EtherCAT","LAN","以太网", "Ethernet", "WLAN", "Wi-Fi", "无线", "Bluetooth", "蓝牙"];
 
   // 使用 with_capacity 预分配内存
   let mut res = Vec::with_capacity(interfaces.len());

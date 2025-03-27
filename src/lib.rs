@@ -35,7 +35,8 @@ pub use cli::*;
 
 #[cfg(feature = "disk")]
 pub mod disk;
-
+#[cfg(all(feature = "core-temp", target_os = "windows"))]
+pub mod core_temp;
 pub mod api_test;
 pub mod common;
 pub mod os_more;

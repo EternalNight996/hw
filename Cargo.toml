@@ -47,7 +47,17 @@ os = [
     "os-system",
     "os-office",
 ]
-default = ["ohm", "aida64", "os", "cli", "file-info", "drive", "tracing"]
+core-temp = ["csv"]
+default = [
+    "ohm",
+    "aida64",
+    "os",
+    "cli",
+    "file-info",
+    "drive",
+    "tracing",
+    "core-temp",
+]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1", optional = true }
@@ -73,6 +83,7 @@ libc = { version = "0.2", optional = true }
 futures = { version = "0.3", optional = true }
 goblin = { version = "0.9", optional = true }
 e-log = { version = "0.3", optional = true }
+csv = { version = "1.3", optional = true }
 
 [dev-dependencies]
 hw = { path = "./" }
