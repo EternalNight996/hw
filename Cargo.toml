@@ -7,6 +7,7 @@ proc-macro = false
 log = ["e-log/log"]
 tracing = ["e-log/tracing"]
 ohm = ["wmi", "system"]
+lhm = ["wmi","system"]
 aida64 = ["wmi", "system"]
 cli = ["structopt"]
 system = ["sysinfo/system"]
@@ -50,6 +51,7 @@ os = [
 core-temp = ["csv"]
 default = [
     "ohm",
+    "lhm",
     "aida64",
     "os",
     "cli",
@@ -90,7 +92,7 @@ hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.1.40"
+version = "0.2.0"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"

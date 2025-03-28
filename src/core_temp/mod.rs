@@ -25,7 +25,7 @@ impl CoreTemp {
   pub fn read_log_path() -> AnyResult<PathBuf> {
     // 读取最新生成的日志文件
     let mut latest_log = None;
-    let entries = fs::read_dir(".")?;
+    let entries = fs::read_dir(Self::DIR)?;
     for entry in entries {
       if let Ok(entry) = entry {
         let path = entry.path();
@@ -132,6 +132,7 @@ impl CoreTemp {
 
 impl CoreTemp {
   pub const EXE: &'static str = "CoreTemp.exe";
+  pub const DIR: &'static str = "plugins/CoreTemp";    
   fn parse_value(value: Vec<f64>) -> (f64, f64, f64) {
     let temperature = value.iter().sum::<f64>() / value.len() as f64;
     let min = value.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).cloned().unwrap_or(0.0);
@@ -251,7 +252,7 @@ impl HardwareMonitor for CoreTemp {
 
   fn clean() -> AnyResult<()> {
     // 清理旧日志文件
-    let entries = fs::read_dir(".")?;
+    let entries = fs::read_dir(Self::DIR)?;
     for entry in entries {
       if let Ok(entry) = entry {
         let path = entry.path();

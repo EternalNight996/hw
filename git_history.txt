@@ -1,0 +1,52 @@
+当前版本号: 0.2.0
+构建时间: 2025-03-28 14:16:03
+构建类型: Release
+历史提交 :
+
+标识: c797fdc
+标签: HEAD -> master
+时间: 2025-03-28 10:47:10
+作者: Eternal <eternalnightyeah2@yeah.net>
+提交: add CoreTemp
+
+标识: 04a1bda
+标签: github/master, gitee/master
+时间: 2025-03-25 14:52:20
+作者: Eternal <eternalnightyeah2@yeah.net>
+提交: 同步时间默认去除注册服务
+
+标识: e7afeea
+标签: tag: v0.1.23
+时间: 2025-01-09 13:29:18
+作者: Eternal <eternalnightyeah2@yeah.net>
+提交: v0.1.23
+
+标识: 5de4734
+标签: tag: v0.1.10
+时间: 2024-12-21 16:16:01
+作者: EternalNight <eternalnightyeah2@Yeah.net>
+提交: v0.1.10
+
+标识: b4567df
+标签: tag: v0.1.4
+时间: 2024-12-12 08:07:47
+作者: Eternal <eternalnightyeah2@yeah.net>
+提交: add cargo config
+
+标识: aff3f85
+标签: origin/master, origin/HEAD
+时间: 2024-12-10 14:45:10
+作者: Eternal <eternalnightyeah2@yeah.net>
+提交: fix desktop unix bug
+
+标识: c4f21c3
+标签: tag: v0.1.0
+时间: 2024-12-07 15:00:24
+作者: EternalNight <eternalnightyeah2@Yeah.net>
+提交: fix
+
+标识: 7e6b699
+标签: 
+时间: 2024-12-06 21:49:54
+作者: EternalNight <eternalnightyeah2@Yeah.net>
+提交: cli ohm aida64 sysinfo windows

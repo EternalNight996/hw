@@ -234,13 +234,24 @@ impl Tester {
       self.core.params.v3,
     )
   }
-  #[cfg(any(all(feature = "ohm", target_os = "windows"), all(feature = "aida64", target_os = "windows"), feature = "os", all(feature = "core-temp", target_os = "windows")))]
+  #[cfg(any(
+    all(feature = "ohm", target_os = "windows"),
+    all(feature = "aida64", target_os = "windows"),
+    feature = "os",
+    all(feature = "core-temp", target_os = "windows"),
+    all(feature = "lhm", target_os = "windows")
+  ))]
   pub async fn run(mut self) -> e_utils::AnyResult<Self> {
     for i in 0..self.core.params.test_secs {
       tokio::time::sleep(std::time::Duration::from_secs(1)).await;
       let res: e_utils::AnyResult<Vec<Sensor>> = match &mut self.inner {
         #[cfg(all(feature = "ohm", target_os = "windows"))]
         Inner::OHM(ohm) => ohm
+          .a_query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone())
+          .await
+          .map(|v| v.into_iter().filter(|v| v.Name != "Bus Speed").collect()),
+        #[cfg(all(feature = "lhm", target_os = "windows"))]
+        Inner::LHM(lhm) => lhm
           .a_query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone())
           .await
           .map(|v| v.into_iter().filter(|v| v.Name != "Bus Speed").collect()),

@@ -19,6 +19,8 @@ pub const EXTEND1: i32 = 0x1;
 #[doc(hidden)]
 #[derive(Debug)]
 pub enum Inner {
+  #[cfg(all(feature = "lhm", target_os = "windows"))]
+  LHM(crate::lhm::LHM),
   #[cfg(all(feature = "ohm", target_os = "windows"))]
   OHM(crate::ohm::OHM),
   #[cfg(all(feature = "aida64", target_os = "windows"))]
@@ -40,6 +42,10 @@ impl Inner {
   pub fn from_api(api: crate::OptsApi) -> e_utils::AnyResult<Self> {
     use crate::{wmic::HardwareMonitor as _, OptsApi};
     match api {
+      #[cfg(all(feature = "lhm", target_os = "windows"))]
+      OptsApi::LHM => Ok(Self::LHM(crate::lhm::LHM::new()?)),
+      #[cfg(not(all(feature = "lhm", target_os = "windows")))]
+      OptsApi::LHM => Err("LHM not supported".into()),
       #[cfg(all(feature = "ohm", target_os = "windows"))]
       OptsApi::OHM => Ok(Self::OHM(crate::ohm::OHM::new()?)),
       #[cfg(not(all(feature = "ohm", target_os = "windows")))]

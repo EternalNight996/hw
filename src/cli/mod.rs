@@ -11,6 +11,7 @@ arg_enum! {
     #[derive(Deserialize, Serialize, Debug, StructOpt, Clone, PartialEq, Copy)]
     pub enum OptsApi {
         OHM,
+        LHM,
         AIDA64,
         OS,
         OSMore,

@@ -5,9 +5,10 @@ use e_utils::{cmd::Cmd, fs::AutoPath as _, regex::regex2};
 use super::ty::{DriveInfo, DriveNodeInfo, DriveStatusType};
 
 pub const EDRIVE_NAME: &'static str = "devcon.exe";
+pub const EDRIVE_DIR: &'static str = "plugins";
 /// 获取驱动目录
 pub fn get_drive_path() -> PathBuf {
-  env::current_dir().unwrap_or_default().to_path_buf()
+  env::current_dir().unwrap_or_default().join(EDRIVE_DIR).to_path_buf()
 }
 
 /// 解析drivernodes数据

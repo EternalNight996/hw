@@ -19,7 +19,8 @@ pub type RawQuery = HashMap<String, Variant>;
 /// AIDA64
 pub struct AIDA64(WMIConnection);
 impl AIDA64 {
-  pub const AIDA64_EXE: &'static str = "AIDA64.exe";
+  pub const EXE: &'static str = "AIDA64.exe";
+  pub const DIR: &'static str = "plugins/AIDA64";
   /// 获取WMI连接
   pub fn get(&self) -> &WMIConnection {
     &self.0

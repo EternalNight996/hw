@@ -4,20 +4,17 @@ use crate::{
   api_test::{HardwareType, Sensor, SensorType},
   wmic::{Hardware, HardwareMonitor},
 };
-use e_utils::{
-  cmd::{Cmd, ExeType},
-  AnyResult,
-};
+use e_utils::AnyResult;
 use std::{collections::HashMap, str::FromStr as _};
 use wmi::{COMLibrary, Variant, WMIConnection};
 pub type RawQuery = HashMap<String, Variant>;
 
-/// OHM
+/// LHM
 #[derive(Clone, Debug)]
-pub struct OHM(WMIConnection);
-impl OHM {
-  pub const EXE: &'static str = "OpenHardwareMonitor.exe";
-  pub const DIR: &'static str = "plugins/OHM";
+pub struct LHM(WMIConnection);
+impl LHM {
+  pub const EXE: &'static str = "LibreHardwareMonitor.exe";
+  pub const DIR: &'static str = "plugins/LHM";
   /// 获取WMI连接
   pub fn get(&self) -> &WMIConnection {
     &self.0
@@ -96,16 +93,16 @@ impl OHM {
     Ok(sensors)
   }
 }
-impl HardwareMonitor for OHM {
+impl HardwareMonitor for LHM {
   type HWType = HardwareType;
   type SensorType = Sensor;
-  const CON_QUERY: &'static str = "ROOT\\OpenHardwareMonitor";
+  const CON_QUERY: &'static str = "root/LibreHardwareMonitor";
   const HW_QUERY: &'static str = "SELECT * FROM Hardware";
   const SENSOR_QUERY: &'static str = "SELECT * FROM Sensor";
   fn new() -> AnyResult<Self> {
     let com_con = COMLibrary::new()?;
     let wmi = WMIConnection::with_namespace_path(Self::CON_QUERY, com_con)?;
-    Ok(OHM(wmi))
+    Ok(LHM(wmi))
   }
   fn test(count: u64) -> AnyResult<()> {
     for i in 1..=count {
@@ -128,7 +125,7 @@ impl HardwareMonitor for OHM {
 
           if has_value {
             crate::dp(format!("Loading... ({}%/{}%)", count, count));
-            crate::dp("OpenHardwareMonitor ready");
+            crate::dp("LibreHardwareMonitor ready");
             return Ok(());
           }
         }
@@ -137,25 +134,12 @@ impl HardwareMonitor for OHM {
       crate::dp(format!("Loading... ({}%/{}%)", i, count));
       std::thread::sleep(std::time::Duration::from_millis(200));
     }
-    Err("OpenHardwareMonitor load timeout".into())
+    Err("LibreHardwareMonitor load timeout".into())
   }
   fn stop() -> AnyResult<()> {
-    if cfg!(target_os = "windows") {
-      let res = Cmd::new("sc")
-        .set_type(ExeType::Cmd)
-        .args(&["config", "WinRing0_1_2_0", "start=", "disabled"])
-        .output()?;
-      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] disable: {}", res.stdout));
-      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["stop", "WinRing0_1_2_0"]).output()?;
-      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] stop: {}", res.stdout));
-    }
     Ok(())
   }
   fn clean() -> AnyResult<()> {
-    if cfg!(target_os = "windows") {
-      let res = Cmd::new("sc").set_type(ExeType::Cmd).args(&["delete", "WinRing0_1_2_0"]).output()?;
-      crate::dp(format!("OHM [OpenHardwareMonitorLib.sys WinRing0_1_2_0] delete: {}", res.stdout));
-    }
     Ok(())
   }
 }

@@ -21,6 +21,8 @@ pub mod drive;
 pub mod file_info;
 #[cfg(all(feature = "ohm", target_os = "windows"))]
 pub mod ohm;
+#[cfg(all(feature = "lhm", target_os = "windows"))]
+pub mod lhm;
 #[cfg(feature = "os")]
 pub mod os;
 #[cfg(feature = "os-office")]

@@ -20,7 +20,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       crate::core_temp::CoreTemp::clean()?;
-      let pids = crate::common::process::run(crate::core_temp::CoreTemp::EXE, std::env::current_dir()?)?;
+      let pids = crate::common::process::run(crate::core_temp::CoreTemp::EXE, std::env::current_dir()?.join(crate::core_temp::CoreTemp::DIR))?;
       if pids.is_empty() {
         return Err(format!("Task {} is empty", crate::core_temp::CoreTemp::EXE).into());
       }
@@ -38,15 +38,39 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       }
       tester = res?;
     }
+    #[cfg(all(feature = "lhm", target_os = "windows"))]
+    Inner::LHM(_) => {
+      if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
+        return Err("Task No check Or print Or data".into());
+      }
+      use crate::wmic::HardwareMonitor as _;
+      let pids = crate::common::process::run(crate::lhm::LHM::EXE, std::env::current_dir()?.join(crate::lhm::LHM::DIR))?;
+      if pids.is_empty() {
+        return Err(format!("Task {} is empty", crate::lhm::LHM::EXE).into());
+      }
+      crate::lhm::LHM::test(100)?;
+      tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
+      let load_handles = tester.spawn_load().unwrap_or_default();
+      crate::dp(tester.get_test_start());
+      let res = tester.run().await;
+      crate::api_test::LOAD_CONTROLLER.stop_running();
+      crate::common::process::kill_name(crate::lhm::LHM::EXE)?;
+      crate::lhm::LHM::stop()?;
+      crate::lhm::LHM::clean()?;
+      for handle in load_handles {
+        handle.join().map_err(|_| "LHM线程错误")?;
+      }
+      tester = res?;
+    }
     #[cfg(all(feature = "ohm", target_os = "windows"))]
     Inner::OHM(_) => {
       if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let pids = crate::common::process::run(crate::ohm::OHM::OHM_EXE, std::env::current_dir()?)?;
+      let pids = crate::common::process::run(crate::ohm::OHM::EXE, std::env::current_dir()?.join(crate::ohm::OHM::DIR))?;
       if pids.is_empty() {
-        return Err(format!("Task {} is empty", crate::ohm::OHM::OHM_EXE).into());
+        return Err(format!("Task {} is empty", crate::ohm::OHM::EXE).into());
       }
       crate::ohm::OHM::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
@@ -54,7 +78,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
       crate::api_test::LOAD_CONTROLLER.stop_running();
-      crate::common::process::kill_name(crate::ohm::OHM::OHM_EXE)?;
+      crate::common::process::kill_name(crate::ohm::OHM::EXE)?;
       crate::ohm::OHM::stop()?;
       crate::ohm::OHM::clean()?;
       for handle in load_handles {
@@ -68,9 +92,9 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
         return Err("Task No check Or print Or data".into());
       }
       use crate::wmic::HardwareMonitor as _;
-      let pids = crate::common::process::run(crate::aida64::AIDA64::AIDA64_EXE, std::env::current_dir()?)?;
+      let pids = crate::common::process::run(crate::aida64::AIDA64::EXE, std::env::current_dir()?.join(crate::aida64::AIDA64::DIR))?;
       if pids.is_empty() {
-        return Err(format!("Task {} is empty", crate::aida64::AIDA64::AIDA64_EXE).into());
+        return Err(format!("Task {} is empty", crate::aida64::AIDA64::EXE).into());
       }
       crate::aida64::AIDA64::test(100)?;
       tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
@@ -78,7 +102,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
       crate::dp(tester.get_test_start());
       let res = tester.run().await;
       crate::api_test::LOAD_CONTROLLER.stop_running();
-      crate::common::process::kill_name(crate::aida64::AIDA64::AIDA64_EXE)?;
+      crate::common::process::kill_name(crate::aida64::AIDA64::EXE)?;
       crate::aida64::AIDA64::stop()?;
       crate::aida64::AIDA64::clean()?;
       for handle in load_handles {

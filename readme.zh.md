@@ -199,6 +199,18 @@ hw --api CoreTemp --task check --args CPU Temperature
 hw --api CoreTemp --task check --args CPU Clock
 ```
 
+### [X.📖 Click for Rust LibreHardwareMonitor CPU Voltage Usage](examples/lhm_cpu_clock.rs)
+```bash
+# CPU温度监控
+hw --api LHM --task check --args CPU Temperature
+
+# CPU频率测试 (5次, 目标3000MHz, 误差±2000MHz, 100%负载)
+hw --api LHM --task check --args CPU Clock -- 5 3000 2000 100
+
+# 风扇转速测试 (5次, 目标3000RPM, 误差±2000RPM)
+hw --api LHM --task check --args ALL Fan -- 5 3000 2000
+```
+
 ### [5. 📖 点击Rust调用OSMore](examples/os_more_base.rs)
 ```bash
 # 获取系统完整信息
