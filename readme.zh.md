@@ -187,6 +187,18 @@ hw --api AIDA64 --task check --args RAM Load
 # CPU核心电压监控
 hw --api AIDA64 --task check --args CPU Voltage
 ```
+
+### [X.📖 Click for Rust CoreTemp CPU Voltage Usage](examples/core_temp.rs)
+### CoreTemp Monitoring
+![CoreTemp Monitor Interface](assets/screen/CoreTemp.png)
+```bash
+# Memory Usage Monitoring
+hw --api CoreTemp --task check --args CPU Temperature
+
+# CPU Core Voltage Monitoring
+hw --api CoreTemp --task check --args CPU Clock
+```
+
 ### [5. 📖 点击Rust调用OSMore](examples/os_more_base.rs)
 ```bash
 # 获取系统完整信息
@@ -325,6 +337,24 @@ hw --api Disk --task check-load --args 10 90
     <th>Status</th>
     <th>Description</th>
     <th>支持功能</th>
+  </tr>
+  <tr>
+    <td>CoreTemp</td>
+    <td>
+      <h4 style="color:green">✓</h4>
+      <span style="color:#888">100%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td>
+      <h4>-</h4>
+      <span style="color:#888">0%</span>
+    </td>
+    <td><h4 style="color:green">✓</h4><span>已完成</span></td>
+    <td>获取硬件传感器数据<br>完成所有功能开发</td>
+    <td>HardwareType(硬件类型),SensorType(传感器类型)</td>
   </tr>
   <tr>
     <td>OHM</td>

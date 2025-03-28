@@ -19,6 +19,7 @@ arg_enum! {
         OSSystem,
         OSOffice,
         Disk,
+        CoreTemp,
     }
 }
 

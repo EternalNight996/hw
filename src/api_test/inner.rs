@@ -31,6 +31,8 @@ pub enum Inner {
   OSSystem,
   OSOffice,
   Disk,
+  #[cfg(all(feature = "core-temp", target_os = "windows"))]
+  CoreTemp(crate::core_temp::CoreTemp),
 }
 impl Inner {
   /// 从API创建Inner
@@ -56,6 +58,10 @@ impl Inner {
       OptsApi::OSSystem => Ok(Self::OSSystem),
       OptsApi::OSOffice => Ok(Self::OSOffice),
       OptsApi::Disk => Ok(Self::Disk),
+      #[cfg(all(feature = "core-temp", target_os = "windows"))]
+      OptsApi::CoreTemp => Ok(Self::CoreTemp(crate::core_temp::CoreTemp::new()?)),
+      #[cfg(not(all(feature = "core-temp", target_os = "windows")))]
+      OptsApi::CoreTemp => Err("CoreTemp not supported".into()),
     }
   }
 }

@@ -234,7 +234,7 @@ impl Tester {
       self.core.params.v3,
     )
   }
-  #[cfg(any(all(feature = "ohm", target_os = "windows"), all(feature = "aida64", target_os = "windows"), feature = "os"))]
+  #[cfg(any(all(feature = "ohm", target_os = "windows"), all(feature = "aida64", target_os = "windows"), feature = "os", all(feature = "core-temp", target_os = "windows")))]
   pub async fn run(mut self) -> e_utils::AnyResult<Self> {
     for i in 0..self.core.params.test_secs {
       tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -248,6 +248,8 @@ impl Tester {
         Inner::AIDA64(aida64) => aida64.a_query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone()).await,
         #[cfg(feature = "os")]
         Inner::OS(os) => os.query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone()),
+        #[cfg(all(feature = "core-temp", target_os = "windows"))]
+        Inner::CoreTemp(core_temp) => core_temp.query(self.core.results.hw_type.clone(), self.core.results.sensor_type.clone()),
         _ => return Err("不支持".into()),
       };
       match res {

@@ -13,6 +13,31 @@ use strum::VariantArray;
 pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
   let mut tester = Tester::from_opts(&op)?;
   match tester.inner {
+    #[cfg(all(feature = "core-temp", target_os = "windows"))]
+    Inner::CoreTemp(_) => {
+      use crate::wmic::HardwareMonitor as _;
+      if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
+        return Err("Task No check Or print Or data".into());
+      }
+      crate::core_temp::CoreTemp::clean()?;
+      let pids = crate::common::process::run(crate::core_temp::CoreTemp::EXE, std::env::current_dir()?)?;
+      if pids.is_empty() {
+        return Err(format!("Task {} is empty", crate::core_temp::CoreTemp::EXE).into());
+      }
+      crate::core_temp::CoreTemp::test(100)?;
+      tester.core.core_count = tester.inner.get_cpu_core_count().await.unwrap_or(1);
+      let load_handles = tester.spawn_load().unwrap_or_default();
+      crate::dp(tester.get_test_start());
+      let res = tester.run().await;
+      crate::api_test::LOAD_CONTROLLER.stop_running();
+      crate::common::process::kill_name(crate::core_temp::CoreTemp::EXE)?;
+      crate::core_temp::CoreTemp::stop()?;
+      crate::core_temp::CoreTemp::clean()?;
+      for handle in load_handles {
+        handle.join().map_err(|_| "CoreTemp线程错误")?;
+      }
+      tester = res?;
+    }
     #[cfg(all(feature = "ohm", target_os = "windows"))]
     Inner::OHM(_) => {
       if !tester.core.is_check && !tester.core.is_print && !tester.core.is_data {
