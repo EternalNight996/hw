@@ -34,16 +34,7 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
   let mut has_connected_filter = false;
   let mut has_dhcp_filter = false;
   let mut has_auto_filter = false;
-  let mut type_filters = Vec::new();
-
-  // 预先计算所有接口类型的字符串表示，避免重复转换
-  let interface_types: Vec<String> = interfaces.iter().map(|x| x.if_type.to_string()).collect();
-
-  // 创建接口类型到索引的映射，用于快速查找
-  let mut type_to_indices = std::collections::HashMap::new();
-  for (idx, if_type) in interface_types.iter().enumerate() {
-    type_to_indices.entry(if_type.as_str()).or_insert_with(Vec::new).push(idx);
-  }
+  let mut mac_filters = Vec::new();
 
   for &f in &filter {
     match f {
@@ -51,51 +42,31 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
       "~is_connected" => has_connected_filter = true,
       "~has_dhcp_ip" => has_dhcp_filter = true,
       "~auto" => has_auto_filter = true,
-      _ if !f.starts_with('~') => {
-        if type_to_indices.contains_key(f) {
-          type_filters.push(f);
-        }
+      _ if f.starts_with('~') => {
+        mac_filters.push(f.trim_start_matches('~'));
       }
       _ => {} // 忽略其他特殊过滤器
     }
   }
 
-  // 使用 with_capacity 预分配内存
-  let mut res = Vec::with_capacity(interfaces.len());
-
-  // 如果有类型过滤器，先处理这些（最快的路径）
-  if !type_filters.is_empty() {
-    let mut indices_to_check = Vec::new();
-
-    for &type_filter in &type_filters {
-      if let Some(indices) = type_to_indices.get(type_filter) {
-        indices_to_check.extend_from_slice(indices);
-      }
-    }
-
-    // 如果没有其他过滤器，直接返回类型匹配的接口
-    if !has_speed_filter && !has_connected_filter && !has_dhcp_filter && !has_auto_filter {
-      for &idx in &indices_to_check {
-        res.push(interfaces[idx].to_simple());
-      }
-      return Ok(res);
-    }
-
-    // 否则只检查类型匹配的接口
-    for &idx in &indices_to_check {
-      let x = &interfaces[idx];
-
-      // 应用其他过滤器
-      if apply_remaining_filters(x, has_auto_filter, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
-        res.push(x.to_simple());
-      }
-    }
-
-    return if res.is_empty() { Err("No interfaces found".into()) } else { Ok(res) };
-  }
-
+  let mut res = vec![];
   // 处理所有接口
   for x in &interfaces {
+    if mac_filters.len() > 0 {
+      if !mac_filters
+        .iter()
+        .any(|f| x.mac_addr.to_string().to_ascii_uppercase().starts_with(&f.to_ascii_uppercase()))
+      {
+        return Err(
+          format!(
+            "MAC地址过滤失败: {} 不符合规则 [{}]",
+            x.mac_addr.to_string().to_ascii_uppercase(),
+            mac_filters.join(", ")
+          )
+          .into(),
+        );
+      }
+    }
     if apply_remaining_filters(x, has_auto_filter, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
       res.push(x.to_simple());
     }
