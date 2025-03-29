@@ -52,6 +52,9 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
   let mut res = vec![];
   // 处理所有接口
   for x in &interfaces {
+    if apply_remaining_filters(x, has_auto_filter, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
+      res.push(x.to_simple());
+    }
     if mac_filters.len() > 0 {
       if !mac_filters
         .iter()
@@ -66,9 +69,6 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
           .into(),
         );
       }
-    }
-    if apply_remaining_filters(x, has_auto_filter, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
-      res.push(x.to_simple());
     }
   }
 
