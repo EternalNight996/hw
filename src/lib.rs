@@ -39,6 +39,8 @@ pub use cli::*;
 pub mod disk;
 #[cfg(all(feature = "core-temp", target_os = "windows"))]
 pub mod core_temp;
+#[cfg(all(feature = "argus-monitor", target_os = "windows"))]
+pub mod argus_monitor;
 pub mod api_test;
 pub mod common;
 pub mod os_more;

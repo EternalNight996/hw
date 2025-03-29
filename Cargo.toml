@@ -49,6 +49,7 @@ os = [
     "os-office",
 ]
 core-temp = ["csv"]
+argus-monitor = ["csv"]
 default = [
     "ohm",
     "lhm",
@@ -59,6 +60,7 @@ default = [
     "drive",
     "tracing",
     "core-temp",
+    "argus-monitor",
 ]
 
 [target.'cfg(windows)'.build-dependencies]
