@@ -90,7 +90,6 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
         "check-mac" => {
           let count = args.get(1).and_then(|x| x.as_ref().parse::<usize>().ok()).unwrap_or(0);
           let ifaces = crate::os_more::net_interface::get_interfaces_simple(filter_refs)?;
-
           // 提前检查数量
           if count > 0 && count != ifaces.len() {
             return Err(format!("正确网口数量:{} 实际网口数量:{}", count, ifaces.len()).into());
@@ -111,7 +110,6 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           // 单次遍历检查所有接口
           for iface in &ifaces {
             let mac = &iface.mac_addr;
-
             // 检查无效 MAC（O(1) 时间）
             if mac_checks.contains(mac.as_str()) {
               return Err(
@@ -122,11 +120,10 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
                 .into(),
               );
             }
-
             // 检查重复 MAC（O(1) 时间）
             if let Some(entries) = mac_map.get(mac.as_str()) {
               if entries.iter().any(|e| e.friendly_name != iface.friendly_name) {
-                let repeat_mac = entries.iter().find(|e| e.friendly_name != iface.friendly_name).unwrap();
+                let repeat_mac = entries.iter().find(|e| e.friendly_name != iface.friendly_name).ok_or("重复MAC地址获取失败")?;
                 return Err(
                   format!(
                     "FAIL {}重复MAC地址{}, INTERFACE={}, MAC={}, TYPE={}, IP={}, STATUS={}",
