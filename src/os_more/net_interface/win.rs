@@ -52,8 +52,16 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
   let mut res = vec![];
   // 处理所有接口
   for x in &interfaces {
-    if apply_remaining_filters(x, has_auto_filter, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
-      res.push(x.to_simple());
+    if has_auto_filter {
+      let friendly_name = &x.friendly_name;
+      if x.if_type == InterfaceType::Loopback
+        || friendly_name.contains("vEthernet")
+        || friendly_name.contains("vNIC")
+        || friendly_name.contains("vSwitch")
+        || friendly_name.contains("虚拟")
+      {
+        continue;
+      }
     }
     if mac_filters.len() > 0 {
       if !mac_filters
@@ -70,9 +78,12 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
         );
       }
     }
+    if apply_remaining_filters(x, has_speed_filter, has_connected_filter, has_dhcp_filter, &filter) {
+      res.push(x.to_simple());
+    }
   }
 
-  if res.is_empty() {
+  if res.len() == 0 {
     Err("No interfaces found".into())
   } else {
     Ok(res)
@@ -81,15 +92,7 @@ pub fn get_interfaces_simple(filter: Vec<&str>) -> e_utils::AnyResult<Vec<Interf
 
 // 提取过滤逻辑到单独的函数，避免代码重复
 #[inline]
-fn apply_remaining_filters(
-  x: &Interface,
-  has_auto_filter: bool,
-  has_speed_filter: bool,
-  has_connected_filter: bool,
-  has_dhcp_filter: bool,
-  all_filters: &[&str],
-) -> bool {
-  let friendly_name = &x.friendly_name;
+fn apply_remaining_filters(x: &Interface, has_speed_filter: bool, has_connected_filter: bool, has_dhcp_filter: bool, all_filters: &[&str]) -> bool {
   // 检查速度过滤器（需要计算速度）
   if has_speed_filter {
     // 只在有速度过滤器时计算速度
@@ -116,16 +119,6 @@ fn apply_remaining_filters(
     return false;
   }
 
-  if has_auto_filter {
-    if x.if_type == InterfaceType::Loopback
-      || friendly_name.contains("vEthernet")
-      || friendly_name.contains("vNIC")
-      || friendly_name.contains("vSwitch")
-      || friendly_name.contains("虚拟")
-    {
-      return false;
-    }
-  }
   true
 }
 
