@@ -1,19 +1,13 @@
 当前版本号: 0.2.0
-构建时间: 2025-03-28 14:16:03
+构建时间: 2025-04-08 16:50:56
 构建类型: Release
 历史提交 :
 
-标识: c797fdc
-标签: HEAD -> master
-时间: 2025-03-28 10:47:10
+标识: 7d2eeae
+标签: HEAD -> master, github/master, gitee/master
+时间: 2025-03-29 16:54:46
 作者: Eternal <eternalnightyeah2@yeah.net>
-提交: add CoreTemp
-
-标识: 04a1bda
-标签: github/master, gitee/master
-时间: 2025-03-25 14:52:20
-作者: Eternal <eternalnightyeah2@yeah.net>
-提交: 同步时间默认去除注册服务
+提交: add ArgusMonitor
 
 标识: e7afeea
 标签: tag: v0.1.23

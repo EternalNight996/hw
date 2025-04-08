@@ -21,6 +21,7 @@ pub enum Type {
   NetManage,
   Desktop,
   Drive,
+  MemoryManufacturerPartNumber,
 }
 #[allow(unused)]
 pub async fn query_os_more<T: AsRef<str>>(infos: &[Type], args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<Vec<String>> {
@@ -318,12 +319,17 @@ pub fn system_query(info: &super::Type) -> e_utils::Result<String> {
       super::Type::CpuUsage => system::cpu_usage().map(|v| format!("{:.2}%", v)),
       super::Type::MemoryUsage => system::memory_usage().map(|v| format!("{:.2}%", v)),
       super::Type::CpuArch => system::cpu_arch(),
+      super::Type::MemoryManufacturerPartNumber => {
+        system::memory_manufacturer_partnumber().map(|data| data.into_iter().map(|v| format!("{v:?}")).collect::<Vec<_>>().join(","))
+      }
       _ => Ok(String::new()),
     }
   }
 }
 #[cfg(feature = "system")]
 pub mod system {
+  use e_utils::cmd::Cmd;
+
   /// 获取系统运行时间
   pub fn uptime() -> e_utils::Result<u64> {
     Ok(sysinfo::System::uptime())
@@ -377,5 +383,43 @@ pub mod system {
   /// 获取完整 OS 名称
   pub fn os_full_version() -> e_utils::Result<String> {
     Ok(sysinfo::System::long_os_version().unwrap_or("未知".to_string()))
+  }
+
+  pub fn memory_manufacturer_partnumber() -> e_utils::Result<Vec<MemInfo>> {
+    // 执行 WMIC 命令
+    let output = Cmd::new("wmic")
+      .args(&["memorychip", "get", "Manufacturer,PartNumber", "/format:csv"])
+      .output()?;
+
+    // 转换并处理输出
+    let mem_list: Vec<MemInfo> = output
+      .stdout
+      .lines()
+      .skip(1) // 跳过 CSV 表头
+      .filter_map(|line| {
+        let trimmed = line.trim().replace("\r", "");
+        if trimmed.is_empty() {
+          return None;
+        }
+
+        // 分割字段
+        let fields: Vec<&str> = trimmed.split(',').collect();
+        if fields.len() >= 3 {
+          Some(MemInfo {
+            manufacturer: fields[1].trim().to_string(),
+            part_number: fields[2].trim().to_string(),
+          })
+        } else {
+          None
+        }
+      })
+      .collect();
+
+    Ok(mem_list)
+  }
+  #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+  pub struct MemInfo {
+    pub manufacturer: String,
+    pub part_number: String,
   }
 }

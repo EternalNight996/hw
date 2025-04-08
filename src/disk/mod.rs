@@ -16,6 +16,7 @@ pub async fn disk_query<T: AsRef<str>>(task: &str, args: &[T], filter: &[T]) -> 
         let end = args[1].parse::<f64>()?;
         Ok(serde_json::to_string(&disk_check_load(&disks, start, end)?)?)
       }
+      "info" => Ok(serde_json::to_string(&disk_drive_info()?)?),
       _ => Err("Not supported".into()),
     }
   }
@@ -23,6 +24,8 @@ pub async fn disk_query<T: AsRef<str>>(task: &str, args: &[T], filter: &[T]) -> 
 #[cfg(feature = "disk")]
 mod api {
   use std::path::PathBuf;
+
+  use e_utils::cmd::Cmd;
   pub fn disk_check_load(slf: &sysinfo::Disks, start: f64, end: f64) -> Result<Vec<(String, f64)>, String> {
     let mut results = Vec::new();
     let mut errors = Vec::new();
@@ -87,6 +90,45 @@ mod api {
         Ok((mount_point.to_path_buf(), dirs))
       })
       .collect::<e_utils::AnyResult<Vec<(PathBuf, Vec<PathBuf>)>>>()
+  }
+  pub fn disk_drive_info() -> e_utils::Result<Vec<DiskInfo>> {
+    // 执行 WMIC 命令（优化命令参数）
+    let output = Cmd::new("wmic").args(&["diskdrive", "get", "Model,Name,PNPDeviceID", "/format:csv"]).output()?;
+
+    // 解析 CSV 输出（带容错处理）
+    let disks: Vec<DiskInfo> = output
+      .stdout
+      .lines()
+      .skip(1) // 跳过 CSV 表头（例如：Node,Model,Name,PNPDeviceID）
+      .filter_map(|line| {
+        let cleaned = line.trim().replace('\r', "");
+        if cleaned.is_empty() {
+          return None;
+        }
+
+        // 分割字段并校验完整性
+        let fields: Vec<&str> = cleaned.split(',').collect();
+        if fields.len() >= 4 {
+          // Node,Model,Name,PNPDeviceID
+          Some(DiskInfo {
+            model: fields[1].trim().to_string(),
+            name: fields[2].trim().to_string(),
+            pnp_device_id: fields[3].trim().to_string(),
+          })
+        } else {
+          None // 自动过滤无效数据行
+        }
+      })
+      .collect();
+
+    Ok(disks)
+  }
+
+  #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+  pub struct DiskInfo {
+    pub model: String,
+    pub name: String,
+    pub pnp_device_id: String,
   }
 }
 #[cfg(feature = "disk")]
