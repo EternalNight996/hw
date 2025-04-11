@@ -52,7 +52,6 @@ pub fn devcon_parse_driver_status(output: &str) -> Vec<DriveInfo> {
     if line.is_empty() || line.contains("matching device(s) found") {
       continue;
     }
-
     // 如果行不以空格开始，则为新设备ID
     if !line.starts_with(' ') {
       // 保存之前的设备信息（如果有）
@@ -65,6 +64,17 @@ pub fn devcon_parse_driver_status(output: &str) -> Vec<DriveInfo> {
         driver_descript: String::new(),
         status: DriveStatusType::None,
       });
+      if line.contains(":") {
+        if let Some((k, v)) = line.split_once(':') {
+          let id = k.trim().to_string();
+          let driver_descript = v.trim().to_string();
+          // 处理设备详情行
+          if let Some(drive) = &mut current_drive {
+            drive.id = id;
+            drive.driver_descript = driver_descript;
+          }
+        }
+      }
       continue;
     }
 
@@ -263,7 +273,7 @@ pub fn pnputil_export_driver(commands: Vec<String>) -> e_utils::AnyResult<String
   pnputil(args)
 }
 
-pub fn find_with_run<F>(args: &Vec<String>, filters: &Vec<String>, f: F) -> e_utils::AnyResult<Vec<DriveInfo>>
+pub fn find_with_run<F>(args: &Vec<String>, filters: &Vec<String>, f: F, is_scan: bool) -> e_utils::AnyResult<Vec<DriveInfo>>
 where
   F: Fn(Vec<String>) -> e_utils::AnyResult<String>,
 {
@@ -274,7 +284,9 @@ where
     let _fres = f(args)?;
     crate::dp(format!("STATUS {_fres}"));
   }
-  let _ = pnputil_scan()?;
+  if is_scan {
+    let _ = pnputil_scan()?;
+  }
   Ok(findnodes_status(&filters)?)
 }
 
