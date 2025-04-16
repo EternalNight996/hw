@@ -61,6 +61,7 @@ default = [
     "tracing",
     "core-temp",
     "argus-monitor",
+    "disk"
 ]
 
 [target.'cfg(windows)'.build-dependencies]
@@ -94,7 +95,7 @@ hw = { path = "./" }
 
 [package]
 name = "hw"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"

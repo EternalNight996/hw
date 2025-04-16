@@ -11,6 +11,7 @@ pub async fn disk_query<T: AsRef<str>>(task: &str, args: &[T], filter: &[T]) -> 
       "count" => Ok(serde_json::to_string(&disk_data_no_filters(&disks).len())?),
       "data" => Ok(serde_json::to_string(&disk_data(&disks, &filters))?),
       "mount-tree" => Ok(serde_json::to_string(&disk_mount_points(&disks, &filters)?)?),
+      "size" => Ok(serde_json::to_string(&disk_size(&disks, &filters)?)?),
       "check-load" => {
         let start = args[0].parse::<f64>()?;
         let end = args[1].parse::<f64>()?;
@@ -90,6 +91,18 @@ mod api {
         Ok((mount_point.to_path_buf(), dirs))
       })
       .collect::<e_utils::AnyResult<Vec<(PathBuf, Vec<PathBuf>)>>>()
+  }
+  /// 获取所有磁盘的根目录列表
+  pub fn disk_size(slf: &sysinfo::Disks, filters: &[&str]) -> e_utils::AnyResult<Vec<(PathBuf, String)>> {
+    slf
+      .iter()
+      .filter(|disk| filters.is_empty() || filters.iter().any(|filter| disk.mount_point().display().to_string().contains(filter)))
+      .map(|disk| {
+        let mount_point = disk.mount_point();
+        let size = disk.total_space() / 1024 / 1024 / 1024;
+        Ok((mount_point.to_path_buf(), format!("{size}GB")))
+      })
+      .collect::<e_utils::AnyResult<Vec<(PathBuf, String)>>>()
   }
   pub fn disk_drive_info() -> e_utils::Result<Vec<DiskInfo>> {
     // 执行 WMIC 命令（优化命令参数）
