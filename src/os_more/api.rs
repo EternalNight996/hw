@@ -61,7 +61,9 @@ pub mod network {
 /// 网络查询
 #[cfg(feature = "network")]
 pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter: &[T], is_full: bool) -> e_utils::AnyResult<String> {
-  use crate::os_more::net_interface::InterfaceSimple;
+  use e_utils::chrono::{parse_datetime_offset, DateTime};
+
+  use crate::os_more::{net_interface::InterfaceSimple, net_manage::get_current_timezone};
 
   let task = args.get(0).map(|x| x.as_ref()).unwrap_or_default();
   let filter_refs: Vec<&str> = filter.iter().map(AsRef::as_ref).collect();
@@ -204,6 +206,51 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
           let is_register = if args.get(2).map(AsRef::as_ref).unwrap_or("0") == "1" { true } else { false };
           Ok(crate::os_more::net_manage::sync_datetime(&arg, is_register).await?)
+        }
+        "sync-datetime2" => {
+          let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
+          let is_register = if args.get(2).map(AsRef::as_ref).unwrap_or("0") == "1" { true } else { false };
+          let port = args.get(3).map(AsRef::as_ref).unwrap_or("123");
+          let target = format!("{arg}:{port}");
+          crate::p(format!("尝试NTP时间同步: {target} 是否注册：{is_register}"));
+          if is_register {
+            crate::os_more::net_manage::ensure_windows_time_service().await?;
+          }
+          let res = ntp_client::Client::new().target(target)?.format(Some("%Y-%m-%d %H:%M:%S")).request()?;
+          let server_time =
+            parse_datetime_offset(DateTime::from_timestamp(res.timestamp, 0).ok_or("?")?.naive_utc(), get_current_timezone()).ok_or("?")?;
+          let time_str = server_time.to_string();
+          crate::p(format!("请求成功NTP时间：{}", time_str));
+          ntp_client::sync_systemtime(server_time)?;
+          Ok(format!("同步NTP时间：{time_str} PASS"))
+        }
+        "diff" => {
+          let arg = args.get(1).map(AsRef::as_ref).unwrap_or("time.windows.com");
+          let is_register = if args.get(2).map(AsRef::as_ref).unwrap_or("0") == "1" { true } else { false };
+          let port = args.get(3).map(AsRef::as_ref).unwrap_or("123");
+          let target = format!("{arg}:{port}");
+          let sec = filter_refs.get(0).and_then(|v| v.parse::<i64>().ok()).unwrap_or(600);
+          crate::p(format!("尝试NTP时间校验: {target} 是否注册：{is_register}"));
+          if is_register {
+            crate::os_more::net_manage::ensure_windows_time_service().await?;
+          }
+          let res = ntp_client::Client::new().target(target)?.format(Some("%Y-%m-%d %H:%M:%S")).request()?;
+          println!("时区：{}", get_current_timezone());
+          let server_time =
+            parse_datetime_offset(DateTime::from_timestamp(res.timestamp, 0).ok_or("?")?.naive_utc(), get_current_timezone()).ok_or("?")?;
+          // 本地时间
+          let local_time = ntp_client::Client::now_zh().ok_or("获取本地时间失败")?;
+          // 计算时间差并验证
+          let time_diff = local_time.signed_duration_since(server_time);
+          let is_valid = time_diff.abs() >= e_utils::chrono::Duration::seconds(sec);
+          crate::p(format!("服务器时间: {}", server_time.format("%Y-%m-%d %H:%M:%S")));
+          crate::p(format!("本地时间: {}", local_time.format("%Y-%m-%d %H:%M:%S")));
+          crate::p(format!("时间差: {}秒", time_diff.num_seconds()));
+          if is_valid {
+            Err(format!("时间状态: × 误差在{}/s 允许误差{}/s",time_diff.num_seconds(), sec).into())
+          } else {
+            Ok(format!("时间状态: ✔️ 误差在{sec}/s内"))
+          }
         }
         "ping" => {
           let source = args.get(1).ok_or("Args Error Source 1 ")?.as_ref();

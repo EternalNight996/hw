@@ -259,6 +259,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "conv"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78ff10625fd0ac447827aa30ea8b861fead473bb60aeb73af6c1c58caf0d1299"
+dependencies = [
+ "custom_derive",
+]
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -318,6 +327,12 @@ checksum = "7d02f3b0da4c6504f86e9cd789d8dbafab48c2321be74e9987593de5a894d93d"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "custom_derive"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef8ae57c4978a2acd8b869ce6b9ca1dfe817bff704c220209fdef2c0b75a01b9"
 
 [[package]]
 name = "deranged"
@@ -384,9 +399,9 @@ dependencies = [
 
 [[package]]
 name = "e-utils"
-version = "0.4.18"
+version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "807ca9271c58eebd6c944f11abe82b1780e9044c4111cb646c07befb6548c11d"
+checksum = "68fb2d2b91ea3566a2bdae79e4bbd3ba308dc326b5398d3ff15319b8ec8b38b1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -737,7 +752,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hw"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "built",
  "csv",
@@ -747,6 +762,7 @@ dependencies = [
  "goblin",
  "hw",
  "libc",
+ "ntp-client",
  "serde",
  "serde_json",
  "static_vcruntime",
@@ -1095,6 +1111,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8a3895c6391c39d7fe7ebc444a87eb2991b2a0bc718fdabd071eec617fc68e4"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "ntp-client"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a7349f56a805da588dc8873a0ceef143e21971d2ad65ee86e47e51dbcdb1adc"
+dependencies = [
+ "byteorder",
+ "conv",
+ "e-utils",
+ "strum",
 ]
 
 [[package]]

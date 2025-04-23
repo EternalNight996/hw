@@ -1,9 +1,8 @@
+use e_utils::{chrono::FixedOffset, cmd::Cmd};
 use std::time::Duration;
 
-use e_utils::cmd::Cmd;
-
 #[cfg(windows)]
-async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
+pub async fn ensure_windows_time_service() -> e_utils::AnyResult<()> {
   let status = Cmd::new("w32tm").args(["/query", "/status"]).a_output().await?;
   crate::p(&status.stdout);
   if !status.stdout.contains("Leap") {
@@ -83,4 +82,12 @@ pub async fn sync_datetime(server: &str, is_register: bool) -> e_utils::AnyResul
 
     Err("时间同步失败，请检查网络连接".into())
   }
+}
+
+// 获取当前系统时区
+pub fn get_current_timezone() -> FixedOffset {
+  // 使用 Local::now() 获取当前本地时间，它会根据系统设置确定时区
+  let local_now = e_utils::chrono::Local::now();
+  // 从本地时间中提取出时区信息
+  local_now.offset().clone()
 }
