@@ -18,17 +18,17 @@ pub mod builtin;
 pub use registry::{get, list, register, registered_modes, Registry};
 pub use runner::{run_mode, LoadStat, MetricStat, ModeReport, TestParams};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// 一次采样得到的指标
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metric {
   /// 指标名（如 "Total_Rx"、"CPU_Usage_Global"、"C: Used%"）
   pub name: String,
   /// 数值
   pub value: f64,
   /// 单位（如 "B/s"、"%"、"MHz"、"GiB"、"°C"）
-  pub unit: &'static str,
+  pub unit: String,
   /// 可选的单次采样最小值（如传感器 Min）
   pub min: Option<f64>,
   /// 可选的单次采样最大值（如传感器 Max）
@@ -36,8 +36,8 @@ pub struct Metric {
 }
 
 impl Metric {
-  pub fn new(name: impl Into<String>, value: f64, unit: &'static str) -> Self {
-    Self { name: name.into(), value, unit, min: None, max: None }
+  pub fn new(name: impl Into<String>, value: f64, unit: impl Into<String>) -> Self {
+    Self { name: name.into(), value, unit: unit.into(), min: None, max: None }
   }
   pub fn with_range(mut self, min: Option<f64>, max: Option<f64>) -> Self {
     self.min = min;

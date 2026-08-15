@@ -41,10 +41,10 @@ impl TestParams {
 }
 
 /// 单个指标跨采样统计
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricStat {
   pub name: String,
-  pub unit: &'static str,
+  pub unit: String,
   /// 最后一次采样值
   pub value: f64,
   pub min: f64,
@@ -57,16 +57,19 @@ pub struct MetricStat {
 }
 
 impl MetricStat {
-  fn new(name: &str, unit: &'static str, value: f64) -> Self {
-    Self { name: name.into(), unit, value, min: value, max: value, avg: value, std_dev: 0.0, samples: 0, pass: None }
+  /// 以首个样本值创建统计
+  pub fn new(name: &str, unit: impl Into<String>, value: f64) -> Self {
+    Self { name: name.into(), unit: unit.into(), value, min: value, max: value, avg: value, std_dev: 0.0, samples: 0, pass: None }
   }
-  fn update(&mut self, value: f64) {
+  /// 累加一个样本
+  pub fn update(&mut self, value: f64) {
     self.min = self.min.min(value);
     self.max = self.max.max(value);
     self.value = value;
     self.samples += 1;
   }
-  fn finish(&mut self, sum: f64, sum_sq: f64) {
+  /// 依据样本和/平方和完成均值与标准差计算
+  pub fn finish(&mut self, sum: f64, sum_sq: f64) {
     if self.samples > 0 {
       self.avg = sum / self.samples as f64;
     }
@@ -76,13 +79,14 @@ impl MetricStat {
       self.std_dev = var.sqrt();
     }
   }
-  fn out_of_range(&self, p: TestParams) -> bool {
+  /// 末值是否超出允许范围
+  pub fn out_of_range(&self, p: TestParams) -> bool {
     !p.in_range(self.value)
   }
 }
 
 /// 负载统计（check 且 v3>0 时记录全局 CPU 使用率）
-#[derive(Debug, Clone, Copy, Default, Serialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct LoadStat {
   pub min: f64,
   pub max: f64,
@@ -102,7 +106,7 @@ impl LoadStat {
 }
 
 /// 模式运行报告（print / check 输出）
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModeReport {
   pub mode: String,
   pub task: String,
@@ -169,7 +173,7 @@ pub async fn run_mode(mode: &dyn TestMode, ctx: &ModeContext<'_>, task: &str) ->
       for m in &last_metrics {
         let st = stats
           .entry(m.name.clone())
-          .or_insert_with(|| MetricStat::new(&m.name, m.unit, m.value));
+          .or_insert_with(|| MetricStat::new(&m.name, m.unit.clone(), m.value));
         *sums.entry(m.name.clone()).or_insert(0.0) += m.value;
         *sum_sqs.entry(m.name.clone()).or_insert(0.0) += m.value * m.value;
         st.update(m.value);

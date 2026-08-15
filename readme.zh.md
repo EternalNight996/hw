@@ -370,6 +370,26 @@ hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 
 详见 [src/test_mode/mod.rs](src/test_mode/mod.rs) 的 trait 文档。
 ---
+### [18. 📖 图形化界面 — hw-gui（eframe/egui 桌面应用）](src/bin/hw-gui.rs)
+基于 eframe/egui 的桌面 GUI（`hw-gui`），形态参考 TrafficMonitor 的悬浮窗风格：
+
+- **实时监控** — 持续采样已注册的测试模式（net-speed、cpu-usage、mem-usage、disk-usage、temp、gpu-usage），各指标随时间绘制曲线
+- **Check 可视化** — 设定目标值/±误差/负载运行 check，逐秒采样叠加目标带，实时 PASS/FAIL
+- **历史与导出** — 每次 check 自动记录到 `hw-gui-history.json`，可导出 JSON/CSV 报告
+
+```bash
+# 构建（gui 特性引入 eframe/egui_plot；需要 rustc >= 1.95）
+cargo build --features gui --bin hw-gui
+
+# 运行
+target\debug\hw-gui.exe
+
+# 自动化冒烟测试：3 秒后自动关闭窗口
+set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
+```
+
+温度/GPU 模式需要 `plugins/` 下有 OHM/LHM/AIDA64（见第 17 节），首次启动这些模式最长约 20 秒（拉起后端进程）；其余模式开箱即用。
+---
 ## 🚀 开发进度
 <table>
   <tr>

@@ -370,6 +370,26 @@ The verb is the first `--args` value (`data` / `print` / `check`, default `print
 
 See [src/test_mode/mod.rs](src/test_mode/mod.rs) for the trait docs.
 ---
+### [18. 📖 GUI — hw-gui (eframe/egui desktop app)](src/bin/hw-gui.rs)
+A desktop GUI (`hw-gui`) built with eframe/egui, modeled on TrafficMonitor's floating-window style:
+
+- **Live monitoring** — continuously samples the registered test modes (net-speed, cpu-usage, mem-usage, disk-usage, temp, gpu-usage) and plots each metric over time
+- **Check visualization** — run `check` with target/±error/load, watch per-second samples against the target band, live PASS/FAIL
+- **History & export** — every check run is recorded to `hw-gui-history.json`; export JSON/CSV reports
+
+```bash
+# Build (the gui feature adds eframe/egui_plot; requires rustc >= 1.95)
+cargo build --features gui --bin hw-gui
+
+# Run
+target\debug\hw-gui.exe
+
+# Automated smoke test: auto-close the window after 3 seconds
+set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
+```
+
+Temperature/GPU modes need OHM/LHM/AIDA64 executables under `plugins/` (see section 17); the first start of those modes may take up to ~20 s to launch the backend. Other modes work out of the box.
+---
 ## 🚀 Development Progress
 <table>
   <tr>
