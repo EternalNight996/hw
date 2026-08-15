@@ -385,7 +385,7 @@ struct GuiApp {
   started_at: Instant,
   msg: String,
   smoke: bool,
-  smoke_announced: bool,
+  rules_emitted: bool,
   auto_closed: bool,
   view: View,
   rules: RulesGui,
@@ -422,7 +422,7 @@ impl GuiApp {
       started_at: Instant::now(),
       msg: format!("就绪。已注册 {} 个测试模式", count),
       smoke,
-      smoke_announced: false,
+      rules_emitted: false,
       auto_closed: false,
       view: match config.view() {
         "live" => View::Live,
@@ -432,13 +432,19 @@ impl GuiApp {
       rules: RulesGui::new(),
       config: config.clone(),
     };
-    // 配置生效：默认秒数/负载、规则文件自动加载
+    // 配置生效：默认秒数/负载/check 参数、规则文件自动加载
     if config.run_seconds > 0 {
       app.c_secs = config.run_seconds as usize;
     }
     if config.raise_load_percent > 0.0 {
       app.c_load = config.raise_load_percent;
     }
+    if config.check_params.secs > 0 {
+      app.c_secs = config.check_params.secs;
+    }
+    app.c_target = config.check_params.target;
+    app.c_err = config.check_params.error;
+    app.c_load = config.check_params.load;
     app.rules.path = config.rule_file.clone();
     app.rules.global_load = config.raise_load_percent;
     if std::path::Path::new(&config.rule_file).exists() {
@@ -575,6 +581,23 @@ impl GuiApp {
       self.history.remove(0);
     }
     self.save_history();
+  }
+
+  /// 构造 etest 兼容的 R<...>R 结果行（与 CLI main.rs 的 CmdResult 结构完全一致）
+  fn rules_etest_line(&self) -> String {
+    use e_utils::cmd::CmdResult;
+    let report = rules::RulesReport {
+      plan: self.rules.plan.clone(),
+      status: self.rules.results.iter().all(|r| r.pass),
+      results: self.rules.results.clone(),
+    };
+    let content = report.to_json().unwrap_or_default();
+    let res: CmdResult<serde_json::Value> = CmdResult {
+      content,
+      status: report.status,
+      opts: serde_json::Value::Null,
+    };
+    res.to_str().unwrap_or_default()
   }
 
   fn save_history(&self) {
@@ -722,29 +745,30 @@ impl eframe::App for GuiApp {
         }
       }
     }
-    // 配置 auto_close：规则完成后自动关闭并设置退出码（供 etest 判断）
-    if self.config.auto_close && !self.auto_closed && self.rules.done && !self.rules.results.is_empty() {
-      self.auto_closed = true;
-      let ok = self.rules.results.iter().all(|r| r.pass);
-      let code = if !ok && self.config.exit_code_on_fail { 1 } else { 0 };
-      EXIT_CODE.store(code, Ordering::SeqCst);
-      println!(
-        "HW_GUI_TEST_DONE status={} items={} exit={}",
-        if ok { "PASS" } else { "FAIL" },
-        self.rules.results.len(),
-        code
-      );
-      ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    // 规则完成：输出 R<...>R 结果（stdout + 日志文件），与 CLI 协议一致，etest 统一解析
+    if self.rules.done && !self.rules.results.is_empty() && !self.rules_emitted {
+      self.rules_emitted = true;
+      let line = self.rules_etest_line();
+      println!("{}", line);
+      if !self.config.log_file.is_empty() {
+        let ts = now_str();
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.log_file) {
+          use std::io::Write;
+          let _ = f.write_all(format!("{}	{}
+", ts, line).as_bytes());
+        }
+      }
+      if self.config.auto_close {
+        self.auto_closed = true;
+        let ok = self.rules.results.iter().all(|r| r.pass);
+        let code = if !ok && self.config.exit_code_on_fail { 1 } else { 0 };
+        EXIT_CODE.store(code, Ordering::SeqCst);
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+      }
     }
     ctx.request_repaint_after(SAMPLE_INTERVAL);
 
-    // 冒烟：规则执行完成后打印标记并关闭（供自动化验证）
-    if self.smoke && !self.smoke_announced && self.rules.done && !self.rules.results.is_empty() {
-      self.smoke_announced = true;
-      let ok = self.rules.results.iter().all(|r| r.pass);
-      println!("SMOKE_RULES_DONE status={} items={}", ok, self.rules.results.len());
-      ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-    }
+    // 冒烟兜底：超时强制关闭
     if self.smoke && self.started_at.elapsed() > Duration::from_secs(6) {
       ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
@@ -1083,7 +1107,7 @@ impl GuiApp {
           .striped(true)
           .num_columns(8)
           .show(ui, |ui| {
-            for h in ["#", "id", "模式", "指标", "下限", "上限", "秒数", "负载%"] {
+            for h in ["#", "id", "模式", "指标", "下限", "上限", "稳定σ", "秒数", "负载%"] {
               ui.strong(h);
             }
             ui.end_row();
@@ -1098,6 +1122,7 @@ impl GuiApp {
               });
               ui.label(r.min.map(|v| v.to_string()).unwrap_or_else(|| "-".into()));
               ui.label(r.max.map(|v| v.to_string()).unwrap_or_else(|| "-".into()));
+              ui.label(r.max_std.map(|v| v.to_string()).unwrap_or_else(|| "-".into()));
               ui.label(r.secs.to_string());
               ui.label(r.load.to_string());
               ui.end_row();
@@ -1179,12 +1204,15 @@ impl GuiApp {
               ui.label(format!("{:.2}", r.avg));
               ui.label(format!("{:.2}", r.min));
               ui.label(format!("{:.2}", r.max));
-              let lim = match (r.min_limit, r.max_limit) {
+              let mut lim = match (r.min_limit, r.max_limit) {
                 (Some(lo), Some(hi)) => format!("{:.0}~{:.0}", lo, hi),
                 (Some(lo), None) => format!("≥{:.0}", lo),
                 (None, Some(hi)) => format!("≤{:.0}", hi),
                 (None, None) => "-".into(),
               };
+              if let Some(ms) = r.max_std_limit {
+                lim.push_str(&format!(" σ≤{:.1}", ms));
+              }
               ui.label(lim);
               if r.pass {
                 ui.colored_label(egui::Color32::from_rgb(120, 200, 120), "PASS");

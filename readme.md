@@ -444,6 +444,8 @@ etest/operators edit `hw-gui-config.json` (auto-created on first run) to control
 | `raise_load_percent` | Global load %; >0 becomes the default load for rules without explicit load (and the Check default) | `0` |
 | `display_mode` | `all` = show every metric; `single` = only `display_metrics` | `all` |
 | `display_metrics` | Metric name contains-match list used when `display_mode=single` (e.g. `["CPU_0_Clock"]` for CPU frequency, `["CPU_Usage_Global"]`) | `[]` |
+| `check_params` | Check 测试默认参数（etest 可直接修改）：`{secs, target, error, load}` | `{5, 1000, 500, 0}` |
+| `log_file` | Test result log file — the `R<...>R` result is appended here (empty = no file) | `hw-gui-test.log` |
 
 ```json
 

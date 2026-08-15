@@ -444,6 +444,8 @@ etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）
 | `raise_load_percent` | 全局负载%；>0 时作为未指定负载规则的默认负载（也是 Check 默认负载） | `0` |
 | `display_mode` | `all` = 显示全部指标；`single` = 只显示 `display_metrics` 指定指标 | `all` |
 | `display_metrics` | `display_mode=single` 时按指标名包含匹配显示（如 `["CPU_0_Clock"]` 只看 CPU 主频、`["CPU_Usage_Global"]` 只看占用） | `[]` |
+| `check_params` | Check 测试参数（etest 可直接修改）：`{secs, target, error, load}`（秒数/目标值/±误差/负载） | `{5, 1000, 500, 0}` |
+| `log_file` | 测试结果日志文件，`R<...>R` 结果追加写入（空 = 不写文件） | `hw-gui-test.log` |
 
 产线一键示例：启动即进规则视图 → 自动运行 `etest-rules.json` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
 

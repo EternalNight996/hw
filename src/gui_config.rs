@@ -15,6 +15,7 @@
 use serde::{Deserialize, Serialize};
 
 pub const CONFIG_FILE: &str = "hw-gui-config.json";
+pub const DEFAULT_LOG_FILE: &str = "hw-gui-test.log";
 
 /// hw-gui 运行配置（JSON，etest 可直接编辑）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,9 +39,38 @@ pub struct GuiConfig {
   pub display_mode: String,
   /// display_mode=single 时的指标名/包含匹配列表
   pub display_metrics: Vec<String>,
+  /// Check 测试参数（etest 可直接修改；rules 模式以规则文件为准）
+  pub check_params: CheckParams,
+  /// 测试结果日志文件（R<...>R 结果追加写入；空 = 不写文件）
+  pub log_file: String,
   /// 配置说明（仅注释用途，程序忽略）
   #[serde(rename = "_说明")]
   pub note: String,
+}
+
+/// Check 测试参数（GUI「Check 测试」视图的默认值）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CheckParams {
+  /// 采样秒数（0 = 用内置默认 5）
+  pub secs: usize,
+  /// 目标值
+  pub target: f64,
+  /// 允许误差 ±
+  pub error: f64,
+  /// 负载百分比（0 = 不加载）
+  pub load: f64,
+}
+
+impl Default for CheckParams {
+  fn default() -> Self {
+    Self {
+      secs: 5,
+      target: 1000.0,
+      error: 500.0,
+      load: 0.0,
+    }
+  }
 }
 
 impl Default for GuiConfig {
@@ -55,6 +85,8 @@ impl Default for GuiConfig {
       raise_load_percent: 0.0,
       display_mode: "all".into(),
       display_metrics: Vec::new(),
+      check_params: CheckParams::default(),
+      log_file: DEFAULT_LOG_FILE.into(),
       note: "hw-gui 运行配置，etest 可直接修改本文件。字段说明见 README 第 20 节。".into(),
     }
   }
@@ -113,6 +145,9 @@ mod tests {
     assert!(cfg.auto_run);
     assert!(cfg.auto_close);
     assert_eq!(cfg.run_seconds, 0);
+    assert_eq!(cfg.check_params.secs, 5);
+    assert_eq!(cfg.check_params.target, 1000.0);
+    assert_eq!(cfg.log_file, DEFAULT_LOG_FILE);
   }
 
   #[test]

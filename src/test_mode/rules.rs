@@ -46,6 +46,9 @@ pub struct Rule {
   /// 上限（None = 不限）
   #[serde(default)]
   pub max: Option<f64>,
+  /// 稳定性：采样标准差上限（None = 不限）
+  #[serde(default)]
+  pub max_std: Option<f64>,
   /// 采样秒数（默认 3）
   #[serde(default = "default_secs")]
   pub secs: usize,
@@ -96,6 +99,8 @@ pub struct RuleResult {
   pub samples: usize,
   pub min_limit: Option<f64>,
   pub max_limit: Option<f64>,
+  /// 稳定性上限（标准差）
+  pub max_std_limit: Option<f64>,
   pub pass: bool,
   pub message: Option<String>,
 }
@@ -116,6 +121,7 @@ impl RuleResult {
       samples: 0,
       min_limit: rule.min,
       max_limit: rule.max,
+      max_std_limit: rule.max_std,
       pass: false,
       message: Some(message.into()),
     }
@@ -136,6 +142,11 @@ impl Rule {
     }
     if let Some(hi) = self.max {
       if st.avg > hi {
+        return false;
+      }
+    }
+    if let Some(ms) = self.max_std {
+      if st.std_dev > ms {
         return false;
       }
     }
@@ -165,6 +176,7 @@ pub fn rules_template() -> e_utils::AnyResult<String> {
         unit: Some("B/s".into()),
         min: Some(1000000.0),
         max: None,
+        max_std: None,
         secs: 5,
         load: 0.0,
       },
@@ -175,6 +187,7 @@ pub fn rules_template() -> e_utils::AnyResult<String> {
         unit: Some("%".into()),
         min: None,
         max: Some(90.0),
+        max_std: Some(2.0),
         secs: 3,
         load: 0.0,
       },
@@ -360,6 +373,7 @@ impl RuleRun {
       samples: primary.samples,
       min_limit: self.rule.min,
       max_limit: self.rule.max,
+      max_std_limit: self.rule.max_std,
       pass,
       message,
     }
@@ -438,6 +452,7 @@ mod tests {
       unit: None,
       min: None,
       max,
+      max_std: None,
       secs: 2,
       load: 0.0,
     }
@@ -456,6 +471,24 @@ mod tests {
     assert_eq!(r.samples, 2);
     assert!((r.avg - 15.0).abs() < 1e-9); // (10+20)/2
     assert!(r.pass); // 15 <= 25
+  }
+
+  #[test]
+  fn rule_run_stability() {
+    crate::test_mode::register(&Dummy);
+    // values 10/20/30，std_dev=10；max_std=5 => 不稳定 FAIL
+    let mut r = dummy_rule(None);
+    r.max_std = Some(5.0);
+    let mut run = RuleRun::new(&r).unwrap();
+    run.step();
+    run.step();
+    assert!(!run.result().pass);
+    // max_std=50 => PASS
+    r.max_std = Some(50.0);
+    let mut run = RuleRun::new(&r).unwrap();
+    run.step();
+    run.step();
+    assert!(run.result().pass);
   }
 
   #[test]
@@ -489,6 +522,7 @@ mod tests {
       unit: None,
       min: None,
       max: Some(90.0),
+      max_std: None,
       secs: 3,
       load: 0.0,
     };
