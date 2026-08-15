@@ -10,3 +10,10 @@
 License.html
 License.txt
 /plugins
+
+# hw-gui 运行时产物
+hw-gui-history.json
+hw-gui-history-*.json
+hw-gui-history-*.csv
+hw-gui-test.log
+etest-report-*.json
