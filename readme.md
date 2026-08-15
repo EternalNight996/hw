@@ -37,6 +37,8 @@ cargo install just
 just
 ```
 
+**Default launch is the GUI**: `cargo run` (or `target\\debug\\hw-gui.exe`) opens the desktop app with three views — Live Monitoring / Check / etest Rules. The CLI tool remains `hw` (e.g. `hw --api Test --task list`).
+
 **Command Differences:**
 - **data**: Only returns current sensor values
 - **print**: Returns complete statistics without validation
@@ -376,6 +378,7 @@ A desktop GUI (`hw-gui`) built with eframe/egui, modeled on TrafficMonitor's flo
 - **Live monitoring** — continuously samples the registered test modes (net-speed, cpu-usage, mem-usage, disk-usage, temp, gpu-usage) and plots each metric over time
 - **Check visualization** — run `check` with target/±error/load, watch per-second samples against the target band, live PASS/FAIL
 - **History & export** — every check run is recorded to `hw-gui-history.json`; export JSON/CSV reports
+- **etest rules panel** — load an `etest-rules.json` rule file and run it from the GUI with per-rule progress/curve and PASS-FAIL table; export the same report JSON as the CLI (see section 19)
 
 ```bash
 # Build (the gui feature adds eframe/egui_plot; requires rustc >= 1.95)
@@ -424,6 +427,8 @@ hw --api Test --task run-rules --args etest-rules.json
 ```
 
 Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
+
+The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule with live progress/curves, and exports the identical report JSON — the final production test can run entirely from the GUI.
 ---
 ## 🚀 Development Progress
 <table>

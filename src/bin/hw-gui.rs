@@ -13,7 +13,7 @@ use eframe::egui;
 use egui_plot::{HLine, Legend, Line, Plot, PlotPoints};
 
 use hw::test_mode::{
-  get as get_mode, list as list_modes, register_all, Metric, MetricStat, ModeContext, ModeInstance,
+  get as get_mode, list as list_modes, register_all, rules, Metric, MetricStat, ModeContext, ModeInstance,
   TestParams,
 };
 
@@ -40,6 +40,121 @@ fn main() -> eframe::Result {
 
 fn matches_filter(filter: &[String], name: &str) -> bool {
   filter.is_empty() || filter.iter().any(|f| name.contains(f.as_str()))
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum View {
+  Live,
+  Check,
+  Rules,
+}
+
+/// etest 规则执行面板状态（与 CLI run-rules 共用 rules::RuleRun）
+struct RulesGui {
+  path: String,
+  file: Option<rules::RuleFile>,
+  run: Option<rules::RuleRun>,
+  results: Vec<rules::RuleResult>,
+  plan: String,
+  done: bool,
+  msg: String,
+}
+
+impl RulesGui {
+  fn new() -> Self {
+    Self {
+      path: "etest-rules.json".into(),
+      file: None,
+      run: None,
+      results: Vec::new(),
+      plan: String::new(),
+      done: false,
+      msg: String::new(),
+    }
+  }
+
+  fn total(&self) -> usize {
+    self.file.as_ref().map(|f| f.rules.len()).unwrap_or(0)
+  }
+
+  fn load(&mut self) {
+    match rules::parse_rules(&self.path) {
+      Ok(file) => {
+        self.plan = file.name.clone().unwrap_or_else(|| self.path.clone());
+        self.results.clear();
+        self.run = None;
+        self.done = false;
+        self.msg = format!("已加载规则文件：{}（{} 条）", self.plan, file.rules.len());
+        self.file = Some(file);
+      }
+      Err(e) => {
+        self.file = None;
+        self.msg = format!("加载失败: {}", e);
+      }
+    }
+  }
+
+  fn start(&mut self) {
+    if self.file.is_none() {
+      self.msg = "请先加载规则文件".into();
+      return;
+    }
+    self.results.clear();
+    self.run = None;
+    self.done = false;
+    self.advance();
+  }
+
+  /// 推进到下一条规则；全部完成时置 done
+  fn advance(&mut self) {
+    let total = self.total();
+    if self.results.len() >= total {
+      let ok = self.results.iter().all(|r| r.pass);
+      let plan = self.plan.clone();
+      self.msg = format!("{} 完成：{} / {}", plan, if ok { "PASS" } else { "FAIL" }, self.results.len());
+      self.done = true;
+      return;
+    }
+    let idx = self.results.len();
+    let rule = self.file.as_ref().unwrap().rules[idx].clone();
+    match rules::RuleRun::new(&rule) {
+      Ok(run) => {
+        self.msg = format!("运行规则 {}/{}：{}（{}）", idx + 1, total, rule.id, rule.mode);
+        self.run = Some(run);
+      }
+      Err(e) => {
+        self.results.push(rules::RuleResult::failed(&rule, format!("初始化失败: {}", e)));
+        self.advance();
+      }
+    }
+  }
+
+  /// 中止当前规则，剩余规则标记为未执行
+  fn stop(&mut self) {
+    if let Some(mut run) = self.run.take() {
+      run.cancel();
+      self.results.push(run.result());
+    }
+    while self.results.len() < self.total() {
+      let rule = self.file.as_ref().unwrap().rules[self.results.len()].clone();
+      self.results.push(rules::RuleResult::failed(&rule, "未执行（已停止）"));
+    }
+    self.done = true;
+    self.msg = "已停止".into();
+  }
+
+  fn export_report(&mut self) {
+    let path = format!("etest-report-{}.json", now_str());
+    let report = rules::RulesReport {
+      plan: self.plan.clone(),
+      status: self.results.iter().all(|r| r.pass),
+      results: self.results.clone(),
+    };
+    match serde_json::to_string_pretty(&report).map(|j| std::fs::write(&path, j)) {
+      Ok(Ok(())) => self.msg = format!("已导出报告: {}", path),
+      _ => self.msg = "导出失败".into(),
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -232,6 +347,9 @@ struct GuiApp {
   started_at: Instant,
   msg: String,
   smoke: bool,
+  smoke_announced: bool,
+  view: View,
+  rules: RulesGui,
 }
 
 impl GuiApp {
@@ -247,7 +365,7 @@ impl GuiApp {
       .unwrap_or_else(|| "net-speed".into());
     let history = load_history();
     let count = modes.len();
-    Self {
+    let mut app = Self {
       modes,
       selected,
       live: None,
@@ -262,7 +380,15 @@ impl GuiApp {
       started_at: Instant::now(),
       msg: format!("就绪。已注册 {} 个测试模式", count),
       smoke,
+      smoke_announced: false,
+      view: View::Live,
+      rules: RulesGui::new(),
+    };
+    // 冒烟测试：自动加载规则文件
+    if smoke && std::path::Path::new("etest-rules.json").exists() {
+      app.rules.load();
     }
+    app
   }
 
   fn start_live(&mut self) {
@@ -512,10 +638,30 @@ impl eframe::App for GuiApp {
           self.check = Some(done); // 保留结果供查看
         }
       }
+      // etest 规则逐条执行
+      if let Some(run) = &mut self.rules.run {
+        if run.step() {
+          let res = run.result();
+          self.rules.results.push(res);
+          self.rules.run = None;
+          self.rules.advance();
+        }
+      }
+      // 冒烟测试：自动加载并运行规则
+      if self.smoke && self.rules.file.is_some() && !self.rules.done && self.rules.run.is_none() && self.rules.results.is_empty() {
+        self.rules.start();
+      }
     }
     ctx.request_repaint_after(SAMPLE_INTERVAL);
 
-    if self.smoke && self.started_at.elapsed() > Duration::from_secs(3) {
+    // 冒烟：规则执行完成后打印标记并关闭（供自动化验证）
+    if self.smoke && !self.smoke_announced && self.rules.done && !self.rules.results.is_empty() {
+      self.smoke_announced = true;
+      let ok = self.rules.results.iter().all(|r| r.pass);
+      println!("SMOKE_RULES_DONE status={} items={}", ok, self.rules.results.len());
+      ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+    if self.smoke && self.started_at.elapsed() > Duration::from_secs(6) {
       ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 
@@ -524,6 +670,10 @@ impl eframe::App for GuiApp {
       ui.add_space(4.0);
       ui.horizontal(|ui| {
         ui.heading("HW Monitor GUI");
+        ui.separator();
+        ui.selectable_value(&mut self.view, View::Live, "实时监控");
+        ui.selectable_value(&mut self.view, View::Check, "Check 测试");
+        ui.selectable_value(&mut self.view, View::Rules, "etest 规则");
         ui.separator();
         ui.label("模式:");
         egui::ComboBox::from_id_salt("mode_sel")
@@ -660,36 +810,46 @@ impl eframe::App for GuiApp {
     // ---------------- 中央：实时曲线 / check 曲线 ----------------
     egui::CentralPanel::default().show(ui, |ui| {
       ui.add_space(4.0);
-      if let Some(live) = &self.live {
-        ui.heading(format!("实时曲线 — {}", live.mode_name));
-        let names: Vec<String> = live.series.keys().cloned().collect();
-        if names.is_empty() {
-          ui.weak("等待首个样本…");
-        } else {
-          egui::ScrollArea::vertical()
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-              ui.columns(2, |cols| {
-                for (idx, name) in names.iter().enumerate() {
-                  let ui = &mut cols[idx % 2];
-                  if let Some(points) = live.series.get(name) {
-                    let pts: Vec<[f64; 2]> = points.iter().map(|&(x, y)| [x, y]).collect();
-                    let line = Line::new(name.clone(), PlotPoints::from(pts)).width(2.0);
-                    Plot::new(format!("live_{}", name))
-                      .height(110.0)
-                      .legend(Legend::default())
-                      .show(ui, |pui| {
-                        pui.line(line);
-                      });
-                  }
-                }
-              });
-            });
+      match self.view {
+        View::Live => {
+          if let Some(live) = &self.live {
+            ui.heading(format!("实时曲线 — {}", live.mode_name));
+            let names: Vec<String> = live.series.keys().cloned().collect();
+            if names.is_empty() {
+              ui.weak("等待首个样本…");
+            } else {
+              egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                  ui.columns(2, |cols| {
+                    for (idx, name) in names.iter().enumerate() {
+                      let ui = &mut cols[idx % 2];
+                      if let Some(points) = live.series.get(name) {
+                        let pts: Vec<[f64; 2]> = points.iter().map(|&(x, y)| [x, y]).collect();
+                        let line = Line::new(name.clone(), PlotPoints::from(pts)).width(2.0);
+                        Plot::new(format!("live_{}", name))
+                          .height(110.0)
+                          .legend(Legend::default())
+                          .show(ui, |pui| {
+                            pui.line(line);
+                          });
+                      }
+                    }
+                  });
+                });
+            }
+          } else {
+            ui.weak("选择模式后点击「▶ 实时监控」查看实时曲线。");
+          }
         }
-      } else if let Some(check) = &self.check {
-        self.show_check_panel(ui, check);
-      } else {
-        ui.weak("选择模式后点击「▶ 实时监控」查看实时曲线，或设置参数后点击「▶ Check」运行测试。");
+        View::Check => {
+          if let Some(check) = &self.check {
+            self.show_check_panel(ui, check);
+          } else {
+            ui.weak("设置参数后点击「▶ Check」运行测试。");
+          }
+        }
+        View::Rules => self.show_rules_panel(ui),
       }
     });
   }
@@ -791,5 +951,158 @@ impl GuiApp {
           }
         });
     });
+  }
+
+  /// etest 规则执行面板
+  fn show_rules_panel(&mut self, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+      ui.label("规则文件:");
+      ui.add(egui::TextEdit::singleline(&mut self.rules.path).desired_width(260.0));
+      if ui.button("加载").clicked() {
+        self.rules.load();
+      }
+      let can_run = self.rules.file.is_some() && self.rules.run.is_none() && !self.rules.done;
+      if ui
+        .add_enabled(can_run, egui::Button::new("▶ 运行规则"))
+        .clicked()
+      {
+        self.rules.start();
+      }
+      let running = self.rules.run.is_some();
+      if ui.add_enabled(running, egui::Button::new("⏹ 停止")).clicked() {
+        self.rules.stop();
+      }
+      if ui.button("导出报告").clicked() {
+        self.rules.export_report();
+      }
+      if ui.button("清空结果").clicked() {
+        self.rules.results.clear();
+        self.rules.run = None;
+        self.rules.done = false;
+      }
+    });
+    if !self.rules.msg.is_empty() {
+      ui.colored_label(egui::Color32::from_rgb(255, 220, 120), &self.rules.msg);
+    }
+
+    // 规则清单
+    if let Some(file) = &self.rules.file {
+      ui.add_space(6.0);
+      ui.heading(format!("规则清单（{}）", file.rules.len()));
+      egui::ScrollArea::vertical().max_height(140.0).show(ui, |ui| {
+        egui::Grid::new("rules_table")
+          .striped(true)
+          .num_columns(8)
+          .show(ui, |ui| {
+            for h in ["#", "id", "模式", "指标", "下限", "上限", "秒数", "负载%"] {
+              ui.strong(h);
+            }
+            ui.end_row();
+            for (i, r) in file.rules.iter().enumerate() {
+              ui.label((i + 1).to_string());
+              ui.label(&r.id);
+              ui.label(&r.mode);
+              ui.label(if r.metric.is_empty() {
+                "全部".into()
+              } else {
+                r.metric.clone()
+              });
+              ui.label(r.min.map(|v| v.to_string()).unwrap_or_else(|| "-".into()));
+              ui.label(r.max.map(|v| v.to_string()).unwrap_or_else(|| "-".into()));
+              ui.label(r.secs.to_string());
+              ui.label(r.load.to_string());
+              ui.end_row();
+            }
+          });
+      });
+    }
+
+    // 当前规则进度 + 曲线
+    if let Some(run) = &self.rules.run {
+      ui.add_space(6.0);
+      ui.horizontal(|ui| {
+        ui.spinner();
+        ui.label(format!(
+          "运行中 {}/{}：{}（{}）",
+          self.rules.results.len() + 1,
+          self.rules.total(),
+          run.rule.id,
+          run.rule.mode
+        ));
+      });
+      let last = run.last_metrics();
+      if !last.is_empty() {
+        ui.horizontal_wrapped(|ui| {
+          for m in last {
+            ui.label(format!("{}={:.2}{}", m.name, m.value, m.unit));
+          }
+        });
+      }
+      if let Some(first) = run.samples.first().and_then(|(_, ms)| ms.first().cloned()) {
+        let pts: Vec<[f64; 2]> = run
+          .samples
+          .iter()
+          .filter_map(|(t, ms)| {
+            ms.iter()
+              .find(|m| m.name == first.name)
+              .map(|m| [*t, m.value])
+          })
+          .collect();
+        if !pts.is_empty() {
+          let line = Line::new(first.name.clone(), PlotPoints::from(pts)).width(2.0);
+          Plot::new("rule_cur")
+            .height(120.0)
+            .legend(Legend::default())
+            .show(ui, |pui| {
+              pui.line(line);
+            });
+        }
+      }
+    }
+
+    // 结果表
+    if !self.rules.results.is_empty() {
+      ui.add_space(6.0);
+      let ok = self.rules.results.iter().all(|r| r.pass);
+      let color = if ok {
+        egui::Color32::from_rgb(120, 200, 120)
+      } else {
+        egui::Color32::from_rgb(230, 120, 120)
+      };
+      ui.colored_label(color, format!("整体: {}", if ok { "PASS" } else { "FAIL" }));
+      egui::ScrollArea::vertical().max_height(260.0).show(ui, |ui| {
+        egui::Grid::new("rules_results")
+          .striped(true)
+          .num_columns(9)
+          .show(ui, |ui| {
+            for h in ["项", "模式", "指标", "平均", "最小", "最大", "限制", "判定", "说明"] {
+              ui.strong(h);
+            }
+            ui.end_row();
+            for r in &self.rules.results {
+              ui.label(&r.item);
+              ui.label(&r.mode);
+              ui.label(&r.metric);
+              ui.label(format!("{:.2}", r.avg));
+              ui.label(format!("{:.2}", r.min));
+              ui.label(format!("{:.2}", r.max));
+              let lim = match (r.min_limit, r.max_limit) {
+                (Some(lo), Some(hi)) => format!("{:.0}~{:.0}", lo, hi),
+                (Some(lo), None) => format!("≥{:.0}", lo),
+                (None, Some(hi)) => format!("≤{:.0}", hi),
+                (None, None) => "-".into(),
+              };
+              ui.label(lim);
+              if r.pass {
+                ui.colored_label(egui::Color32::from_rgb(120, 200, 120), "PASS");
+              } else {
+                ui.colored_label(egui::Color32::from_rgb(230, 120, 120), "FAIL");
+              }
+              ui.label(r.message.clone().unwrap_or_default());
+              ui.end_row();
+            }
+          });
+      });
+    }
   }
 }

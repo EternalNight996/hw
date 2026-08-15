@@ -17,13 +17,15 @@
 //!
 //!     hw --api Test --task run-rules --args etest-rules.json
 //!     hw --api Test --task rules-template --args etest-rules.json   # 生成模板
+//!
+//! GUI（hw-gui）的“规则执行”面板与 CLI 共用本引擎。
 
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
-use super::{get as get_mode, register_all, Metric, MetricStat, ModeContext};
+use super::{get as get_mode, register_all, Metric, MetricStat, ModeContext, ModeInstance};
 
 /// 单条测试规则
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -96,6 +98,28 @@ pub struct RuleResult {
   pub max_limit: Option<f64>,
   pub pass: bool,
   pub message: Option<String>,
+}
+
+impl RuleResult {
+  /// 构造失败结果（模式不存在 / 初始化失败 / 指标未找到等）
+  pub fn failed(rule: &Rule, message: impl Into<String>) -> Self {
+    RuleResult {
+      item: rule.id.clone(),
+      mode: rule.mode.clone(),
+      metric: String::new(),
+      unit: String::new(),
+      value: 0.0,
+      avg: 0.0,
+      min: 0.0,
+      max: 0.0,
+      std_dev: 0.0,
+      samples: 0,
+      min_limit: rule.min,
+      max_limit: rule.max,
+      pass: false,
+      message: Some(message.into()),
+    }
+  }
 }
 
 impl Rule {
@@ -174,180 +198,287 @@ impl RulesReport {
   }
 }
 
+/// 单条规则的可增量执行器（CLI 与 GUI 共用；实例不 Send，仅在同一任务内使用）
+pub struct RuleRun {
+  pub rule: Rule,
+  /// 时间序列样本（GUI 画图用）
+  pub samples: Vec<(f64, Vec<Metric>)>,
+  last_metrics: Vec<Metric>,
+  stats: HashMap<String, MetricStat>,
+  sums: HashMap<String, f64>,
+  sum_sqs: HashMap<String, f64>,
+  sample_err: Option<String>,
+  t0: Instant,
+  inst: Option<Box<dyn ModeInstance>>,
+  load_handles: Vec<std::thread::JoinHandle<()>>,
+  done: bool,
+}
+
+impl RuleRun {
+  /// 创建并 setup（未知模式 / 初始化失败返回 Err）
+  pub fn new(rule: &Rule) -> e_utils::AnyResult<Self> {
+    let mode = get_mode(&rule.mode).ok_or_else(|| format!("未知模式 {}", rule.mode))?;
+    let mut inst = mode.create()?;
+    inst.setup(&ModeContext::default())?;
+    #[cfg(feature = "system")]
+    let load_handles = if rule.load > 0.0 {
+      inst.spawn_load(&ModeContext::default(), rule.load).unwrap_or_default()
+    } else {
+      Vec::new()
+    };
+    #[cfg(not(feature = "system"))]
+    let load_handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
+    Ok(RuleRun {
+      rule: rule.clone(),
+      samples: Vec::new(),
+      last_metrics: Vec::new(),
+      stats: HashMap::new(),
+      sums: HashMap::new(),
+      sum_sqs: HashMap::new(),
+      sample_err: None,
+      t0: Instant::now(),
+      inst: Some(inst),
+      load_handles,
+      done: false,
+    })
+  }
+
+  /// 采样一步；返回 true 表示本规则已完成（达到 secs 或出错）
+  pub fn step(&mut self) -> bool {
+    if self.done {
+      return true;
+    }
+    let t = self.t0.elapsed().as_secs_f64();
+    let ctx = ModeContext {
+      is_full: true,
+      ..Default::default()
+    };
+    match self.inst.as_mut().expect("inst").sample(&ctx) {
+      Ok(metrics) => {
+        self.last_metrics = metrics.clone();
+        self.samples.push((t, metrics.clone()));
+        for m in &metrics {
+          if !self.rule.matches(&m.name) {
+            continue;
+          }
+          let st = self
+            .stats
+            .entry(m.name.clone())
+            .or_insert_with(|| MetricStat::new(&m.name, m.unit.clone(), m.value));
+          *self.sums.entry(m.name.clone()).or_insert(0.0) += m.value;
+          *self.sum_sqs.entry(m.name.clone()).or_insert(0.0) += m.value * m.value;
+          st.update(m.value);
+        }
+      }
+      Err(e) => {
+        self.sample_err = Some(e.to_string());
+        self.finish();
+        return true;
+      }
+    }
+    if self.samples.len() >= self.rule.secs.max(1) {
+      self.finish();
+      return true;
+    }
+    false
+  }
+
+  /// 中止当前规则（结果标记为失败）
+  pub fn cancel(&mut self) {
+    if !self.done {
+      self.sample_err = Some("已中止".into());
+      self.finish();
+    }
+  }
+
+  fn finish(&mut self) {
+    if self.done {
+      return;
+    }
+    for (name, st) in self.stats.iter_mut() {
+      st.finish(
+        self.sums.get(name).copied().unwrap_or(0.0),
+        self.sum_sqs.get(name).copied().unwrap_or(0.0),
+      );
+    }
+    if !self.load_handles.is_empty() {
+      crate::api_test::LOAD_CONTROLLER.stop_running();
+      for h in self.load_handles.drain(..) {
+        let _ = h.join();
+      }
+    }
+    if let Some(mut inst) = self.inst.take() {
+      let _ = inst.teardown(&ModeContext::default());
+    }
+    self.done = true;
+  }
+
+  /// 汇总为规则结果
+  pub fn result(&self) -> RuleResult {
+    if let Some(err) = &self.sample_err {
+      let mut r = RuleResult::failed(&self.rule, format!("采样失败: {}", err));
+      if let Some(first) = self.last_metrics.first() {
+        r.metric = first.name.clone();
+        r.unit = first.unit.clone();
+        r.value = first.value;
+      }
+      return r;
+    }
+    let mut matched: Vec<&MetricStat> = self
+      .stats
+      .values()
+      .filter(|st| self.rule.matches(&st.name))
+      .collect();
+    if matched.is_empty() {
+      let mut r = RuleResult::failed(&self.rule, format!("指标未找到: {}", self.rule.metric));
+      if let Some(first) = self.last_metrics.first() {
+        r.metric = first.name.clone();
+        r.unit = first.unit.clone();
+        r.value = first.value;
+      }
+      return r;
+    }
+    matched.sort_by(|a, b| a.name.cmp(&b.name));
+    let primary = matched[0];
+    let failing: Vec<&MetricStat> = matched.iter().copied().filter(|st| !self.rule.passes(st)).collect();
+    let pass = failing.is_empty();
+    let message = if failing.is_empty() {
+      None
+    } else {
+      Some(format!("{} 超出范围", failing.iter().map(|st| st.name.clone()).collect::<Vec<_>>().join(", ")))
+    };
+    RuleResult {
+      item: self.rule.id.clone(),
+      mode: self.rule.mode.clone(),
+      metric: primary.name.clone(),
+      unit: primary.unit.clone(),
+      value: primary.value,
+      avg: primary.avg,
+      min: primary.min,
+      max: primary.max,
+      std_dev: primary.std_dev,
+      samples: primary.samples,
+      min_limit: self.rule.min,
+      max_limit: self.rule.max,
+      pass,
+      message,
+    }
+  }
+
+  pub fn last_metrics(&self) -> &[Metric] {
+    &self.last_metrics
+  }
+  pub fn is_done(&self) -> bool {
+    self.done
+  }
+}
+
+/// 执行单条规则（异步包装，1 秒一拍）
+pub async fn run_rule(rule: &Rule) -> RuleResult {
+  let mut run = match RuleRun::new(rule) {
+    Ok(r) => r,
+    Err(e) => return RuleResult::failed(rule, format!("初始化失败: {}", e)),
+  };
+  loop {
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    if run.step() {
+      break;
+    }
+  }
+  run.result()
+}
+
 /// 执行规则文件，返回结构化报告（etest 判定 status 与逐项结果）
 pub async fn run_rules(path: &str) -> e_utils::AnyResult<RulesReport> {
   register_all();
   let file = parse_rules(path)?;
-  let plan = file
-    .name
-    .clone()
-    .unwrap_or_else(|| path.to_string());
+  let plan = file.name.clone().unwrap_or_else(|| path.to_string());
   let mut results: Vec<RuleResult> = Vec::new();
   for rule in &file.rules {
-    results.push(run_one_rule(rule).await);
+    results.push(run_rule(rule).await);
   }
   let status = results.iter().all(|r| r.pass);
   Ok(RulesReport { plan, status, results })
 }
 
-async fn run_one_rule(rule: &Rule) -> RuleResult {
-  let base = RuleResult {
-    item: rule.id.clone(),
-    mode: rule.mode.clone(),
-    metric: String::new(),
-    unit: String::new(),
-    value: 0.0,
-    avg: 0.0,
-    min: 0.0,
-    max: 0.0,
-    std_dev: 0.0,
-    samples: 0,
-    min_limit: rule.min,
-    max_limit: rule.max,
-    pass: false,
-    message: None,
-  };
-
-  let mode = match get_mode(&rule.mode) {
-    Some(m) => m,
-    None => {
-      let mut r = base;
-      r.message = Some(format!("未知模式 {}", rule.mode));
-      return r;
-    }
-  };
-
-  // 创建实例 + setup
-  let mut inst = match mode.create() {
-    Ok(i) => i,
-    Err(e) => {
-      let mut r = base;
-      r.message = Some(format!("创建实例失败: {}", e));
-      return r;
-    }
-  };
-  if let Err(e) = inst.setup(&ModeContext::default()) {
-    let mut r = base;
-    r.message = Some(format!("初始化失败: {}", e));
-    return r;
-  }
-
-  // 负载（规则级，仅 cpu-usage 等支持）
-  #[cfg(feature = "system")]
-  let load_handles = if rule.load > 0.0 {
-    inst.spawn_load(&ModeContext::default(), rule.load).unwrap_or_default()
-  } else {
-    Vec::new()
-  };
-  #[cfg(not(feature = "system"))]
-  let load_handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
-
-  // 采样
-  let ctx = ModeContext {
-    is_full: true,
-    ..Default::default()
-  };
-  let mut stats: HashMap<String, MetricStat> = HashMap::new();
-  let mut sums: HashMap<String, f64> = HashMap::new();
-  let mut sum_sqs: HashMap<String, f64> = HashMap::new();
-  let mut last_metrics: Vec<Metric> = Vec::new();
-  let mut sample_err: Option<String> = None;
-  for _ in 0..rule.secs.max(1) {
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    match inst.sample(&ctx) {
-      Ok(metrics) => {
-        last_metrics = metrics;
-        for m in &last_metrics {
-          if !rule.matches(&m.name) {
-            continue;
-          }
-          let st = stats
-            .entry(m.name.clone())
-            .or_insert_with(|| MetricStat::new(&m.name, m.unit.clone(), m.value));
-          *sums.entry(m.name.clone()).or_insert(0.0) += m.value;
-          *sum_sqs.entry(m.name.clone()).or_insert(0.0) += m.value * m.value;
-          st.update(m.value);
-        }
-      }
-      Err(e) => {
-        sample_err = Some(e.to_string());
-        break;
-      }
-    }
-  }
-
-  // 清理
-  if !load_handles.is_empty() {
-    crate::api_test::LOAD_CONTROLLER.stop_running();
-    for h in load_handles {
-      let _ = h.join();
-    }
-  }
-  let _ = inst.teardown(&ModeContext::default());
-
-  if let Some(err) = sample_err {
-    let mut r = base;
-    r.message = Some(format!("采样失败: {}", err));
-    return r;
-  }
-
-  // 收尾统计
-  for (name, st) in stats.iter_mut() {
-    st.finish(
-      sums.get(name).copied().unwrap_or(0.0),
-      sum_sqs.get(name).copied().unwrap_or(0.0),
-    );
-  }
-
-  // 判定：metric 匹配到的全部指标都须通过
-  let matched: Vec<&MetricStat> = stats
-    .values()
-    .filter(|st| rule.matches(&st.name))
-    .collect();
-  if matched.is_empty() {
-    let mut r = base;
-    if let Some(first) = last_metrics.first() {
-      r.metric = first.name.clone();
-      r.unit = first.unit.clone();
-      r.value = first.value;
-    }
-    r.message = Some(format!("指标未找到: {}", rule.metric));
-    return r;
-  }
-
-  // 排序取第一个作为结果主体
-  let mut matched: Vec<&MetricStat> = matched.into_iter().collect();
-  matched.sort_by(|a, b| a.name.cmp(&b.name));
-  let primary = matched[0];
-  let failing: Vec<&MetricStat> = matched.iter().copied().filter(|st| !rule.passes(st)).collect();
-  let pass = failing.is_empty();
-  let message = if failing.is_empty() {
-    None
-  } else {
-    Some(format!("{} 超出范围", failing.iter().map(|st| st.name.clone()).collect::<Vec<_>>().join(", ")))
-  };
-
-  RuleResult {
-    item: rule.id.clone(),
-    mode: rule.mode.clone(),
-    metric: primary.name.clone(),
-    unit: primary.unit.clone(),
-    value: primary.value,
-    avg: primary.avg,
-    min: primary.min,
-    max: primary.max,
-    std_dev: primary.std_dev,
-    samples: primary.samples,
-    min_limit: rule.min,
-    max_limit: rule.max,
-    pass,
-    message,
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  /// 可控的假模式（供 RuleRun 单测）
+  struct Dummy;
+  struct DummyInst {
+    count: usize,
+    values: Vec<f64>,
+  }
+  impl super::super::TestMode for Dummy {
+    fn name(&self) -> &'static str {
+      "dummy-rule"
+    }
+    fn description(&self) -> &'static str {
+      "dummy"
+    }
+    fn create(&self) -> e_utils::AnyResult<Box<dyn ModeInstance>> {
+      Ok(Box::new(DummyInst { count: 0, values: vec![10.0, 20.0, 30.0] }))
+    }
+  }
+  impl ModeInstance for DummyInst {
+    fn sample(&mut self, _ctx: &ModeContext) -> e_utils::AnyResult<Vec<Metric>> {
+      let v = self.values.get(self.count).copied().unwrap_or(30.0);
+      self.count += 1;
+      Ok(vec![Metric::new("DummyValue", v, "x")])
+    }
+  }
+
+  fn dummy_rule(max: Option<f64>) -> Rule {
+    Rule {
+      id: "d".into(),
+      mode: "dummy-rule".into(),
+      metric: "DummyValue".into(),
+      unit: None,
+      min: None,
+      max,
+      secs: 2,
+      load: 0.0,
+    }
+  }
+
+  #[test]
+  fn rule_run_incremental() {
+    crate::test_mode::register(&Dummy);
+    let mut run = RuleRun::new(&dummy_rule(Some(25.0))).unwrap();
+    // 第一次 step：10（未完成）；第二次 step：20，samples=2 == secs => 完成
+    assert!(!run.step());
+    assert!(run.step());
+    assert!(run.is_done());
+    assert!(run.step()); // 已完成幂等
+    let r = run.result();
+    assert_eq!(r.samples, 2);
+    assert!((r.avg - 15.0).abs() < 1e-9); // (10+20)/2
+    assert!(r.pass); // 15 <= 25
+  }
+
+  #[test]
+  fn rule_run_fail_avg() {
+    crate::test_mode::register(&Dummy);
+    let mut run = RuleRun::new(&dummy_rule(Some(12.0))).unwrap();
+    run.step();
+    run.step();
+    let r = run.result();
+    assert!(!r.pass); // avg 15 > 12
+    assert!(r.message.is_some());
+  }
+
+  #[test]
+  fn rule_run_cancel() {
+    crate::test_mode::register(&Dummy);
+    let mut run = RuleRun::new(&dummy_rule(None)).unwrap();
+    run.cancel();
+    assert!(run.is_done());
+    let r = run.result();
+    assert!(!r.pass);
+    assert!(r.message.is_some());
+  }
 
   #[test]
   fn rule_matches() {
@@ -365,30 +496,6 @@ mod tests {
     assert!(!r.matches("CPU_Usage"));
     let empty = Rule { metric: String::new(), ..r.clone() };
     assert!(empty.matches("anything"));
-  }
-
-  #[test]
-  fn rule_passes_avg() {
-    // avg=85 <= max 90 => 通过
-    let r = Rule {
-      id: "x".into(),
-      mode: "m".into(),
-      metric: String::new(),
-      unit: None,
-      min: None,
-      max: Some(90.0),
-      secs: 1,
-      load: 0.0,
-    };
-    let mut st = MetricStat::new("a", "%", 80.0);
-    st.update(80.0);
-    st.update(90.0);
-    st.finish(170.0, 80.0 * 80.0 + 90.0 * 90.0); // samples=2, avg=85
-    assert!(r.passes(&st));
-    let r2 = Rule { max: Some(80.0), ..r.clone() };
-    assert!(!r2.passes(&st));
-    let r3 = Rule { min: Some(90.0), max: None, ..r.clone() };
-    assert!(!r3.passes(&st));
   }
 
   #[test]

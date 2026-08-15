@@ -62,6 +62,7 @@ default = [
     "tracing",
     "core-temp",
     "argus-monitor",
+    "gui",
 ]
 
 [target.'cfg(windows)'.build-dependencies]
@@ -102,6 +103,7 @@ required-features = ["gui"]
 
 [package]
 name = "hw"
+default-run = "hw-gui"
 version = "0.2.0"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"

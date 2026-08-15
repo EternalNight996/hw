@@ -37,6 +37,8 @@ cargo install just
 just
 ```
 
+**默认启动为 GUI**：`cargo run`（或 `target\\debug\\hw-gui.exe`）打开桌面应用，含「实时监控 / Check 测试 / etest 规则」三个视图；命令行工具仍为 `hw`（如 `hw --api Test --task list`）。
+
 **命令区别说明：**
 - **data**: 仅返回传感器当前值
 - **print**: 返回完整统计信息，但不做验证
@@ -376,6 +378,7 @@ hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 - **实时监控** — 持续采样已注册的测试模式（net-speed、cpu-usage、mem-usage、disk-usage、temp、gpu-usage），各指标随时间绘制曲线
 - **Check 可视化** — 设定目标值/±误差/负载运行 check，逐秒采样叠加目标带，实时 PASS/FAIL
 - **历史与导出** — 每次 check 自动记录到 `hw-gui-history.json`，可导出 JSON/CSV 报告
+- **etest 规则执行面板** — 加载 `etest-rules.json` 规则文件，在 GUI 里逐条执行（进度/曲线/逐项 PASS-FAIL），导出与 CLI 相同的报告 JSON（见第 19 节）
 
 ```bash
 # 构建（gui 特性引入 eframe/egui_plot；需要 rustc >= 1.95）
@@ -424,6 +427,8 @@ hw --api Test --task run-rules --args etest-rules.json
 ```
 
 `content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
+
+GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（带进度与曲线），并导出与 CLI 完全一致的报告 JSON —— 最终生产测试可以全程在 GUI 中运行。
 ---
 ## 🚀 开发进度
 <table>
