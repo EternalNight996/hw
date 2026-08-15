@@ -390,6 +390,41 @@ set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 
 温度/GPU 模式需要 `plugins/` 下有 OHM/LHM/AIDA64（见第 17 节），首次启动这些模式最长约 20 秒（拉起后端进程）；其余模式开箱即用。
 ---
+### [19. 📖 etest 测试平台接入](src/test_mode/rules.rs)
+生产测试由 **etest** 平台调度：平台通过命令行调用 `hw.exe`，解析标准输出的 `R<...>R` 包装 JSON：
+
+```text
+R<{"content":"...","status":true,"opts":null}>R
+```
+
+`status` = 整体 PASS/FAIL；`content` = 规则报告 JSON（见下）。
+
+**规则文件**（JSON）——每个测试项一条，含上下限：
+
+```json
+{
+  "name": "my-plan",
+  "rules": [
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "secs": 5 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "max": 90, "secs": 3 }
+  ]
+}
+```
+
+- `id`：测试项 ID（唯一）；`mode`：已注册测试模式；`metric`：指标名包含匹配（空 = 该模式全部指标须通过）；`min`/`max`：上下限（省略 = 不限），按采样**平均值**判定；`secs`：采样秒数（默认 3）；`load`：负载%（默认 0）。
+
+**命令：**
+
+```bash
+# 生成规则模板文件
+hw --api Test --task rules-template --args etest-rules.json
+
+# 执行规则文件
+hw --api Test --task run-rules --args etest-rules.json
+```
+
+`content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
+---
 ## 🚀 开发进度
 <table>
   <tr>

@@ -390,6 +390,41 @@ set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 
 Temperature/GPU modes need OHM/LHM/AIDA64 executables under `plugins/` (see section 17); the first start of those modes may take up to ~20 s to launch the backend. Other modes work out of the box.
 ---
+### [19. 📖 etest Test Platform Integration](src/test_mode/rules.rs)
+Production testing is driven by the **etest** platform, which invokes `hw.exe` via CLI and parses the `R<...>R`-wrapped JSON on stdout:
+
+```text
+R<{"content":"...","status":true,"opts":null}>R
+```
+
+`status` = overall PASS/FAIL; `content` = rule report JSON (see below).
+
+**Rule file** (JSON) — one entry per test item with its limits:
+
+```json
+{
+  "name": "my-plan",
+  "rules": [
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "secs": 5 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "max": 90, "secs": 3 }
+  ]
+}
+```
+
+- `id`: test item id (unique); `mode`: registered test mode; `metric`: metric name contains-match (empty = all metrics must pass); `min`/`max`: limits (omitted = unlimited), judged on the sampling **average**; `secs`: sampling seconds (default 3); `load`: load % (default 0).
+
+**Commands:**
+
+```bash
+# Generate a rule template file
+hw --api Test --task rules-template --args etest-rules.json
+
+# Execute the rule file
+hw --api Test --task run-rules --args etest-rules.json
+```
+
+Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
+---
 ## 🚀 Development Progress
 <table>
   <tr>

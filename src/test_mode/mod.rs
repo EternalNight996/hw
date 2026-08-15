@@ -14,9 +14,11 @@
 mod registry;
 mod runner;
 pub mod builtin;
+pub mod rules;
 
 pub use registry::{get, list, register, registered_modes, Registry};
 pub use runner::{run_mode, LoadStat, MetricStat, ModeReport, TestParams};
+pub use rules::{Rule, RuleFile, RuleResult};
 
 use serde::{Deserialize, Serialize};
 
@@ -116,6 +118,25 @@ pub async fn run(op: &crate::cli::Opts) -> e_utils::AnyResult<String> {
       }
       crate::p(out.trim_end());
       Ok(out)
+    }
+    // etest 规则任务
+    "run-rules" => {
+      let path = op.args.first().map(|s| s.as_str()).unwrap_or("etest-rules.json");
+      let report = rules::run_rules(path).await?;
+      let json = report.to_json()?;
+      if report.status {
+        return Ok(json);
+      }
+      // 整体失败：返回内容为报告 JSON 的错误，main 会置 status=false（etest 兼容）
+      return Err(rules::RulesFail(json).into());
+    }
+    "rules-template" => {
+      let template = rules::rules_template()?;
+      if let Some(path) = op.args.first() {
+        std::fs::write(path, &template)?;
+        crate::p(format!("已生成规则模板: {}", path));
+      }
+      return Ok(template);
     }
     task => {
       let mode = get(task).ok_or_else(|| {
