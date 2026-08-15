@@ -6,12 +6,14 @@
 //! 自动化冒烟测试：设置环境变量 HW_GUI_SMOKE=1 时 3 秒后自动关闭窗口
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use eframe::egui;
 use egui_plot::{HLine, Legend, Line, Plot, PlotPoints};
 
+use hw::gui_config::{GuiConfig, CONFIG_FILE};
 use hw::test_mode::{
   get as get_mode, list as list_modes, register_all, rules, Metric, MetricStat, ModeContext, ModeInstance,
   TestParams,
@@ -20,6 +22,9 @@ use hw::test_mode::{
 const SAMPLE_INTERVAL: Duration = Duration::from_secs(1);
 const MAX_POINTS: usize = 900;
 const HISTORY_FILE: &str = "hw-gui-history.json";
+
+/// 进程退出码（auto_close 时由测试结果决定，供 etest 判断）
+static EXIT_CODE: AtomicI32 = AtomicI32::new(0);
 
 fn main() -> eframe::Result {
   register_all();
@@ -31,11 +36,19 @@ fn main() -> eframe::Result {
       .with_title("HW Monitor GUI"),
     ..Default::default()
   };
-  eframe::run_native(
+  let result = eframe::run_native(
     "HW Monitor GUI",
     opts,
     Box::new(|cc| Ok(Box::new(GuiApp::new(cc, smoke)))),
-  )
+  );
+  // auto_close 场景：测试失败时以退出码 1 结束，供 etest 判断
+  if result.is_ok() {
+    let code = EXIT_CODE.load(Ordering::SeqCst);
+    if code != 0 {
+      std::process::exit(code);
+    }
+  }
+  result
 }
 
 fn matches_filter(filter: &[String], name: &str) -> bool {
@@ -58,6 +71,8 @@ struct RulesGui {
   plan: String,
   done: bool,
   msg: String,
+  global_load: f64,
+  run_started: Option<Instant>,
 }
 
 impl RulesGui {
@@ -70,6 +85,8 @@ impl RulesGui {
       plan: String::new(),
       done: false,
       msg: String::new(),
+      global_load: 0.0,
+      run_started: None,
     }
   }
 
@@ -102,6 +119,7 @@ impl RulesGui {
     self.results.clear();
     self.run = None;
     self.done = false;
+    self.run_started = Some(Instant::now());
     self.advance();
   }
 
@@ -116,7 +134,11 @@ impl RulesGui {
       return;
     }
     let idx = self.results.len();
-    let rule = self.file.as_ref().unwrap().rules[idx].clone();
+    let mut rule = self.file.as_ref().unwrap().rules[idx].clone();
+    // 全局负载覆盖：配置 >0 且规则未指定负载时生效
+    if self.global_load > 0.0 && rule.load == 0.0 {
+      rule.load = self.global_load;
+    }
     match rules::RuleRun::new(&rule) {
       Ok(run) => {
         self.msg = format!("运行规则 {}/{}：{}（{}）", idx + 1, total, rule.id, rule.mode);
@@ -140,7 +162,23 @@ impl RulesGui {
       self.results.push(rules::RuleResult::failed(&rule, "未执行（已停止）"));
     }
     self.done = true;
+    self.run_started = None;
     self.msg = "已停止".into();
+  }
+
+  /// 超时/中止：当前规则标记失败，剩余规则标记 reason
+  fn timeout(&mut self, reason: &str) {
+    if let Some(mut run) = self.run.take() {
+      run.cancel();
+      self.results.push(run.result());
+    }
+    while self.results.len() < self.total() {
+      let rule = self.file.as_ref().unwrap().rules[self.results.len()].clone();
+      self.results.push(rules::RuleResult::failed(&rule, reason));
+    }
+    self.done = true;
+    self.run_started = None;
+    self.msg = reason.into();
   }
 
   fn export_report(&mut self) {
@@ -348,8 +386,10 @@ struct GuiApp {
   msg: String,
   smoke: bool,
   smoke_announced: bool,
+  auto_closed: bool,
   view: View,
   rules: RulesGui,
+  config: GuiConfig,
 }
 
 impl GuiApp {
@@ -365,6 +405,8 @@ impl GuiApp {
       .unwrap_or_else(|| "net-speed".into());
     let history = load_history();
     let count = modes.len();
+    // 加载运行配置（缺失自动创建模板）
+    let (config, created) = GuiConfig::load(CONFIG_FILE);
     let mut app = Self {
       modes,
       selected,
@@ -381,12 +423,29 @@ impl GuiApp {
       msg: format!("就绪。已注册 {} 个测试模式", count),
       smoke,
       smoke_announced: false,
-      view: View::Live,
+      auto_closed: false,
+      view: match config.view() {
+        "live" => View::Live,
+        "check" => View::Check,
+        _ => View::Rules,
+      },
       rules: RulesGui::new(),
+      config: config.clone(),
     };
-    // 冒烟测试：自动加载规则文件
-    if smoke && std::path::Path::new("etest-rules.json").exists() {
+    // 配置生效：默认秒数/负载、规则文件自动加载
+    if config.run_seconds > 0 {
+      app.c_secs = config.run_seconds as usize;
+    }
+    if config.raise_load_percent > 0.0 {
+      app.c_load = config.raise_load_percent;
+    }
+    app.rules.path = config.rule_file.clone();
+    app.rules.global_load = config.raise_load_percent;
+    if std::path::Path::new(&config.rule_file).exists() {
       app.rules.load();
+    }
+    if created {
+      app.msg = format!("已生成默认配置 {}（etest 可直接修改）", CONFIG_FILE);
     }
     app
   }
@@ -647,10 +706,35 @@ impl eframe::App for GuiApp {
           self.rules.advance();
         }
       }
-      // 冒烟测试：自动加载并运行规则
-      if self.smoke && self.rules.file.is_some() && !self.rules.done && self.rules.run.is_none() && self.rules.results.is_empty() {
+      // 自动运行（配置 auto_run 或冒烟模式）
+      if (self.config.auto_run || self.smoke)
+        && self.rules.file.is_some()
+        && !self.rules.done
+        && self.rules.run.is_none()
+        && self.rules.results.is_empty()
+      {
         self.rules.start();
       }
+      // 总时长上限
+      if let Some(started) = self.rules.run_started {
+        if self.config.run_seconds > 0 && started.elapsed().as_secs() >= self.config.run_seconds {
+          self.rules.timeout("超过总时长上限");
+        }
+      }
+    }
+    // 配置 auto_close：规则完成后自动关闭并设置退出码（供 etest 判断）
+    if self.config.auto_close && !self.auto_closed && self.rules.done && !self.rules.results.is_empty() {
+      self.auto_closed = true;
+      let ok = self.rules.results.iter().all(|r| r.pass);
+      let code = if !ok && self.config.exit_code_on_fail { 1 } else { 0 };
+      EXIT_CODE.store(code, Ordering::SeqCst);
+      println!(
+        "HW_GUI_TEST_DONE status={} items={} exit={}",
+        if ok { "PASS" } else { "FAIL" },
+        self.rules.results.len(),
+        code
+      );
+      ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
     ctx.request_repaint_after(SAMPLE_INTERVAL);
 
@@ -764,7 +848,7 @@ impl eframe::App for GuiApp {
                 ui.strong("值");
                 ui.strong("单位");
                 ui.end_row();
-                for m in &live.last_metrics {
+                for m in live.last_metrics.iter().filter(|m| self.config.metric_visible(&m.name)) {
                   ui.label(&m.name);
                   ui.label(format!("{:.2}", m.value));
                   ui.label(&m.unit);
@@ -814,7 +898,12 @@ impl eframe::App for GuiApp {
         View::Live => {
           if let Some(live) = &self.live {
             ui.heading(format!("实时曲线 — {}", live.mode_name));
-            let names: Vec<String> = live.series.keys().cloned().collect();
+            let names: Vec<String> = live
+              .series
+              .keys()
+              .filter(|n| self.config.metric_visible(n))
+              .cloned()
+              .collect();
             if names.is_empty() {
               ui.weak("等待首个样本…");
             } else {
@@ -1030,7 +1119,11 @@ impl GuiApp {
           run.rule.mode
         ));
       });
-      let last = run.last_metrics();
+      let last: Vec<&Metric> = run
+        .last_metrics()
+        .iter()
+        .filter(|m| self.config.metric_visible(&m.name))
+        .collect();
       if !last.is_empty() {
         ui.horizontal_wrapped(|ui| {
           for m in last {

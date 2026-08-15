@@ -430,6 +430,41 @@ Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metri
 
 The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule with live progress/curves, and exports the identical report JSON — the final production test can run entirely from the GUI.
 ---
+### [20. 📖 GUI Run Config (`hw-gui-config.json`, editable by etest)](src/gui_config.rs)
+etest/operators edit `hw-gui-config.json` (auto-created on first run) to control the GUI test behavior — no code changes needed:
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
+| `rule_file` | Rule file path, auto-loaded at startup | `etest-rules.json` |
+| `auto_run` | Auto-start rule execution after launch | `true` |
+| `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |
+| `auto_close` | Auto-close the window when the test completes | `true` |
+| `exit_code_on_fail` | Return process exit code `1` on test failure (etest can judge without parsing; only applies with `auto_close`) | `true` |
+| `raise_load_percent` | Global load %; >0 becomes the default load for rules without explicit load (and the Check default) | `0` |
+| `display_mode` | `all` = show every metric; `single` = only `display_metrics` | `all` |
+| `display_metrics` | Metric name contains-match list used when `display_mode=single` (e.g. `["CPU_0_Clock"]` for CPU frequency, `["CPU_Usage_Global"]`) | `[]` |
+
+```json
+
+```
+
+Example — production one-shot: start at the rules view, run `etest-rules.json`, raise 60% load, watch only CPU frequency/usage, close with exit code when done:
+
+```json
+{
+  "default_view": "rules",
+  "rule_file": "etest-rules.json",
+  "auto_run": true,
+  "run_seconds": 60,
+  "auto_close": true,
+  "exit_code_on_fail": true,
+  "raise_load_percent": 60,
+  "display_mode": "single",
+  "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"]
+}
+```
+---
 ## 🚀 Development Progress
 <table>
   <tr>

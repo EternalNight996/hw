@@ -43,6 +43,7 @@ pub mod core_temp;
 pub mod argus_monitor;
 pub mod api_test;
 pub mod common;
+pub mod gui_config;
 pub mod os_more;
 pub mod share;
 pub mod test_mode;

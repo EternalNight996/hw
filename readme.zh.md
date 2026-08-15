@@ -430,6 +430,37 @@ hw --api Test --task run-rules --args etest-rules.json
 
 GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（带进度与曲线），并导出与 CLI 完全一致的报告 JSON —— 最终生产测试可以全程在 GUI 中运行。
 ---
+### [20. 📖 GUI 运行配置表（`hw-gui-config.json`，etest 可直接修改）](src/gui_config.rs)
+etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）即可控制 GUI 测试行为，无需改代码：
+
+| 字段 | 含义 | 默认值 |
+| --- | --- | --- |
+| `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
+| `rule_file` | 规则文件路径，启动自动加载 | `etest-rules.json` |
+| `auto_run` | 启动后自动开始执行规则 | `true` |
+| `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |
+| `auto_close` | 测试完成后自动关闭窗口 | `true` |
+| `exit_code_on_fail` | 测试失败时进程退出码返回 `1`（etest 不解析也能判断；仅 auto_close 时生效） | `true` |
+| `raise_load_percent` | 全局负载%；>0 时作为未指定负载规则的默认负载（也是 Check 默认负载） | `0` |
+| `display_mode` | `all` = 显示全部指标；`single` = 只显示 `display_metrics` 指定指标 | `all` |
+| `display_metrics` | `display_mode=single` 时按指标名包含匹配显示（如 `["CPU_0_Clock"]` 只看 CPU 主频、`["CPU_Usage_Global"]` 只看占用） | `[]` |
+
+产线一键示例：启动即进规则视图 → 自动运行 `etest-rules.json` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
+
+```json
+{
+  "default_view": "rules",
+  "rule_file": "etest-rules.json",
+  "auto_run": true,
+  "run_seconds": 60,
+  "auto_close": true,
+  "exit_code_on_fail": true,
+  "raise_load_percent": 60,
+  "display_mode": "single",
+  "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"]
+}
+```
+---
 ## 🚀 开发进度
 <table>
   <tr>
