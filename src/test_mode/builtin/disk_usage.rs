@@ -2,8 +2,10 @@
 //!
 //! 指标：每个磁盘 <挂载点> Used%（占用率）、Read / Write（B/s，1s 窗口）。
 //!
-//!     hw --api Test --task disk-usage --task print -- 3
-//!     hw --api Test --task disk-usage --task check --filter "C: Used%" -- 3 80 5
+//! ```text
+//! hw --api Test --task disk-usage --args print -- 3
+//! hw --api Test --task disk-usage --args check --filter "C: Used%" -- 3 80 5
+//! ```
 
 use crate::test_mode::{Metric, ModeContext, ModeInstance, TestMode};
 

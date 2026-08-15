@@ -30,8 +30,11 @@ pub enum Inner {
   OSMore,
   Drive,
   FileInfo,
+  #[cfg(feature = "os-system")]
   OSSystem,
+  #[cfg(feature = "os-office")]
   OSOffice,
+  #[cfg(feature = "disk")]
   Disk,
   #[cfg(all(feature = "core-temp", target_os = "windows"))]
   CoreTemp(crate::core_temp::CoreTemp),
@@ -61,9 +64,18 @@ impl Inner {
       OptsApi::OSMore => Ok(Self::OSMore),
       OptsApi::Drive => Ok(Self::Drive),
       OptsApi::FileInfo => Ok(Self::FileInfo),
+      #[cfg(feature = "os-system")]
       OptsApi::OSSystem => Ok(Self::OSSystem),
+      #[cfg(not(feature = "os-system"))]
+      OptsApi::OSSystem => Err("OSSystem not supported (enable os-system feature)".into()),
+      #[cfg(feature = "os-office")]
       OptsApi::OSOffice => Ok(Self::OSOffice),
+      #[cfg(not(feature = "os-office"))]
+      OptsApi::OSOffice => Err("OSOffice not supported (enable os-office feature)".into()),
+      #[cfg(feature = "disk")]
       OptsApi::Disk => Ok(Self::Disk),
+      #[cfg(not(feature = "disk"))]
+      OptsApi::Disk => Err("Disk not supported (enable disk feature)".into()),
       #[cfg(all(feature = "core-temp", target_os = "windows"))]
       OptsApi::CoreTemp => Ok(Self::CoreTemp(crate::core_temp::CoreTemp::new()?)),
       #[cfg(not(all(feature = "core-temp", target_os = "windows")))]

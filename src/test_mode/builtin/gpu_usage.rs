@@ -1,7 +1,9 @@
 //! GPU 利用率测试模式（依赖 OHM / LHM / AIDA64 后端，仅 Windows）
 //!
-//!     hw --api Test --task gpu-usage --task print -- 3
-//!     hw --api Test --task gpu-usage --task check --filter "GPU Core" -- 5 90 10
+//! ```text
+//! hw --api Test --task gpu-usage --args print -- 3
+//! hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
+//! ```
 
 use crate::api_test::{HardwareType, SensorType};
 use crate::test_mode::{Metric, ModeContext, ModeInstance, TestMode};

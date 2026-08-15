@@ -5,18 +5,22 @@
 //!
 //! 规则文件（JSON）：
 //!
-//!     {
-//!       "name": "网卡产测",
-//!       "rules": [
-//!         { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "min": 1000000, "secs": 5 },
-//!         { "id": "cpu-temp", "mode": "temp", "metric": "CPU Package", "max": 85, "secs": 3 }
-//!       ]
-//!     }
+//! ```text
+//! {
+//!   "name": "网卡产测",
+//!   "rules": [
+//!     { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "min": 1000000, "secs": 5 },
+//!     { "id": "cpu-temp", "mode": "temp", "metric": "CPU Package", "max": 85, "secs": 3 }
+//!   ]
+//! }
+//! ```
 //!
 //! CLI：
 //!
-//!     hw --api Test --task run-rules --args etest-rules.json
-//!     hw --api Test --task rules-template --args etest-rules.json   # 生成模板
+//! ```text
+//! hw --api Test --task run-rules --args etest-rules.json
+//! hw --api Test --task rules-template --args etest-rules.json   # 生成模板
+//! ```
 //!
 //! GUI（hw-gui）的“规则执行”面板与 CLI 共用本引擎。
 

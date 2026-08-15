@@ -1,7 +1,9 @@
 fn main() -> e_utils::AnyResult<()> {
   // 基础编译配置
   println!("cargo:rustc-env=RUSTFLAGS=-C target-cpu=native");
-  println!("cargo:rustc-link-arg=-s"); // 剥离符号表
+  // 剥离符号表（MSVC 无 -s 选项，忽略）
+  #[cfg(not(target_env = "msvc"))]
+  println!("cargo:rustc-link-arg=-s");
   #[cfg(feature = "built")]
   built()?;
   #[cfg(feature = "build")]

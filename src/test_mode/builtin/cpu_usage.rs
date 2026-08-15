@@ -3,7 +3,9 @@
 //! 指标：CPU_Usage_Global（%）；--full 或 --filter 时输出每核心利用率与主频。
 //! check 模式支持 v3 负载（0-100%），复用 LoadController 忙等生成器。
 //!
-//!     hw --api Test --task cpu-usage --task check --filter CPU_Usage_Global -- 5 80 10 100
+//! ```text
+//! hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 100
+//! ```
 
 use crate::api_test::{HardwareType, SensorType, LOAD_CONTROLLER};
 use crate::test_mode::{Metric, ModeContext, ModeInstance, TestMode};

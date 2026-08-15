@@ -1,7 +1,9 @@
 //! 温度测试模式（CPU / GPU / 主板，依赖 OHM / LHM / AIDA64 后端，仅 Windows）
 //!
-//!     hw --api Test --task temp --task print -- 3
-//!     hw --api Test --task temp --task check --filter "CPU Package" -- 5 80 5
+//! ```text
+//! hw --api Test --task temp --args print -- 3
+//! hw --api Test --task temp --args check --filter "CPU Package" -- 5 80 5
+//! ```
 
 use crate::api_test::{HardwareType, SensorType};
 use crate::test_mode::{Metric, ModeContext, ModeInstance, TestMode};

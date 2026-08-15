@@ -2,8 +2,10 @@
 //!
 //! 指标：RAM_Usage（%）、RAM_Total/Used/Free（GiB）、Swap_Usage（%）。
 //!
-//!     hw --api Test --task mem-usage --task print -- 3
-//!     hw --api Test --task mem-usage --task check --filter RAM_Usage -- 3 60 10
+//! ```text
+//! hw --api Test --task mem-usage --args print -- 3
+//! hw --api Test --task mem-usage --args check --filter RAM_Usage -- 3 60 10
+//! ```
 
 use crate::test_mode::{Metric, ModeContext, ModeInstance, TestMode};
 

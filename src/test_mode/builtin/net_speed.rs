@@ -2,8 +2,10 @@
 //!
 //! 指标：Total_Rx / Total_Tx（B/s，全接口汇总）；--full 或 --filter 时输出各接口速率。
 //!
-//!     hw --api Test --task net-speed --task print -- 5
-//!     hw --api Test --task net-speed --task check --filter Total_Rx -- 5 1000000 200000
+//! ```text
+//! hw --api Test --task net-speed --args print -- 5
+//! hw --api Test --task net-speed --args check --filter Total_Rx -- 5 1000000 200000
+//! ```
 
 use std::collections::HashMap;
 

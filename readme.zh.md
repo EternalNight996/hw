@@ -8,6 +8,8 @@
   
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw)[![API](https://docs.rs/e-log/badge.svg)](https://docs.rs/hw)[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
+[![CI](https://github.com/eternalnight996/hw/actions/workflows/ci.yml/badge.svg)](https://github.com/eternalnight996/hw/actions/workflows/ci.yml)
+
 [English](readme.md) | 简体中文
 
 </div>
@@ -36,6 +38,8 @@ cd hw
 cargo install just
 just
 ```
+
+> CI（GitHub Actions）覆盖：`cargo check --all-features`、`--no-default-features --features "cli,log"`、`--features "ohm,cli,log"` 与 `cargo test`（lib + doc）。
 
 **默认启动为 GUI**：`cargo run`（或 `target\\debug\\hw-gui.exe`）打开桌面应用，含「实时监控 / Check 测试 / etest 规则」三个视图；命令行工具仍为 `hw`（如 `hw --api Test --task list`）。
 
@@ -76,7 +80,7 @@ hw = {version="0.1", default-features = false, feature=["ohm","cli","log"]}
 ```bash
 hw --api OS --task data --args CPU Clock
 ```
-```rust
+```text
    Compiling hw v0.1.2 (D:\MyApp\hw)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.18s
      Running `target\x86_64-pc-windows-msvc\debug\hw.exe --api OHM --task data --args CPU Clock`
@@ -112,7 +116,7 @@ R<{"content":"1068","status":true,"opts":null}>R
 ```bash
 hw --api OHM --task print --full --args CPU Clock
 ```
-```rust
+```text
 ...
 
 R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"1102\",\"min\":1101.5174560546875,\"max\":1101.5174560546875,\"avg\":1102.0,\"total\":6609.104736328125,\"samples\":6,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":0.0,\"total\":0.0,\"status\":[]},\"status\":[...]}","status":true,"opts":null}>R
@@ -122,7 +126,7 @@ R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"r
 ```bash
 hw --api OHM --task check --full --args CPU Clock -- 10 2000 3000 100
 ```
-```rust
+```text
 ...
 
 --- 第 10 秒中央处理器状态 ---

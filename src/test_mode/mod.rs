@@ -5,11 +5,13 @@
 //!
 //! CLI 用法（需 cli 特性）：
 //!
-//!     # 列出所有已注册模式
-//!     hw --api Test --task list
-//!     # 运行某个模式：data（当前值）/ print（统计）/ check（校验+负载）
-//!     hw --api Test --task net-speed --task print -- 5
-//!     hw --api Test --task cpu-usage --task check --filter Global -- 5 80 10 100
+//! ```text
+//! # 列出所有已注册模式
+//! hw --api Test --task list
+//! # 运行某个模式：data（当前值）/ print（统计）/ check（校验+负载）
+//! hw --api Test --task net-speed --args print -- 5
+//! hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 100
+//! ```
 
 mod registry;
 mod runner;
@@ -98,9 +100,11 @@ pub fn register_all() {
 ///
 /// 动词（data/print/check）由 --args 首参数指定，缺省为 print：
 ///
-///     hw --api Test --task list
-///     hw --api Test --task net-speed --args print -- 5
-///     hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 100
+/// ```text
+/// hw --api Test --task list
+/// hw --api Test --task net-speed --args print -- 5
+/// hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 100
+/// ```
 ///
 /// 首次调用时自动注册内置模式（重复调用幂等）。
 #[cfg(feature = "cli")]
