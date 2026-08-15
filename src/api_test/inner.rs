@@ -68,6 +68,8 @@ impl Inner {
       OptsApi::CoreTemp => Ok(Self::CoreTemp(crate::core_temp::CoreTemp::new()?)),
       #[cfg(not(all(feature = "core-temp", target_os = "windows")))]
       OptsApi::CoreTemp => Err("CoreTemp not supported".into()),
+      // Test 模式在 cli::api 中直接路由，不会走到这里
+      OptsApi::Test => Err("Test mode is routed before Inner construction".into()),
     }
   }
 }

@@ -11,6 +11,10 @@ use strum::VariantArray;
 
 /// # Input api 统一接口
 pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
+  // Test 模式：走可注册的 test_mode 框架，不经 Tester/Inner
+  if op.api == OptsApi::Test {
+    return crate::test_mode::run(&op).await;
+  }
   let mut tester = Tester::from_opts(&op)?;
   match tester.inner {
     #[cfg(all(feature = "core-temp", target_os = "windows"))]

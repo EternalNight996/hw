@@ -339,6 +339,37 @@ hw --api Disk --task mount-tree --args C:
 hw --api Disk --task check-load --args 10 90
 ```
 ---
+### [17. 📖 Click for Rust Test Modes](src/test_mode/)
+### Test Modes (pluggable test framework, inspired by TrafficMonitor's plugin interface)
+```bash
+# List all registered modes
+hw --api Test --task list
+
+# Network upload/download rate (B/s), 5 samples
+hw --api Test --task net-speed --args print -- 5
+
+# CPU usage check: 5s, target 80%, ±10%, with 60% load
+hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 60
+
+# Memory usage, single data point
+hw --api Test --task mem-usage --args data
+
+# Disk used% and IO rates
+hw --api Test --task disk-usage --args print -- 3
+
+# Temperature (°C) and GPU utilization (need OHM/LHM/AIDA64 in plugins/)
+hw --api Test --task temp --args print -- 3
+hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
+```
+The verb is the first `--args` value (`data` / `print` / `check`, default `print`); test params follow `--` as `<secs> <target> <error> <load%>`; `--filter` restricts which metrics are validated/emitted.
+
+**Adding a new mode** = 1 module + 1 registration line (no dispatcher changes):
+1. Implement `TestMode` (name/description/create) + `ModeInstance` (sample; optional setup/teardown/spawn_load)
+2. Add a `pub static MODE: XxxMode = XxxMode;`
+3. Register in `src/test_mode/builtin/mod.rs` (one line)
+
+See [src/test_mode/mod.rs](src/test_mode/mod.rs) for the trait docs.
+---
 ## 🚀 Development Progress
 <table>
   <tr>

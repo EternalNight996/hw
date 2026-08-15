@@ -339,6 +339,37 @@ hw --api Disk --task mount-tree --args C:
 hw --api Disk --task check-load --args 10 90
 ```
 ---
+### [17. 📖 点击Rust调用测试模式](src/test_mode/)
+### 测试模式（可注册测试框架，受 TrafficMonitor 插件接口启发）
+```bash
+# 列出所有已注册模式
+hw --api Test --task list
+
+# 网速上/下行速率（B/s），5 次采样
+hw --api Test --task net-speed --args print -- 5
+
+# CPU 利用率检查：5 秒，目标 80%，误差 ±10%，并施加 60% 负载
+hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 60
+
+# 内存利用率，单次数据
+hw --api Test --task mem-usage --args data
+
+# 磁盘占用率与 IO 速率
+hw --api Test --task disk-usage --args print -- 3
+
+# 温度（°C）与显卡利用率（需在 plugins/ 放置 OHM/LHM/AIDA64）
+hw --api Test --task temp --args print -- 3
+hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
+```
+动词为 `--args` 首参数（`data` / `print` / `check`，缺省 `print`）；测试参数跟在 `--` 后：`<秒数> <目标值> <误差> <负载%>`；`--filter` 限制参与校验/输出的指标。
+
+**新增一个测试模式 = 1 个模块 + 1 行注册**（无需改动分发代码）：
+1. 实现 `TestMode`（name/description/create）+ `ModeInstance`（sample，可选 setup/teardown/spawn_load）
+2. 声明 `pub static MODE: XxxMode = XxxMode;`
+3. 在 `src/test_mode/builtin/mod.rs` 注册一行
+
+详见 [src/test_mode/mod.rs](src/test_mode/mod.rs) 的 trait 文档。
+---
 ## 🚀 开发进度
 <table>
   <tr>
