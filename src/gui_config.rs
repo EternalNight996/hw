@@ -92,6 +92,25 @@ impl Default for GuiConfig {
   }
 }
 
+/// 解析路径占位符（参考 MVCheck Conf.json）：{origin} = 程序目录、{env:KEY} = 环境变量
+pub fn resolve_placeholders(input: &str) -> String {
+  let origin = std::env::current_exe()
+    .ok()
+    .and_then(|p| p.parent().map(|d| d.display().to_string()))
+    .unwrap_or_default();
+  let mut out = input.replace("{origin}", &origin);
+  while let Some(start) = out.find("{env:") {
+    if let Some(rel) = out[start..].find('}') {
+      let key = out[start + 5..start + rel].to_string();
+      let val = std::env::var(&key).unwrap_or_default();
+      out.replace_range(start..=start + rel, &val);
+    } else {
+      break;
+    }
+  }
+  out
+}
+
 impl GuiConfig {
   /// 生成模板文本
   pub fn template() -> e_utils::AnyResult<String> {
@@ -102,7 +121,11 @@ impl GuiConfig {
   pub fn load(path: &str) -> (Self, bool) {
     match std::fs::read_to_string(path) {
       Ok(text) => match serde_json::from_str::<GuiConfig>(&text) {
-        Ok(cfg) => (cfg, false),
+        Ok(mut cfg) => {
+          cfg.rule_file = resolve_placeholders(&cfg.rule_file);
+          cfg.log_file = resolve_placeholders(&cfg.log_file);
+          (cfg, false)
+        },
         Err(_) => {
           let def = GuiConfig::default();
           let _ = std::fs::write(path, GuiConfig::template().unwrap_or_default());
@@ -161,6 +184,19 @@ mod tests {
     assert!(!cfg.metric_visible("RAM_Usage"));
     cfg.display_mode = "all".into();
     assert!(cfg.metric_visible("RAM_Usage"));
+  }
+
+  #[test]
+  fn placeholders_resolve() {
+    // {origin} 解析为程序目录（非空）
+    let s = resolve_placeholders("{origin}/etest-rules.json");
+    assert!(!s.starts_with("{origin}"));
+    assert!(s.ends_with("/etest-rules.json"));
+    // 未知 {env:KEY} 解析为空
+    let s2 = resolve_placeholders("{env:NO_SUCH_KEY_XYZ}/a");
+    assert!(s2.starts_with("/a"));
+    // 无占位符原样
+    assert_eq!(resolve_placeholders("plain.json"), "plain.json");
   }
 
   #[test]

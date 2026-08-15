@@ -1,0 +1,27 @@
+{
+  "name": "my-plan",
+  "rules": [
+    {
+      "id": "net-up",
+      "mode": "net-speed",
+      "metric": "Total_Rx",
+      "unit": "B/s",
+      "min": 1000000.0,
+      "max": null,
+      "max_std": null,
+      "secs": 5,
+      "load": 0.0
+    },
+    {
+      "id": "ram-usage",
+      "mode": "mem-usage",
+      "metric": "RAM_Usage",
+      "unit": "%",
+      "min": null,
+      "max": 90.0,
+      "max_std": 2.0,
+      "secs": 3,
+      "load": 0.0
+    }
+  ]
+}

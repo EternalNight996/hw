@@ -402,31 +402,44 @@ R<{"content":"...","status":true,"opts":null}>R
 
 `status` = overall PASS/FAIL; `content` = rule report JSON (see below).
 
-**Rule file** (JSON) — one entry per test item with its limits:
+> 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
+
+**Rule file `etest-rules.json`** — one entry per test item with its limits (template shipped in the repo; regenerate with `rules-template`):
+
+| Field | Meaning | Example |
+| --- | --- | --- |
+| `id` | Test item id (unique) | `net-up` |
+| `mode` | Registered test mode (section 17) | `net-speed` |
+| `metric` | Metric name contains-match; empty = all metrics must pass | `Total_Rx` |
+| `unit` | Optional unit check | `B/s` |
+| `min` / `max` | Lower/upper limit, judged on sampling **average**; omitted = unlimited | `1000000` / `null` |
+| `max_std` | **Stability**: max standard deviation σ; omitted = unlimited | `2.0` |
+| `secs` | Sampling seconds (default 3) | `5` |
+| `load` | Load % (default 0) | `0` |
+
+Template (identical to the committed `etest-rules.json`):
 
 ```json
 {
   "name": "my-plan",
   "rules": [
-    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "secs": 5 },
-    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "max": 90, "secs": 3 }
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "max": null, "max_std": null, "secs": 5, "load": 0 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "min": null, "max": 90, "max_std": 2.0, "secs": 3, "load": 0 }
   ]
 }
 ```
 
-- `id`: test item id (unique); `mode`: registered test mode; `metric`: metric name contains-match (empty = all metrics must pass); `min`/`max`: limits (omitted = unlimited), judged on the sampling **average**; `secs`: sampling seconds (default 3); `load`: load % (default 0).
-
 **Commands:**
 
 ```bash
-# Generate a rule template file
+# Generate / refresh the rule template
 hw --api Test --task rules-template --args etest-rules.json
 
 # Execute the rule file
 hw --api Test --task run-rules --args etest-rules.json
 ```
 
-Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
+Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
 
 The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule with live progress/curves, and exports the identical report JSON — the final production test can run entirely from the GUI.
 ---
@@ -436,7 +449,7 @@ etest/operators edit `hw-gui-config.json` (auto-created on first run) to control
 | Field | Meaning | Default |
 | --- | --- | --- |
 | `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
-| `rule_file` | Rule file path, auto-loaded at startup | `etest-rules.json` |
+| `rule_file` | Rule file path, auto-loaded at startup (supports `{origin}` = program dir, `{env:KEY}`) | `etest-rules.json` |
 | `auto_run` | Auto-start rule execution after launch | `true` |
 | `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |
 | `auto_close` | Auto-close the window when the test completes | `true` |
@@ -445,7 +458,7 @@ etest/operators edit `hw-gui-config.json` (auto-created on first run) to control
 | `display_mode` | `all` = show every metric; `single` = only `display_metrics` | `all` |
 | `display_metrics` | Metric name contains-match list used when `display_mode=single` (e.g. `["CPU_0_Clock"]` for CPU frequency, `["CPU_Usage_Global"]`) | `[]` |
 | `check_params` | Check 测试默认参数（etest 可直接修改）：`{secs, target, error, load}` | `{5, 1000, 500, 0}` |
-| `log_file` | Test result log file — the `R<...>R` result is appended here (empty = no file) | `hw-gui-test.log` |
+| `log_file` | Test result log file — the `R<...>R` result is appended here (supports `{origin}`/`{env:KEY}`, empty = no file) | `hw-gui-test.log` |
 
 ```json
 

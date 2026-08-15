@@ -402,31 +402,44 @@ R<{"content":"...","status":true,"opts":null}>R
 
 `status` = 整体 PASS/FAIL；`content` = 规则报告 JSON（见下）。
 
-**规则文件**（JSON）——每个测试项一条，含上下限：
+> 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
+
+**规则文件 `etest-rules.json`** —— 每个测试项一条，含上下限与稳定性（仓库已带模板，`rules-template` 可重新生成）：
+
+| 字段 | 说明 | 示例 |
+| --- | --- | --- |
+| `id` | 测试项 ID（唯一） | `net-up` |
+| `mode` | 已注册测试模式（见第 17 节） | `net-speed` |
+| `metric` | 指标名包含匹配；空 = 该模式全部指标须通过 | `Total_Rx` |
+| `unit` | 可选单位校验 | `B/s` |
+| `min` / `max` | 上下限，按采样**平均值**判定；省略 = 不限 | `1000000` / `null` |
+| `max_std` | **稳定性**：采样标准差 σ 上限；省略 = 不限 | `2.0` |
+| `secs` | 采样秒数（默认 3） | `5` |
+| `load` | 负载%（默认 0） | `0` |
+
+模板（与入库的 `etest-rules.json` 一致）：
 
 ```json
 {
   "name": "my-plan",
   "rules": [
-    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "secs": 5 },
-    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "max": 90, "secs": 3 }
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "max": null, "max_std": null, "secs": 5, "load": 0 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "min": null, "max": 90, "max_std": 2.0, "secs": 3, "load": 0 }
   ]
 }
 ```
 
-- `id`：测试项 ID（唯一）；`mode`：已注册测试模式；`metric`：指标名包含匹配（空 = 该模式全部指标须通过）；`min`/`max`：上下限（省略 = 不限），按采样**平均值**判定；`secs`：采样秒数（默认 3）；`load`：负载%（默认 0）。
-
 **命令：**
 
 ```bash
-# 生成规则模板文件
+# 生成/刷新规则模板
 hw --api Test --task rules-template --args etest-rules.json
 
 # 执行规则文件
 hw --api Test --task run-rules --args etest-rules.json
 ```
 
-`content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
+`content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
 
 GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（带进度与曲线），并导出与 CLI 完全一致的报告 JSON —— 最终生产测试可以全程在 GUI 中运行。
 ---
@@ -436,7 +449,7 @@ etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）
 | 字段 | 含义 | 默认值 |
 | --- | --- | --- |
 | `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
-| `rule_file` | 规则文件路径，启动自动加载 | `etest-rules.json` |
+| `rule_file` | 规则文件路径，启动自动加载（支持 `{origin}`=程序目录、`{env:KEY}`） | `etest-rules.json` |
 | `auto_run` | 启动后自动开始执行规则 | `true` |
 | `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |
 | `auto_close` | 测试完成后自动关闭窗口 | `true` |
@@ -445,7 +458,7 @@ etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）
 | `display_mode` | `all` = 显示全部指标；`single` = 只显示 `display_metrics` 指定指标 | `all` |
 | `display_metrics` | `display_mode=single` 时按指标名包含匹配显示（如 `["CPU_0_Clock"]` 只看 CPU 主频、`["CPU_Usage_Global"]` 只看占用） | `[]` |
 | `check_params` | Check 测试参数（etest 可直接修改）：`{secs, target, error, load}`（秒数/目标值/±误差/负载） | `{5, 1000, 500, 0}` |
-| `log_file` | 测试结果日志文件，`R<...>R` 结果追加写入（空 = 不写文件） | `hw-gui-test.log` |
+| `log_file` | 测试结果日志文件，`R<...>R` 结果追加写入（支持 `{origin}`/`{env:KEY}`，空 = 不写文件） | `hw-gui-test.log` |
 
 产线一键示例：启动即进规则视图 → 自动运行 `etest-rules.json` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
 
