@@ -125,7 +125,7 @@ pub async fn run(op: &crate::cli::Opts) -> e_utils::AnyResult<String> {
     }
     // etest 规则任务
     "run-rules" => {
-      let path = op.args.first().map(|s| s.as_str()).unwrap_or("etest-rules.json");
+      let path = op.args.first().map(|s| s.as_str()).unwrap_or(crate::gui_config::CONFIG_FILE);
       let report = rules::run_rules(path).await?;
       let json = report.to_json()?;
       if report.status {
@@ -140,6 +140,14 @@ pub async fn run(op: &crate::cli::Opts) -> e_utils::AnyResult<String> {
         std::fs::write(path, &template)?;
         crate::p(format!("已生成规则模板: {}", path));
       }
+      return Ok(template);
+    }
+    // 统一配置表模板（gui + plan 一个文件，etest 直接改）
+    "config-template" => {
+      let path = op.args.first().map(|s| s.as_str()).unwrap_or(crate::gui_config::CONFIG_FILE);
+      let template = crate::gui_config::HwConfig::template()?;
+      std::fs::write(path, &template)?;
+      crate::p(format!("已生成统一配置表: {}", path));
       return Ok(template);
     }
     task => {

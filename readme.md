@@ -384,7 +384,7 @@ A desktop GUI (`hw-gui`) built with eframe/egui, modeled on TrafficMonitor's flo
 - **Live monitoring** — continuously samples the registered test modes (net-speed, cpu-usage, mem-usage, disk-usage, temp, gpu-usage) and plots each metric over time
 - **Check visualization** — run `check` with target/±error/load, watch per-second samples against the target band, live PASS/FAIL
 - **History & export** — every check run is recorded to `hw-gui-history.json`; export JSON/CSV reports
-- **etest rules panel** — load an `etest-rules.json` rule file and run it from the GUI with per-rule progress/curve and PASS-FAIL table; export the same report JSON as the CLI (see section 19)
+- **etest rules panel** — the unified `hw-config.json` plan is auto-loaded and run from the GUI with per-rule progress/curve and PASS-FAIL table; export the same report JSON as the CLI (see section 19)
 
 ```bash
 # Build (the gui feature adds eframe/egui_plot; requires rustc >= 1.95)
@@ -410,7 +410,7 @@ R<{"content":"...","status":true,"opts":null}>R
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 
-**Rule file `etest-rules.json`** — one entry per test item with its limits (template shipped in the repo; regenerate with `rules-template`):
+**Test rules — the `plan` section of the unified `hw-config.json`** (one file for etest: `gui` = run behavior, `plan` = test rules). One entry per test item with its limits:
 
 | Field | Meaning | Example |
 | --- | --- | --- |
@@ -423,7 +423,7 @@ R<{"content":"...","status":true,"opts":null}>R
 | `secs` | Sampling seconds (default 3) | `5` |
 | `load` | Load % (default 0) | `0` |
 
-Template (identical to the committed `etest-rules.json`):
+`plan` template (the committed `hw-config.json` contains `gui` + this `plan`):
 
 ```json
 {
@@ -439,10 +439,11 @@ Template (identical to the committed `etest-rules.json`):
 
 ```bash
 # Generate / refresh the rule template
-hw --api Test --task rules-template --args etest-rules.json
+# Regenerate the unified config template (gui + plan)
+hw --api Test --task config-template --args hw-config.json
 
-# Execute the rule file
-hw --api Test --task run-rules --args etest-rules.json
+# Execute the plan inside hw-config.json (or a bare rule file)
+hw --api Test --task run-rules --args hw-config.json
 ```
 
 Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
@@ -467,13 +468,12 @@ The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule
 | GPU 利用率 | `gpu-usage` | 任意 | % |
 
 ---
-### [20. 📖 GUI Run Config (`hw-gui-config.json`, editable by etest)](src/gui_config.rs)
-etest/operators edit `hw-gui-config.json` (auto-created on first run) to control the GUI test behavior — no code changes needed:
+### [20. 📖 Unified Config Table (`hw-config.json`, one file for etest debugging)](src/gui_config.rs)
+etest/operators edit the **single file `hw-config.json`** (auto-created on first run) — `gui` section controls run behavior, `plan` section holds the test rules. No code changes needed:
 
 | Field | Meaning | Default |
 | --- | --- | --- |
 | `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
-| `rule_file` | Rule file path, auto-loaded at startup (supports `{origin}` = program dir, `{env:KEY}`) | `etest-rules.json` |
 | `auto_run` | Auto-start rule execution after launch | `true` |
 | `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |
 | `auto_close` | Auto-close the window when the test completes | `true` |
@@ -488,19 +488,23 @@ etest/operators edit `hw-gui-config.json` (auto-created on first run) to control
 
 ```
 
-Example — production one-shot: start at the rules view, run `etest-rules.json`, raise 60% load, watch only CPU frequency/usage, close with exit code when done:
+Example — production one-shot: start at the rules view, run the `plan`, raise 60% load, watch only CPU frequency/usage, close with exit code when done:
 
 ```json
 {
-  "default_view": "rules",
-  "rule_file": "etest-rules.json",
-  "auto_run": true,
-  "run_seconds": 60,
-  "auto_close": true,
-  "exit_code_on_fail": true,
-  "raise_load_percent": 60,
-  "display_mode": "single",
-  "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"]
+  "gui": {
+    "default_view": "rules",
+    "auto_run": true,
+    "run_seconds": 60,
+    "auto_close": true,
+    "exit_code_on_fail": true,
+    "raise_load_percent": 60,
+    "display_mode": "single",
+    "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"],
+    "check_params": { "secs": 5, "target": 1000, "error": 500, "load": 0 },
+    "log_file": "hw-gui-test.log"
+  },
+  "plan": { "name": "全项产测", "rules": [ ... 12 items ... ] }
 }
 ```
 ---

@@ -1,31 +1,24 @@
-//! # hw-gui 运行配置
+//! # hw 统一配置表（hw-config.json）
 //!
-//! etest / 产线操作员可直接编辑 `hw-gui-config.json` 控制 GUI 运行行为：
+//! etest / 产线操作员只需编辑**一个文件** `hw-config.json` 即可调试：
 //!
-//! - default_view: 启动视图（live / check / rules）
-//! - rule_file: 规则文件路径（启动自动加载）
-//! - auto_run: 启动后自动开始执行规则
-//! - run_seconds: 测试总时长上限（秒），0 = 不限
-//! - auto_close: 测试完成后自动关闭窗口
-//! - exit_code_on_fail: 失败时进程退出码返回 1（供 etest 判断）
-//! - raise_load_percent: 全局负载%（>0 时作为未指定负载规则的默认负载）
-//! - display_mode: all（显示全部指标）/ single（只显示 display_metrics）
-//! - display_metrics: display_mode=single 时的指标名/包含匹配列表
+//! - `gui` 段：运行行为（默认视图 / 自动运行 / 总时长 / 自动关闭 / 退出码 / 负载 / 显示 / Check 参数 / 日志文件）
+//! - `plan` 段：测试规则（全功能项：CPU 主频/温度、风扇、电压、功率、利用率等）
+//!
+//! 路径支持占位符（参考 MVCheck Conf.json）：`{origin}` = 程序目录、`{env:KEY}` = 环境变量。
 
 use serde::{Deserialize, Serialize};
 
-pub const CONFIG_FILE: &str = "hw-gui-config.json";
+pub const CONFIG_FILE: &str = "hw-config.json";
 pub const DEFAULT_LOG_FILE: &str = "hw-gui-test.log";
 
-/// hw-gui 运行配置（JSON，etest 可直接编辑）
+/// GUI 运行行为配置段
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GuiConfig {
   /// 启动视图：live | check | rules
   pub default_view: String,
-  /// 规则文件路径（启动自动加载）
-  pub rule_file: String,
-  /// 启动后自动开始执行规则
+  /// 启动后自动开始执行规则（plan 内嵌于统一配置）
   pub auto_run: bool,
   /// 测试总时长上限（秒），0 = 不限（按每条规则 secs 执行）
   pub run_seconds: u64,
@@ -39,16 +32,30 @@ pub struct GuiConfig {
   pub display_mode: String,
   /// display_mode=single 时的指标名/包含匹配列表
   pub display_metrics: Vec<String>,
-  /// Check 测试参数（etest 可直接修改；rules 模式以规则文件为准）
+  /// Check 测试参数（GUI「Check 测试」视图默认值）
   pub check_params: CheckParams,
   /// 测试结果日志文件（R<...>R 结果追加写入；空 = 不写文件）
   pub log_file: String,
-  /// 配置说明（仅注释用途，程序忽略）
-  #[serde(rename = "_说明")]
-  pub note: String,
 }
 
-/// Check 测试参数（GUI「Check 测试」视图的默认值）
+impl Default for GuiConfig {
+  fn default() -> Self {
+    Self {
+      default_view: "rules".into(),
+      auto_run: true,
+      run_seconds: 0,
+      auto_close: true,
+      exit_code_on_fail: true,
+      raise_load_percent: 0.0,
+      display_mode: "all".into(),
+      display_metrics: Vec::new(),
+      check_params: CheckParams::default(),
+      log_file: DEFAULT_LOG_FILE.into(),
+    }
+  }
+}
+
+/// Check 测试参数
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CheckParams {
@@ -73,22 +80,71 @@ impl Default for CheckParams {
   }
 }
 
-impl Default for GuiConfig {
+/// 统一配置表：`gui` = 运行行为，`plan` = 测试规则（etest 只改这一个文件）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HwConfig {
+  /// 配置说明（仅注释用途，程序忽略）
+  #[serde(rename = "_说明")]
+  pub note: String,
+  /// GUI 运行配置段
+  pub gui: GuiConfig,
+  /// 测试规则段（全功能项计划）
+  pub plan: crate::test_mode::rules::RuleFile,
+}
+
+impl Default for HwConfig {
   fn default() -> Self {
     Self {
-      default_view: "rules".into(),
-      rule_file: "etest-rules.json".into(),
-      auto_run: true,
-      run_seconds: 0,
-      auto_close: true,
-      exit_code_on_fail: true,
-      raise_load_percent: 0.0,
-      display_mode: "all".into(),
-      display_metrics: Vec::new(),
-      check_params: CheckParams::default(),
-      log_file: DEFAULT_LOG_FILE.into(),
-      note: "hw-gui 运行配置，etest 可直接修改本文件。字段说明见 README 第 20 节。".into(),
+      note: "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则）。字段说明见 README 第 20 节。".into(),
+      gui: GuiConfig::default(),
+      plan: crate::test_mode::rules::full_plan(),
     }
+  }
+}
+
+impl HwConfig {
+  /// 生成统一配置模板文本
+  pub fn template() -> e_utils::AnyResult<String> {
+    Ok(serde_json::to_string_pretty(&HwConfig::default())?)
+  }
+
+  /// 加载统一配置；文件缺失/损坏时自动重建模板
+  pub fn load(path: &str) -> (Self, bool) {
+    match std::fs::read_to_string(path) {
+      Ok(text) => match serde_json::from_str::<HwConfig>(&text) {
+        Ok(mut cfg) => {
+          cfg.gui.log_file = resolve_placeholders(&cfg.gui.log_file);
+          (cfg, false)
+        },
+        Err(_) => {
+          let def = HwConfig::default();
+          let _ = std::fs::write(path, HwConfig::template().unwrap_or_default());
+          (def, true)
+        },
+      },
+      Err(_) => {
+        let def = HwConfig::default();
+        let _ = std::fs::write(path, HwConfig::template().unwrap_or_default());
+        (def, true)
+      },
+    }
+  }
+}
+
+impl GuiConfig {
+  /// 显示模式是否为 single
+  pub fn is_single_display(&self) -> bool {
+    self.display_mode.eq_ignore_ascii_case("single") && !self.display_metrics.is_empty()
+  }
+
+  /// 指标是否可见（single 模式下按包含匹配过滤）
+  pub fn metric_visible(&self, name: &str) -> bool {
+    !self.is_single_display() || self.display_metrics.iter().any(|f| name.contains(f.as_str()))
+  }
+  
+  /// 启动视图名
+  pub fn view(&self) -> &str {
+    self.default_view.trim()
   }
 }
 
@@ -111,66 +167,21 @@ pub fn resolve_placeholders(input: &str) -> String {
   out
 }
 
-impl GuiConfig {
-  /// 生成模板文本
-  pub fn template() -> e_utils::AnyResult<String> {
-    Ok(serde_json::to_string_pretty(&GuiConfig::default())?)
-  }
-
-  /// 加载配置；文件不存在时自动创建模板并返回默认值
-  pub fn load(path: &str) -> (Self, bool) {
-    match std::fs::read_to_string(path) {
-      Ok(text) => match serde_json::from_str::<GuiConfig>(&text) {
-        Ok(mut cfg) => {
-          cfg.rule_file = resolve_placeholders(&cfg.rule_file);
-          cfg.log_file = resolve_placeholders(&cfg.log_file);
-          (cfg, false)
-        },
-        Err(_) => {
-          let def = GuiConfig::default();
-          let _ = std::fs::write(path, GuiConfig::template().unwrap_or_default());
-          (def, true)
-        },
-      },
-      Err(_) => {
-        let def = GuiConfig::default();
-        let _ = std::fs::write(path, GuiConfig::template().unwrap_or_default());
-        (def, true)
-      },
-    }
-  }
-
-  /// 显示模式是否为 single
-  pub fn is_single_display(&self) -> bool {
-    self.display_mode.eq_ignore_ascii_case("single") && !self.display_metrics.is_empty()
-  }
-
-  /// 指标是否可见（single 模式下按包含匹配过滤）
-  pub fn metric_visible(&self, name: &str) -> bool {
-    !self.is_single_display() || self.display_metrics.iter().any(|f| name.contains(f.as_str()))
-  }
-
-  /// 启动视图
-  pub fn view(&self) -> &str {
-    self.default_view.trim()
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
 
   #[test]
   fn default_config_template_roundtrip() {
-    let t = GuiConfig::template().unwrap();
-    let cfg: GuiConfig = serde_json::from_str(&t).unwrap();
-    assert_eq!(cfg.default_view, "rules");
-    assert!(cfg.auto_run);
-    assert!(cfg.auto_close);
-    assert_eq!(cfg.run_seconds, 0);
-    assert_eq!(cfg.check_params.secs, 5);
-    assert_eq!(cfg.check_params.target, 1000.0);
-    assert_eq!(cfg.log_file, DEFAULT_LOG_FILE);
+    let t = HwConfig::template().unwrap();
+    let cfg: HwConfig = serde_json::from_str(&t).unwrap();
+    assert_eq!(cfg.gui.default_view, "rules");
+    assert!(cfg.gui.auto_run);
+    assert!(cfg.gui.auto_close);
+    assert_eq!(cfg.gui.run_seconds, 0);
+    assert_eq!(cfg.gui.check_params.secs, 5);
+    assert_eq!(cfg.gui.log_file, DEFAULT_LOG_FILE);
+    assert_eq!(cfg.plan.rules.len(), 12); // 全功能项
   }
 
   #[test]
@@ -187,26 +198,24 @@ mod tests {
   }
 
   #[test]
-  fn placeholders_resolve() {
-    // {origin} 解析为程序目录（非空）
-    let s = resolve_placeholders("{origin}/etest-rules.json");
-    assert!(!s.starts_with("{origin}"));
-    assert!(s.ends_with("/etest-rules.json"));
-    // 未知 {env:KEY} 解析为空
-    let s2 = resolve_placeholders("{env:NO_SUCH_KEY_XYZ}/a");
-    assert!(s2.starts_with("/a"));
-    // 无占位符原样
-    assert_eq!(resolve_placeholders("plain.json"), "plain.json");
+  fn load_creates_missing_file() {
+    let path = std::env::temp_dir().join("hw-config-test.json");
+    let _ = std::fs::remove_file(&path);
+    let (cfg, created) = HwConfig::load(path.to_str().unwrap());
+    assert!(created);
+    assert!(std::path::Path::new(&path).exists());
+    assert_eq!(cfg.gui.default_view, "rules");
+    assert_eq!(cfg.plan.rules.len(), 12);
+    let _ = std::fs::remove_file(&path);
   }
 
   #[test]
-  fn load_creates_missing_file() {
-    let path = std::env::temp_dir().join("hw-gui-config-test.json");
-    let _ = std::fs::remove_file(&path);
-    let (cfg, created) = GuiConfig::load(path.to_str().unwrap());
-    assert!(created);
-    assert!(std::path::Path::new(&path).exists());
-    assert_eq!(cfg.default_view, "rules");
-    let _ = std::fs::remove_file(&path);
+  fn placeholders_resolve() {
+    let s = resolve_placeholders("{origin}/etest-rules.json");
+    assert!(!s.starts_with("{origin}"));
+    assert!(s.ends_with("/etest-rules.json"));
+    let s2 = resolve_placeholders("{env:NO_SUCH_KEY_XYZ}/a");
+    assert!(s2.starts_with("/a"));
+    assert_eq!(resolve_placeholders("plain.json"), "plain.json");
   }
 }

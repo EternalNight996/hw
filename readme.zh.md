@@ -384,7 +384,7 @@ hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 - **实时监控** — 持续采样已注册的测试模式（net-speed、cpu-usage、mem-usage、disk-usage、temp、gpu-usage），各指标随时间绘制曲线
 - **Check 可视化** — 设定目标值/±误差/负载运行 check，逐秒采样叠加目标带，实时 PASS/FAIL
 - **历史与导出** — 每次 check 自动记录到 `hw-gui-history.json`，可导出 JSON/CSV 报告
-- **etest 规则执行面板** — 加载 `etest-rules.json` 规则文件，在 GUI 里逐条执行（进度/曲线/逐项 PASS-FAIL），导出与 CLI 相同的报告 JSON（见第 19 节）
+- **etest 规则执行面板** — 统一配置 `hw-config.json` 的 plan 段自动加载并在 GUI 逐条执行（进度/曲线/逐项 PASS-FAIL），导出与 CLI 相同的报告 JSON（见第 19 节）
 
 ```bash
 # 构建（gui 特性引入 eframe/egui_plot；需要 rustc >= 1.95）
@@ -410,7 +410,7 @@ R<{"content":"...","status":true,"opts":null}>R
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 
-**规则文件 `etest-rules.json`** —— 每个测试项一条，含上下限与稳定性（仓库已带模板，`rules-template` 可重新生成）：
+**测试规则 —— 统一配置 `hw-config.json` 的 `plan` 段**（etest 只改这一个文件：`gui`=运行行为，`plan`=测试规则）。每个测试项一条，含上下限与稳定性：
 
 | 字段 | 说明 | 示例 |
 | --- | --- | --- |
@@ -423,7 +423,7 @@ R<{"content":"...","status":true,"opts":null}>R
 | `secs` | 采样秒数（默认 3） | `5` |
 | `load` | 负载%（默认 0） | `0` |
 
-模板（与入库的 `etest-rules.json` 一致）：
+`plan` 段模板（入库的 `hw-config.json` 含 `gui` + 本 `plan`）：
 
 ```json
 {
@@ -439,10 +439,11 @@ R<{"content":"...","status":true,"opts":null}>R
 
 ```bash
 # 生成/刷新规则模板
-hw --api Test --task rules-template --args etest-rules.json
+# 重新生成统一配置模板（gui + plan）
+hw --api Test --task config-template --args hw-config.json
 
-# 执行规则文件
-hw --api Test --task run-rules --args etest-rules.json
+# 执行 hw-config.json 内的 plan（也兼容裸规则文件）
+hw --api Test --task run-rules --args hw-config.json
 ```
 
 `content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
@@ -467,13 +468,12 @@ GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（�
 | GPU 利用率 | `gpu-usage` | 任意 | % |
 
 ---
-### [20. 📖 GUI 运行配置表（`hw-gui-config.json`，etest 可直接修改）](src/gui_config.rs)
-etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）即可控制 GUI 测试行为，无需改代码：
+### [20. 📖 统一配置表（`hw-config.json`，etest 只改这一个文件）](src/gui_config.rs)
+etest / 操作员直接编辑**唯一文件 `hw-config.json`**（首次运行自动生成）—— `gui` 段控制运行行为、`plan` 段为测试规则，无需改代码：
 
 | 字段 | 含义 | 默认值 |
 | --- | --- | --- |
 | `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
-| `rule_file` | 规则文件路径，启动自动加载（支持 `{origin}`=程序目录、`{env:KEY}`） | `etest-rules.json` |
 | `auto_run` | 启动后自动开始执行规则 | `true` |
 | `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |
 | `auto_close` | 测试完成后自动关闭窗口 | `true` |
@@ -484,19 +484,23 @@ etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）
 | `check_params` | Check 测试参数（etest 可直接修改）：`{secs, target, error, load}`（秒数/目标值/±误差/负载） | `{5, 1000, 500, 0}` |
 | `log_file` | 测试结果日志文件，`R<...>R` 结果追加写入（支持 `{origin}`/`{env:KEY}`，空 = 不写文件） | `hw-gui-test.log` |
 
-产线一键示例：启动即进规则视图 → 自动运行 `etest-rules.json` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
+产线一键示例：启动即进规则视图 → 自动运行 `plan` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
 
 ```json
 {
-  "default_view": "rules",
-  "rule_file": "etest-rules.json",
-  "auto_run": true,
-  "run_seconds": 60,
-  "auto_close": true,
-  "exit_code_on_fail": true,
-  "raise_load_percent": 60,
-  "display_mode": "single",
-  "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"]
+  "gui": {
+    "default_view": "rules",
+    "auto_run": true,
+    "run_seconds": 60,
+    "auto_close": true,
+    "exit_code_on_fail": true,
+    "raise_load_percent": 60,
+    "display_mode": "single",
+    "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"],
+    "check_params": { "secs": 5, "target": 1000, "error": 500, "load": 0 },
+    "log_file": "hw-gui-test.log"
+  },
+  "plan": { "name": "全项产测", "rules": [ ... 12 项 ... ] }
 }
 ```
 ---

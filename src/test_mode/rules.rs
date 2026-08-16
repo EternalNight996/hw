@@ -168,9 +168,9 @@ pub fn parse_rules(path: &str) -> e_utils::AnyResult<RuleFile> {
   Ok(file)
 }
 
-/// 生成规则模板文本（全功能项：CPU 主频/温度、GPU 温度、主板温度、风扇、电压、功率、CPU/内存/磁盘/网速/GPU 利用率）
-pub fn rules_template() -> e_utils::AnyResult<String> {
-  Ok(serde_json::to_string_pretty(&RuleFile {
+/// 全功能项规则计划（12 项：CPU 主频/温度、GPU 温度、主板温度、风扇、电压、功率、CPU/内存/磁盘/网速/GPU 利用率）
+pub fn full_plan() -> RuleFile {
+  RuleFile {
     name: Some("全项产测".into()),
     rules: vec![
       Rule {
@@ -306,7 +306,27 @@ pub fn rules_template() -> e_utils::AnyResult<String> {
         load: 0.0,
       },
     ],
-  })?)
+  }
+}
+
+/// 生成裸规则模板文本（兼容单规则文件）
+pub fn rules_template() -> e_utils::AnyResult<String> {
+  Ok(serde_json::to_string_pretty(&full_plan())?)
+}
+
+/// 从文件解析规则：优先统一配置（HwConfig.plan），兼容裸规则文件
+pub fn parse_rules_file(path: &str) -> e_utils::AnyResult<RuleFile> {
+  let text = std::fs::read_to_string(path)?;
+  if let Ok(hc) = serde_json::from_str::<crate::gui_config::HwConfig>(&text) {
+    if !hc.plan.rules.is_empty() {
+      return Ok(hc.plan);
+    }
+  }
+  let file: RuleFile = serde_json::from_str(&text)?;
+  if file.rules.is_empty() {
+    return Err("规则为空（rules 数组为空）".into());
+  }
+  Ok(file)
 }
 
 /// 规则执行报告（etest 对齐结构）
@@ -519,7 +539,7 @@ pub async fn run_rule(rule: &Rule) -> RuleResult {
 /// 执行规则文件，返回结构化报告（etest 判定 status 与逐项结果）
 pub async fn run_rules(path: &str) -> e_utils::AnyResult<RulesReport> {
   register_all();
-  let file = parse_rules(path)?;
+  let file = parse_rules_file(path)?;
   let plan = file.name.clone().unwrap_or_else(|| path.to_string());
   let mut results: Vec<RuleResult> = Vec::new();
   for rule in &file.rules {

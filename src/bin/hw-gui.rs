@@ -13,7 +13,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use eframe::egui;
 use egui_plot::{HLine, Legend, Line, Plot, PlotPoints};
 
-use hw::gui_config::{GuiConfig, CONFIG_FILE};
+use hw::gui_config::{HwConfig, CONFIG_FILE};
 use hw::test_mode::{
   get as get_mode, list as list_modes, register_all, rules, Metric, MetricStat, ModeContext, ModeInstance,
   TestParams,
@@ -96,7 +96,7 @@ impl RulesGui {
   }
 
   fn load(&mut self) {
-    match rules::parse_rules(&self.path) {
+    match rules::parse_rules_file(&self.path) {
       Ok(file) => {
         self.plan = file.name.clone().unwrap_or_else(|| self.path.clone());
         self.results.clear();
@@ -390,7 +390,7 @@ struct GuiApp {
   auto_closed: bool,
   view: View,
   rules: RulesGui,
-  config: GuiConfig,
+  config: HwConfig,
 }
 
 impl GuiApp {
@@ -407,7 +407,7 @@ impl GuiApp {
     let history = load_history();
     let count = modes.len();
     // 加载运行配置（缺失自动创建模板）
-    let (config, created) = GuiConfig::load(CONFIG_FILE);
+    let (config, created) = HwConfig::load(CONFIG_FILE);
     let mut app = Self {
       modes,
       selected,
@@ -425,7 +425,7 @@ impl GuiApp {
       smoke,
       rules_emitted: false,
       auto_closed: false,
-      view: match config.view() {
+      view: match config.gui.view() {
         "live" => View::Live,
         "check" => View::Check,
         _ => View::Rules,
@@ -434,22 +434,24 @@ impl GuiApp {
       config: config.clone(),
     };
     // 配置生效：默认秒数/负载/check 参数、规则文件自动加载
-    if config.run_seconds > 0 {
-      app.c_secs = config.run_seconds as usize;
+    // gui 段：Check 默认参数 / 全局负载
+    if config.gui.run_seconds > 0 {
+      app.c_secs = config.gui.run_seconds as usize;
     }
-    if config.raise_load_percent > 0.0 {
-      app.c_load = config.raise_load_percent;
+    if config.gui.raise_load_percent > 0.0 {
+      app.c_load = config.gui.raise_load_percent;
     }
-    if config.check_params.secs > 0 {
-      app.c_secs = config.check_params.secs;
+    if config.gui.check_params.secs > 0 {
+      app.c_secs = config.gui.check_params.secs;
     }
-    app.c_target = config.check_params.target;
-    app.c_err = config.check_params.error;
-    app.c_load = config.check_params.load;
-    app.rules.path = config.rule_file.clone();
-    app.rules.global_load = config.raise_load_percent;
-    if std::path::Path::new(&config.rule_file).exists() {
-      app.rules.load();
+    app.c_target = config.gui.check_params.target;
+    app.c_err = config.gui.check_params.error;
+    app.c_load = config.gui.check_params.load;
+    app.rules.global_load = config.gui.raise_load_percent;
+    // plan 段：统一配置内嵌的测试规则
+    if !config.plan.rules.is_empty() {
+      app.rules.file = Some(config.plan.clone());
+      app.rules.plan = config.plan.name.clone().unwrap_or_else(|| CONFIG_FILE.into());
     }
     if created {
       app.msg = format!("已生成默认配置 {}（etest 可直接修改）", CONFIG_FILE);
@@ -731,7 +733,7 @@ impl eframe::App for GuiApp {
         }
       }
       // 自动运行（配置 auto_run 或冒烟模式）
-      if (self.config.auto_run || self.smoke)
+      if (self.config.gui.auto_run || self.smoke)
         && self.rules.file.is_some()
         && !self.rules.done
         && self.rules.run.is_none()
@@ -741,7 +743,7 @@ impl eframe::App for GuiApp {
       }
       // 总时长上限
       if let Some(started) = self.rules.run_started {
-        if self.config.run_seconds > 0 && started.elapsed().as_secs() >= self.config.run_seconds {
+        if self.config.gui.run_seconds > 0 && started.elapsed().as_secs() >= self.config.gui.run_seconds {
           self.rules.timeout("超过总时长上限");
         }
       }
@@ -751,18 +753,18 @@ impl eframe::App for GuiApp {
       self.rules_emitted = true;
       let line = self.rules_etest_line();
       hw::p(&line); // stdout(R<...>R 协议) + e-log 日志文件
-      if !self.config.log_file.is_empty() {
+      if !self.config.gui.log_file.is_empty() {
         let ts = now_str();
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.log_file) {
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.gui.log_file) {
           use std::io::Write;
           let _ = f.write_all(format!("{}	{}
 ", ts, line).as_bytes());
         }
       }
-      if self.config.auto_close {
+      if self.config.gui.auto_close {
         self.auto_closed = true;
         let ok = self.rules.results.iter().all(|r| r.pass);
-        let code = if !ok && self.config.exit_code_on_fail { 1 } else { 0 };
+        let code = if !ok && self.config.gui.exit_code_on_fail { 1 } else { 0 };
         EXIT_CODE.store(code, Ordering::SeqCst);
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
       }
@@ -873,7 +875,7 @@ impl eframe::App for GuiApp {
                 ui.strong("值");
                 ui.strong("单位");
                 ui.end_row();
-                for m in live.last_metrics.iter().filter(|m| self.config.metric_visible(&m.name)) {
+                for m in live.last_metrics.iter().filter(|m| self.config.gui.metric_visible(&m.name)) {
                   ui.label(&m.name);
                   ui.label(format!("{:.2}", m.value));
                   ui.label(&m.unit);
@@ -926,7 +928,7 @@ impl eframe::App for GuiApp {
             let names: Vec<String> = live
               .series
               .keys()
-              .filter(|n| self.config.metric_visible(n))
+              .filter(|n| self.config.gui.metric_visible(n))
               .cloned()
               .collect();
             if names.is_empty() {
@@ -1148,7 +1150,7 @@ impl GuiApp {
       let last: Vec<&Metric> = run
         .last_metrics()
         .iter()
-        .filter(|m| self.config.metric_visible(&m.name))
+        .filter(|m| self.config.gui.metric_visible(&m.name))
         .collect();
       if !last.is_empty() {
         ui.horizontal_wrapped(|ui| {
