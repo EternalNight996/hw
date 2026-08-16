@@ -11,8 +11,9 @@ pub fn init_logging() {
     use e_log::subscriber::layer::SubscriberExt as _;
     let folder = std::env::current_dir().unwrap_or_default().join("logs");
     let _ = std::fs::create_dir_all(&folder);
-    // 按天滚动文件层（阻塞写入，无需 guard）
-    let roll = e_log::appender::rolling::daily(&folder, "hw.log", e_log::FileShare::Read);
+    // 固定文件层 logs/hw.log（无日期后缀，阻塞写入，无需 guard）
+    // ReadWrite：允许 write_result_line 把 R<...>R 结果追加为该文件最后一行
+    let roll = e_log::appender::rolling::never(&folder, "hw.log", e_log::FileShare::ReadWrite);
     let file_layer = e_log::subscriber::fmt::layer()
       .with_writer(roll)
       .with_ansi(false)

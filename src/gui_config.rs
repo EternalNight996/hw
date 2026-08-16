@@ -10,7 +10,6 @@
 use serde::{Deserialize, Serialize};
 
 pub const CONFIG_FILE: &str = "hw-config.json";
-pub const DEFAULT_LOG_FILE: &str = "hw-gui-test.log";
 
 /// GUI 运行行为配置段
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,8 +33,6 @@ pub struct GuiConfig {
   pub display_metrics: Vec<String>,
   /// Check 测试参数（GUI「Check 测试」视图默认值）
   pub check_params: CheckParams,
-  /// 测试结果日志文件（R<...>R 结果追加写入；空 = 不写文件）
-  pub log_file: String,
 }
 
 impl Default for GuiConfig {
@@ -50,7 +47,6 @@ impl Default for GuiConfig {
       display_mode: "all".into(),
       display_metrics: Vec::new(),
       check_params: CheckParams::default(),
-      log_file: DEFAULT_LOG_FILE.into(),
     }
   }
 }
@@ -99,6 +95,14 @@ impl Default for LockConfig {
   }
 }
 
+fn default_true() -> bool { true }
+
+/// 内置全部测试模式（12 条规则所用）：cpu-clock / temp / fan-speed / voltage / power / cpu-usage / mem-usage / disk-usage / net-speed / gpu-usage
+pub const ALL_MODES: [&str; 10] = [
+  "cpu-clock", "temp", "fan-speed", "voltage", "power",
+  "cpu-usage", "mem-usage", "disk-usage", "net-speed", "gpu-usage",
+];
+
 /// 统一配置表：`gui` = 运行行为，`plan` = 测试规则（etest 只改这一个文件）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HwConfig {
@@ -109,7 +113,13 @@ pub struct HwConfig {
   pub lock: LockConfig,
   /// GUI 运行配置段
   pub gui: GuiConfig,
-  /// 测试规则段（全功能项计划）
+  /// 测试模式总开关：false = 全部规则跳过
+  #[serde(default = "default_true")]
+  pub test_mode: bool,
+  /// 各测试模式开关（mode 名 -> 是否启用；缺省视为 true）
+  #[serde(default)]
+  pub modes: std::collections::HashMap<String, bool>,
+  /// 测试规则段（全功能项计划，放最下面）
   pub plan: crate::test_mode::rules::RuleFile,
 }
 
@@ -120,21 +130,23 @@ impl Default for HwConfig {
       lock: LockConfig::default(),
       gui: GuiConfig::default(),
       plan: crate::test_mode::rules::full_plan(),
+      test_mode: true,
+      modes: ALL_MODES.iter().map(|m| (m.to_string(), true)).collect(),
     }
   }
 }
 
 impl HwConfig {
+  /// 某模式是否启用（总开关 + 逐模式开关）
+  pub fn mode_enabled(&self, mode: &str) -> bool {
+    self.test_mode && self.modes.get(mode).copied().unwrap_or(true)
+  }
+
   /// 生成统一配置模板文本
   pub fn template() -> e_utils::AnyResult<String> {
     Ok(serde_json::to_string_pretty(&HwConfig::default())?)
   }
 
-/// 结果日志路径：读 hw-config.json 的 gui.log_file（支持占位符），缺省 hw-gui-test.log
-pub fn result_log_path() -> String {
-  let (cfg, _) = HwConfig::load(CONFIG_FILE);
-  resolve_placeholders(&cfg.gui.log_file)
-}
 
   /// 保存统一配置到文件（UTF-8，无 BOM）
   pub fn save(&self, path: &str) -> e_utils::AnyResult<()> {
@@ -147,8 +159,7 @@ pub fn result_log_path() -> String {
   pub fn load(path: &str) -> (Self, bool) {
     match std::fs::read_to_string(path) {
       Ok(text) => match serde_json::from_str::<HwConfig>(&text) {
-        Ok(mut cfg) => {
-          cfg.gui.log_file = resolve_placeholders(&cfg.gui.log_file);
+        Ok(cfg) => {
           (cfg, false)
         },
         Err(_) => {
@@ -215,7 +226,6 @@ mod tests {
     assert!(cfg.gui.auto_close);
     assert_eq!(cfg.gui.run_seconds, 0);
     assert_eq!(cfg.gui.check_params.secs, 5);
-    assert_eq!(cfg.gui.log_file, DEFAULT_LOG_FILE);
     assert_eq!(cfg.plan.rules.len(), 12); // 全功能项
     assert!(cfg.lock.enabled); // 默认锁定
     assert_eq!(cfg.lock.password, "admin");

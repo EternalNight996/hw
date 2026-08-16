@@ -36,7 +36,7 @@ pub fn rr_line(content: &str, status: bool) -> String {
 
 /// 将 R<...>R 结果追加为结果日志（config log_file，默认 hw-gui-test.log）的最后一行
 pub fn write_result_line(rr: &str) {
-  let path = crate::gui_config::HwConfig::result_log_path();
+  let path = std::env::current_dir().unwrap_or_default().join("logs").join("hw.log");
   if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
     use std::io::Write;
     let _ = writeln!(f, "{}", rr);
