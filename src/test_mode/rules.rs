@@ -39,6 +39,9 @@ pub struct Rule {
   /// 中文描述（如 "CPU 主频"），GUI 与报告直接显示
   #[serde(default)]
   pub description: String,
+  /// 是否测试（false = 不执行但仍显示，报告标记为跳过）
+  #[serde(default = "default_true")]
+  pub enabled: bool,
   /// 模式名（--task 同名，如 net-speed / cpu-usage / temp）
   pub mode: String,
   /// 指标名包含匹配（空 = 该模式全部指标都须通过）
@@ -65,6 +68,7 @@ pub struct Rule {
 }
 
 fn default_secs() -> usize { 3 }
+fn default_true() -> bool { true }
 
 /// 规则文件
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -95,6 +99,9 @@ pub struct RuleResult {
   /// 中文描述
   #[serde(default)]
   pub description: String,
+  /// 是否跳过（enabled=false 未执行）
+  #[serde(default)]
+  pub skipped: bool,
   pub mode: String,
   /// 参与判定的指标名（metric 匹配到多个时取第一个）
   pub metric: String,
@@ -121,6 +128,7 @@ impl RuleResult {
     RuleResult {
       item: rule.id.clone(),
       description: rule.description.clone(),
+      skipped: false,
       mode: rule.mode.clone(),
       metric: String::new(),
       unit: String::new(),
@@ -135,6 +143,29 @@ impl RuleResult {
       max_std_limit: rule.max_std,
       pass: false,
       message: Some(message.into()),
+    }
+  }
+
+  /// 构造跳过结果（enabled=false 未执行）
+  pub fn skipped(rule: &Rule) -> Self {
+    RuleResult {
+      item: rule.id.clone(),
+      description: rule.description.clone(),
+      skipped: true,
+      mode: rule.mode.clone(),
+      metric: String::new(),
+      unit: String::new(),
+      value: 0.0,
+      avg: 0.0,
+      min: 0.0,
+      max: 0.0,
+      std_dev: 0.0,
+      samples: 0,
+      min_limit: rule.min,
+      max_limit: rule.max,
+      max_std_limit: rule.max_std,
+      pass: false,
+      message: Some("未启用（enabled=false，跳过）".into()),
     }
   }
 }
@@ -183,6 +214,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "cpu-clock".into(),
         description: "CPU 主频（MHz）".into(),
+        enabled: true,
         mode: "cpu-clock".into(),
         metric: String::new(),
         unit: Some("MHz".into()),
@@ -195,6 +227,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "cpu-temp".into(),
         description: "CPU 温度（°C）".into(),
+        enabled: true,
         mode: "temp".into(),
         metric: "CPU Package".into(),
         unit: Some("°C".into()),
@@ -207,6 +240,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "gpu-temp".into(),
         description: "GPU 温度（°C）".into(),
+        enabled: true,
         mode: "temp".into(),
         metric: "GPU".into(),
         unit: Some("°C".into()),
@@ -219,6 +253,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "mobo-temp".into(),
         description: "主板温度（°C）".into(),
+        enabled: true,
         mode: "temp".into(),
         metric: "Mainboard".into(),
         unit: Some("°C".into()),
@@ -231,6 +266,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "fan".into(),
         description: "风扇转速（RPM）".into(),
+        enabled: true,
         mode: "fan-speed".into(),
         metric: String::new(),
         unit: Some("RPM".into()),
@@ -243,6 +279,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "voltage".into(),
         description: "电压（V）".into(),
+        enabled: true,
         mode: "voltage".into(),
         metric: String::new(),
         unit: Some("V".into()),
@@ -255,6 +292,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "power".into(),
         description: "功率（W）".into(),
+        enabled: true,
         mode: "power".into(),
         metric: String::new(),
         unit: Some("W".into()),
@@ -267,6 +305,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "cpu-usage".into(),
         description: "CPU 利用率（%）".into(),
+        enabled: true,
         mode: "cpu-usage".into(),
         metric: "CPU_Usage_Global".into(),
         unit: Some("%".into()),
@@ -279,6 +318,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "ram-usage".into(),
         description: "内存利用率（%）".into(),
+        enabled: true,
         mode: "mem-usage".into(),
         metric: "RAM_Usage".into(),
         unit: Some("%".into()),
@@ -291,6 +331,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "disk-c".into(),
         description: "C 盘占用率（%）".into(),
+        enabled: true,
         mode: "disk-usage".into(),
         metric: "C: Used%".into(),
         unit: Some("%".into()),
@@ -303,6 +344,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "net-up".into(),
         description: "网速上行（B/s）".into(),
+        enabled: true,
         mode: "net-speed".into(),
         metric: "Total_Rx".into(),
         unit: Some("B/s".into()),
@@ -315,6 +357,7 @@ pub fn full_plan() -> RuleFile {
       Rule {
         id: "gpu-usage".into(),
         description: "GPU 利用率（%）".into(),
+        enabled: true,
         mode: "gpu-usage".into(),
         metric: String::new(),
         unit: Some("%".into()),
@@ -516,6 +559,7 @@ impl RuleRun {
     RuleResult {
       item: self.rule.id.clone(),
       description: self.rule.description.clone(),
+      skipped: false,
       mode: self.rule.mode.clone(),
       metric: primary.name.clone(),
       unit: primary.unit.clone(),
@@ -563,9 +607,13 @@ pub async fn run_rules(path: &str) -> e_utils::AnyResult<RulesReport> {
   let plan = file.name.clone().unwrap_or_else(|| path.to_string());
   let mut results: Vec<RuleResult> = Vec::new();
   for rule in &file.rules {
-    results.push(run_rule(rule).await);
+    if !rule.enabled {
+      results.push(RuleResult::skipped(rule));
+    } else {
+      results.push(run_rule(rule).await);
+    }
   }
-  let status = results.iter().all(|r| r.pass);
+  let status = results.iter().filter(|r| !r.skipped).all(|r| r.pass);
   Ok(RulesReport { plan, status, results })
 }
 
@@ -602,6 +650,7 @@ mod tests {
     Rule {
       id: "d".into(),
       description: "假模式".into(),
+      enabled: true,
       mode: "dummy-rule".into(),
       metric: "DummyValue".into(),
       unit: None,
@@ -611,6 +660,25 @@ mod tests {
       secs: 2,
       load: 0.0,
     }
+  }
+
+  #[test]
+  fn rule_skipped_helper() {
+    let mut r = dummy_rule(None);
+    r.enabled = false;
+    let res = RuleResult::skipped(&r);
+    assert!(res.skipped);
+    assert!(!res.pass);
+    assert!(res.message.is_some());
+  }
+
+  #[test]
+  fn rule_enabled_default_true_via_serde() {
+    // 旧规则文件无 enabled 字段 -> 默认 true
+    let json = r#"{"id":"a","mode":"mem-usage"}"#;
+    let rule: Rule = serde_json::from_str(json).unwrap();
+    assert!(rule.enabled);
+    assert_eq!(rule.description, "");
   }
 
   #[test]
@@ -673,6 +741,7 @@ mod tests {
     let r = Rule {
       id: "x".into(),
       description: String::new(),
+      enabled: true,
       mode: "mem-usage".into(),
       metric: "RAM".into(),
       unit: None,

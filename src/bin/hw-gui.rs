@@ -124,11 +124,16 @@ impl RulesGui {
     self.advance();
   }
 
+  /// 整体通过：跳过项（enabled=false）不参与判定
+  fn overall_ok(&self) -> bool {
+    self.results.iter().filter(|r| !r.skipped).all(|r| r.pass)
+  }
+
   /// 推进到下一条规则；全部完成时置 done
   fn advance(&mut self) {
     let total = self.total();
     if self.results.len() >= total {
-      let ok = self.results.iter().all(|r| r.pass);
+      let ok = self.overall_ok();
       let plan = self.plan.clone();
       self.msg = format!("{} 完成：{} / {}", plan, if ok { "PASS" } else { "FAIL" }, self.results.len());
       self.done = true;
@@ -136,6 +141,12 @@ impl RulesGui {
     }
     let idx = self.results.len();
     let mut rule = self.file.as_ref().unwrap().rules[idx].clone();
+    // enabled=false：不执行，标记跳过并继续
+    if !rule.enabled {
+      self.results.push(rules::RuleResult::skipped(&rule));
+      self.advance();
+      return;
+    }
     // 全局负载覆盖：配置 >0 且规则未指定负载时生效
     if self.global_load > 0.0 && rule.load == 0.0 {
       rule.load = self.global_load;
@@ -160,7 +171,11 @@ impl RulesGui {
     }
     while self.results.len() < self.total() {
       let rule = self.file.as_ref().unwrap().rules[self.results.len()].clone();
-      self.results.push(rules::RuleResult::failed(&rule, "未执行（已停止）"));
+      if rule.enabled {
+        self.results.push(rules::RuleResult::failed(&rule, "未执行（已停止）"));
+      } else {
+        self.results.push(rules::RuleResult::skipped(&rule));
+      }
     }
     self.done = true;
     self.run_started = None;
@@ -175,7 +190,11 @@ impl RulesGui {
     }
     while self.results.len() < self.total() {
       let rule = self.file.as_ref().unwrap().rules[self.results.len()].clone();
-      self.results.push(rules::RuleResult::failed(&rule, reason));
+      if rule.enabled {
+        self.results.push(rules::RuleResult::failed(&rule, reason));
+      } else {
+        self.results.push(rules::RuleResult::skipped(&rule));
+      }
     }
     self.done = true;
     self.run_started = None;
@@ -186,7 +205,7 @@ impl RulesGui {
     let path = format!("etest-report-{}.json", now_str());
     let report = rules::RulesReport {
       plan: self.plan.clone(),
-      status: self.results.iter().all(|r| r.pass),
+      status: self.overall_ok(),
       results: self.results.clone(),
     };
     match serde_json::to_string_pretty(&report).map(|j| std::fs::write(&path, j)) {
@@ -610,7 +629,7 @@ impl GuiApp {
     use e_utils::cmd::CmdResult;
     let report = rules::RulesReport {
       plan: self.rules.plan.clone(),
-      status: self.rules.results.iter().all(|r| r.pass),
+      status: self.rules.overall_ok(),
       results: self.rules.results.clone(),
     };
     let content = report.to_json().unwrap_or_default();
@@ -782,7 +801,7 @@ impl eframe::App for GuiApp {
       }
       if self.config.gui.auto_close {
         self.auto_closed = true;
-        let ok = self.rules.results.iter().all(|r| r.pass);
+        let ok = self.rules.overall_ok();
         let code = if !ok && self.config.gui.exit_code_on_fail { 1 } else { 0 };
         EXIT_CODE.store(code, Ordering::SeqCst);
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -1147,7 +1166,7 @@ impl GuiApp {
           .striped(true)
           .num_columns(8)
           .show(ui, |ui| {
-            for h in ["#", "id", "说明", "模式", "指标", "下限", "上限", "稳定σ", "秒数", "负载%"] {
+            for h in ["#", "id", "说明", "测", "模式", "指标", "下限", "上限", "稳定σ", "秒数", "负载%"] {
               ui.strong(h);
             }
             ui.end_row();
@@ -1155,6 +1174,11 @@ impl GuiApp {
               ui.label((i + 1).to_string());
               ui.label(&r.id);
               ui.label(if r.description.is_empty() { "-".into() } else { r.description.clone() });
+              if r.enabled {
+                ui.colored_label(egui::Color32::from_rgb(120, 200, 120), "✓");
+              } else {
+                ui.colored_label(egui::Color32::from_rgb(150, 150, 150), "✗");
+              }
               ui.label(&r.mode);
               ui.label(if r.metric.is_empty() {
                 "全部".into()
@@ -1259,7 +1283,9 @@ impl GuiApp {
                 lim.push_str(&format!(" σ≤{:.1}", ms));
               }
               ui.label(lim);
-              if r.pass {
+              if r.skipped {
+                ui.colored_label(egui::Color32::from_rgb(150, 150, 150), "跳过");
+              } else if r.pass {
                 ui.colored_label(egui::Color32::from_rgb(120, 200, 120), "PASS");
               } else {
                 ui.colored_label(egui::Color32::from_rgb(230, 120, 120), "FAIL");

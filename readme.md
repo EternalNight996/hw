@@ -416,6 +416,7 @@ R<{"content":"...","status":true,"opts":null}>R
 | --- | --- | --- |
 | `id` | Test item id (unique) | `net-up` |
 | `description` | Chinese description shown in GUI/report (e.g. `CPU 主频（MHz）`) | `CPU 主频（MHz）` |
+| `enabled` | **Test this item?** `true` = run & judge; `false` = skipped (still listed, report marks `skipped`, excluded from overall status) | `true` |
 | `mode` | Registered test mode (section 17) | `net-speed` |
 | `metric` | Metric name contains-match; empty = all metrics must pass | `Total_Rx` |
 | `unit` | Optional unit check | `B/s` |
