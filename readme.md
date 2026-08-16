@@ -474,6 +474,7 @@ etest/operators edit the **single file `hw-config.json`** (auto-created on first
 
 | Field | Meaning | Default |
 | --- | --- | --- |
+| `lock` | Config lock: `{enabled, password}` — when `enabled` is `true` all GUI config items are read-only; unlock with the password (default `admin`, in-session only) | `{true, "admin"}` |
 | `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
 | `auto_run` | Auto-start rule execution after launch | `true` |
 | `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |

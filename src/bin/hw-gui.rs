@@ -386,6 +386,8 @@ struct GuiApp {
   started_at: Instant,
   msg: String,
   smoke: bool,
+  unlock_pwd: String,
+  unlocked: bool,
   rules_emitted: bool,
   auto_closed: bool,
   view: View,
@@ -423,6 +425,8 @@ impl GuiApp {
       started_at: Instant::now(),
       msg: format!("就绪。已注册 {} 个测试模式", count),
       smoke,
+      unlock_pwd: String::new(),
+      unlocked: false,
       rules_emitted: false,
       auto_closed: false,
       view: match config.gui.view() {
@@ -457,6 +461,21 @@ impl GuiApp {
       app.msg = format!("已生成默认配置 {}（etest 可直接修改）", CONFIG_FILE);
     }
     app
+  }
+
+  /// 配置是否锁定（锁定后所有配置项只读）
+  fn config_locked(&self) -> bool {
+    self.config.lock.enabled && !self.unlocked
+  }
+
+  /// 解锁：密码正确则本会话内允许编辑
+  fn try_unlock(&mut self) {
+    if self.unlock_pwd == self.config.lock.password {
+      self.unlocked = true;
+      self.msg = "已解锁，配置可编辑（仅本会话）".into();
+    } else {
+      self.msg = "解锁失败：密码错误".into();
+    }
   }
 
   fn start_live(&mut self) {
@@ -810,17 +829,18 @@ impl eframe::App for GuiApp {
         }
       });
       ui.add_space(4.0);
+      let locked = self.config_locked();
       ui.horizontal(|ui| {
         ui.label("秒数");
-        ui.add(egui::DragValue::new(&mut self.c_secs).range(1..=3600));
+        ui.add_enabled(!locked, egui::DragValue::new(&mut self.c_secs).range(1..=3600));
         ui.label("目标");
-        ui.add(egui::DragValue::new(&mut self.c_target).speed(1.0));
+        ui.add_enabled(!locked, egui::DragValue::new(&mut self.c_target).speed(1.0));
         ui.label("±误差");
-        ui.add(egui::DragValue::new(&mut self.c_err).speed(1.0));
+        ui.add_enabled(!locked, egui::DragValue::new(&mut self.c_err).speed(1.0));
         ui.label("负载%");
-        ui.add(egui::DragValue::new(&mut self.c_load).speed(1.0).range(0.0..=100.0));
+        ui.add_enabled(!locked, egui::DragValue::new(&mut self.c_load).speed(1.0).range(0.0..=100.0));
         ui.label("校验过滤(逗号分隔,空=全部)");
-        ui.add(egui::TextEdit::singleline(&mut self.c_filter).desired_width(160.0));
+        ui.add_enabled(!locked, egui::TextEdit::singleline(&mut self.c_filter).desired_width(160.0));
         let check_running = self
           .check
           .as_ref()
@@ -849,6 +869,22 @@ impl eframe::App for GuiApp {
           self.save_history();
         }
       });
+      // 配置锁状态
+      if self.config.lock.enabled {
+        ui.add_space(2.0);
+        ui.horizontal(|ui| {
+          if self.unlocked {
+            ui.colored_label(egui::Color32::from_rgb(120, 200, 120), "🔓 已解锁（本会话）");
+          } else {
+            ui.colored_label(egui::Color32::from_rgb(230, 120, 120), "🔒 配置已锁定（只读，防误改）");
+            ui.label("解锁密码:");
+            ui.add(egui::TextEdit::singleline(&mut self.unlock_pwd).password(true).desired_width(120.0));
+            if ui.button("解锁").clicked() {
+              self.try_unlock();
+            }
+          }
+        });
+      }
       if !self.msg.is_empty() {
         ui.add_space(2.0);
         ui.colored_label(egui::Color32::from_rgb(255, 220, 120), &self.msg);
@@ -1072,9 +1108,10 @@ impl GuiApp {
   /// etest 规则执行面板
   fn show_rules_panel(&mut self, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
+      let locked = self.config_locked();
       ui.label("规则文件:");
-      ui.add(egui::TextEdit::singleline(&mut self.rules.path).desired_width(260.0));
-      if ui.button("加载").clicked() {
+      ui.add_enabled(!locked, egui::TextEdit::singleline(&mut self.rules.path).desired_width(260.0));
+      if ui.add_enabled(!locked, egui::Button::new("加载")).clicked() {
         self.rules.load();
       }
       let can_run = self.rules.file.is_some() && self.rules.run.is_none() && !self.rules.done;

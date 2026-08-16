@@ -474,6 +474,7 @@ etest / 操作员直接编辑**唯一文件 `hw-config.json`**（首次运行自
 
 | 字段 | 含义 | 默认值 |
 | --- | --- | --- |
+| `lock` | 配置锁：`{enabled, password}` —— `enabled=true` 时 GUI 所有配置项只读（防误改）；解锁需密码（默认 `admin`，仅本会话生效） | `{true, "admin"}` |
 | `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
 | `auto_run` | 启动后自动开始执行规则 | `true` |
 | `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |

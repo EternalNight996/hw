@@ -1,5 +1,9 @@
 {
-  "_说明": "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则）。字段说明见 README 第 20 节。",
+  "_说明": "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则, lock=配置锁）。字段说明见 README 第 20 节。",
+  "lock": {
+    "enabled": true,
+    "password": "admin"
+  },
   "gui": {
     "default_view": "rules",
     "auto_run": true,

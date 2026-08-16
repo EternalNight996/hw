@@ -80,12 +80,33 @@ impl Default for CheckParams {
   }
 }
 
+/// 配置锁：锁定后所有配置内容只读（防误改），解锁需密码
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LockConfig {
+  /// 锁定开关：true = 配置只读，需解锁后才能修改
+  pub enabled: bool,
+  /// 解锁密码（默认 admin；明文仅为防误改，非安全措施，请勿用于高敏场景）
+  pub password: String,
+}
+
+impl Default for LockConfig {
+  fn default() -> Self {
+    Self {
+      enabled: true,
+      password: "admin".into(),
+    }
+  }
+}
+
 /// 统一配置表：`gui` = 运行行为，`plan` = 测试规则（etest 只改这一个文件）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HwConfig {
   /// 配置说明（仅注释用途，程序忽略）
   #[serde(rename = "_说明")]
   pub note: String,
+  /// 配置锁（锁定后 GUI 配置只读）
+  pub lock: LockConfig,
   /// GUI 运行配置段
   pub gui: GuiConfig,
   /// 测试规则段（全功能项计划）
@@ -95,7 +116,8 @@ pub struct HwConfig {
 impl Default for HwConfig {
   fn default() -> Self {
     Self {
-      note: "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则）。字段说明见 README 第 20 节。".into(),
+      note: "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则, lock=配置锁）。字段说明见 README 第 20 节。".into(),
+      lock: LockConfig::default(),
       gui: GuiConfig::default(),
       plan: crate::test_mode::rules::full_plan(),
     }
@@ -182,6 +204,8 @@ mod tests {
     assert_eq!(cfg.gui.check_params.secs, 5);
     assert_eq!(cfg.gui.log_file, DEFAULT_LOG_FILE);
     assert_eq!(cfg.plan.rules.len(), 12); // 全功能项
+    assert!(cfg.lock.enabled); // 默认锁定
+    assert_eq!(cfg.lock.password, "admin");
   }
 
   #[test]
