@@ -5,7 +5,7 @@ proc-macro = false
 
 [features]
 log = ["tracing"]
-tracing = ["e-log/tracing"]
+tracing = ["e-log/tracing", "e-log/tracing-appender"]
 ohm = ["wmi", "system"]
 lhm = ["wmi","system"]
 aida64 = ["wmi", "system"]

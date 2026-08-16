@@ -14,6 +14,8 @@ mod wmi_backend;
 #[cfg(all(target_os = "windows", any(feature = "ohm", feature = "lhm", feature = "aida64")))]
 mod temp;
 #[cfg(all(target_os = "windows", any(feature = "ohm", feature = "lhm", feature = "aida64")))]
+mod sensor;
+#[cfg(all(target_os = "windows", any(feature = "ohm", feature = "lhm", feature = "aida64")))]
 mod gpu_usage;
 
 /// 注册所有内置模式
@@ -31,5 +33,9 @@ pub fn register_all() {
   {
     crate::test_mode::register(&temp::TEMP);
     crate::test_mode::register(&gpu_usage::GPU_USAGE);
+    crate::test_mode::register(&sensor::CPU_CLOCK);
+    crate::test_mode::register(&sensor::FAN_SPEED);
+    crate::test_mode::register(&sensor::VOLTAGE);
+    crate::test_mode::register(&sensor::POWER);
   }
 }

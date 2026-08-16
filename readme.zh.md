@@ -39,6 +39,8 @@ cargo install just
 just
 ```
 
+> 运行日志以 e-log（tracing）方式输出：按天滚动写入 `logs/hw-*.log`（含时间戳+级别），控制台输出到 **stderr**；stdout 仅保留 `R<...>R` 协议行，etest 解析不受日志干扰。
+
 > CI（GitHub Actions）覆盖：`cargo check --all-features`、`--no-default-features --features "cli,log"`、`--features "ohm,cli,log"` 与 `cargo test`（lib + doc）。
 
 **默认启动为 GUI**：`cargo run`（或 `target\\debug\\hw-gui.exe`）打开桌面应用，含「实时监控 / Check 测试 / etest 规则」三个视图；命令行工具仍为 `hw`（如 `hw --api Test --task list`）。
@@ -446,6 +448,24 @@ hw --api Test --task run-rules --args etest-rules.json
 `content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
 
 GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（带进度与曲线），并导出与 CLI 完全一致的报告 JSON —— 最终生产测试可以全程在 GUI 中运行。
+
+**全功能项对照表**（限值为建议值，按你的产品调整）：
+
+| 功能项 | mode | metric（建议） | 建议上限/说明 |
+| --- | --- | --- | --- |
+| CPU 主频 | `cpu-clock` | 任意（空=全部核心） | MHz，稳定性可加 `max_std` |
+| CPU 温度 | `temp` | `CPU Package` | ≤ 85 °C |
+| GPU 温度 | `temp` | `GPU` | ≤ 90 °C |
+| 主板温度 | `temp` | `Mainboard` | ≤ 60 °C |
+| 风扇转速 | `fan-speed` | 任意（空=全部风扇） | 建议 `min` ≥ 500 RPM |
+| 电压 | `voltage` | 任意 | V，按规格填 min/max |
+| 功率 | `power` | 任意 | W，按规格填 max |
+| CPU 利用率 | `cpu-usage` | `CPU_Usage_Global` | % |
+| 内存利用率 | `mem-usage` | `RAM_Usage` | ≤ 90 %，稳定性 `max_std` |
+| 磁盘占用 | `disk-usage` | `C: Used%` | ≤ 90 % |
+| 网速 | `net-speed` | `Total_Rx` / `Total_Tx` | B/s，按需 `min` |
+| GPU 利用率 | `gpu-usage` | 任意 | % |
+
 ---
 ### [20. 📖 GUI 运行配置表（`hw-gui-config.json`，etest 可直接修改）](src/gui_config.rs)
 etest / 操作员直接编辑 `hw-gui-config.json`（首次运行自动生成）即可控制 GUI 测试行为，无需改代码：

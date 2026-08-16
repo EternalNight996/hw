@@ -168,11 +168,121 @@ pub fn parse_rules(path: &str) -> e_utils::AnyResult<RuleFile> {
   Ok(file)
 }
 
-/// 生成规则模板文本
+/// 生成规则模板文本（全功能项：CPU 主频/温度、GPU 温度、主板温度、风扇、电压、功率、CPU/内存/磁盘/网速/GPU 利用率）
 pub fn rules_template() -> e_utils::AnyResult<String> {
   Ok(serde_json::to_string_pretty(&RuleFile {
-    name: Some("my-plan".into()),
+    name: Some("全项产测".into()),
     rules: vec![
+      Rule {
+        id: "cpu-clock".into(),
+        mode: "cpu-clock".into(),
+        metric: String::new(),
+        unit: Some("MHz".into()),
+        min: None,
+        max: None,
+        max_std: None,
+        secs: 5,
+        load: 0.0,
+      },
+      Rule {
+        id: "cpu-temp".into(),
+        mode: "temp".into(),
+        metric: "CPU Package".into(),
+        unit: Some("°C".into()),
+        min: None,
+        max: Some(85.0),
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "gpu-temp".into(),
+        mode: "temp".into(),
+        metric: "GPU".into(),
+        unit: Some("°C".into()),
+        min: None,
+        max: Some(90.0),
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "mobo-temp".into(),
+        mode: "temp".into(),
+        metric: "Mainboard".into(),
+        unit: Some("°C".into()),
+        min: None,
+        max: Some(60.0),
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "fan".into(),
+        mode: "fan-speed".into(),
+        metric: String::new(),
+        unit: Some("RPM".into()),
+        min: Some(500.0),
+        max: None,
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "voltage".into(),
+        mode: "voltage".into(),
+        metric: String::new(),
+        unit: Some("V".into()),
+        min: None,
+        max: None,
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "power".into(),
+        mode: "power".into(),
+        metric: String::new(),
+        unit: Some("W".into()),
+        min: None,
+        max: None,
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "cpu-usage".into(),
+        mode: "cpu-usage".into(),
+        metric: "CPU_Usage_Global".into(),
+        unit: Some("%".into()),
+        min: None,
+        max: Some(100.0),
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "ram-usage".into(),
+        mode: "mem-usage".into(),
+        metric: "RAM_Usage".into(),
+        unit: Some("%".into()),
+        min: None,
+        max: Some(90.0),
+        max_std: Some(2.0),
+        secs: 3,
+        load: 0.0,
+      },
+      Rule {
+        id: "disk-c".into(),
+        mode: "disk-usage".into(),
+        metric: "C: Used%".into(),
+        unit: Some("%".into()),
+        min: None,
+        max: Some(90.0),
+        max_std: None,
+        secs: 3,
+        load: 0.0,
+      },
       Rule {
         id: "net-up".into(),
         mode: "net-speed".into(),
@@ -185,13 +295,13 @@ pub fn rules_template() -> e_utils::AnyResult<String> {
         load: 0.0,
       },
       Rule {
-        id: "ram-usage".into(),
-        mode: "mem-usage".into(),
-        metric: "RAM_Usage".into(),
+        id: "gpu-usage".into(),
+        mode: "gpu-usage".into(),
+        metric: String::new(),
         unit: Some("%".into()),
         min: None,
-        max: Some(90.0),
-        max_std: Some(2.0),
+        max: Some(100.0),
+        max_std: None,
         secs: 3,
         load: 0.0,
       },
@@ -542,9 +652,15 @@ mod tests {
     let text = rules_template().unwrap();
     std::fs::write(&path, &text).unwrap();
     let file = parse_rules(path.to_str().unwrap()).unwrap();
-    assert_eq!(file.rules.len(), 2);
-    assert_eq!(file.rules[0].id, "net-up");
+    assert_eq!(file.rules.len(), 12); // 全功能项模板
+    assert_eq!(file.rules[0].id, "cpu-clock");
     assert_eq!(file.rules[0].secs, 5);
+    // 覆盖 CPU 主频/温度/风扇等关键项
+    let ids: Vec<&str> = file.rules.iter().map(|r| r.id.as_str()).collect();
+    assert!(ids.contains(&"cpu-temp"));
+    assert!(ids.contains(&"fan"));
+    assert!(ids.contains(&"voltage"));
+    assert!(ids.contains(&"power"));
     let _ = std::fs::remove_file(&path);
   }
 }

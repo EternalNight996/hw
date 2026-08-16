@@ -1,5 +1,6 @@
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
+  hw::log::init_logging();
   #[cfg(feature = "cli")]
   {
     use e_utils::cmd::CmdResult;

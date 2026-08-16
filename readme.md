@@ -39,6 +39,8 @@ cargo install just
 just
 ```
 
+> 运行日志以 e-log（tracing）方式输出：按天滚动写入 `logs/hw-*.log`（含时间戳+级别），控制台输出到 **stderr**；stdout 仅保留 `R<...>R` 协议行，etest 解析不受日志干扰。
+
 > CI (GitHub Actions) covers: `cargo check --all-features`, `--no-default-features --features "cli,log"`, `--features "ohm,cli,log"`, and `cargo test` (lib + doc).
 
 **Default launch is the GUI**: `cargo run` (or `target\\debug\\hw-gui.exe`) opens the desktop app with three views — Live Monitoring / Check / etest Rules. The CLI tool remains `hw` (e.g. `hw --api Test --task list`).
@@ -446,6 +448,24 @@ hw --api Test --task run-rules --args etest-rules.json
 Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
 
 The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule with live progress/curves, and exports the identical report JSON — the final production test can run entirely from the GUI.
+
+**Full item reference** (per-item limits are suggestions — adjust to your product):
+
+| 功能项 | mode | metric（建议） | 建议上限/说明 |
+| --- | --- | --- | --- |
+| CPU 主频 | `cpu-clock` | 任意（空=全部核心） | MHz，稳定性可加 `max_std` |
+| CPU 温度 | `temp` | `CPU Package` | ≤ 85 °C |
+| GPU 温度 | `temp` | `GPU` | ≤ 90 °C |
+| 主板温度 | `temp` | `Mainboard` | ≤ 60 °C |
+| 风扇转速 | `fan-speed` | 任意（空=全部风扇） | 建议 `min` ≥ 500 RPM |
+| 电压 | `voltage` | 任意 | V，按规格填 min/max |
+| 功率 | `power` | 任意 | W，按规格填 max |
+| CPU 利用率 | `cpu-usage` | `CPU_Usage_Global` | % |
+| 内存利用率 | `mem-usage` | `RAM_Usage` | ≤ 90 %，稳定性 `max_std` |
+| 磁盘占用 | `disk-usage` | `C: Used%` | ≤ 90 % |
+| 网速 | `net-speed` | `Total_Rx` / `Total_Tx` | B/s，按需 `min` |
+| GPU 利用率 | `gpu-usage` | 任意 | % |
+
 ---
 ### [20. 📖 GUI Run Config (`hw-gui-config.json`, editable by etest)](src/gui_config.rs)
 etest/operators edit `hw-gui-config.json` (auto-created on first run) to control the GUI test behavior — no code changes needed:

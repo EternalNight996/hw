@@ -27,6 +27,7 @@ const HISTORY_FILE: &str = "hw-gui-history.json";
 static EXIT_CODE: AtomicI32 = AtomicI32::new(0);
 
 fn main() -> eframe::Result {
+  hw::log::init_logging();
   register_all();
   let smoke = std::env::var("HW_GUI_SMOKE").is_ok();
   let opts = eframe::NativeOptions {
@@ -749,7 +750,7 @@ impl eframe::App for GuiApp {
     if self.rules.done && !self.rules.results.is_empty() && !self.rules_emitted {
       self.rules_emitted = true;
       let line = self.rules_etest_line();
-      println!("{}", line);
+      hw::p(&line); // stdout(R<...>R 协议) + e-log 日志文件
       if !self.config.log_file.is_empty() {
         let ts = now_str();
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.log_file) {
