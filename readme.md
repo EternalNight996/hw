@@ -475,8 +475,7 @@ etest/operators edit the **single file `hw-config.json`** (auto-created on first
 | Field | Meaning | Default |
 | --- | --- | --- |
 | `lock` | Config lock: `{enabled, password}` — when `enabled` is `true` all GUI config items are read-only; unlock with the password (default `admin`, in-session only) | `{true, "admin"}` |
-| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过 | `true` |
-| `modes` | 逐模式开关（共 **10 种 mode**：cpu-clock / temp / fan-speed / voltage / power / cpu-usage / mem-usage / disk-usage / net-speed / gpu-usage）；`"temp": false` 跳过该模式全部规则 | 全部 `true` |
+| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过（逐项由 `plan` 中每条规则的 `enabled` 控制） | `true` |
 | `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
 | `auto_run` | Auto-start rule execution after launch | `true` |
 | `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |

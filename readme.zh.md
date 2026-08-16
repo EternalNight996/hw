@@ -475,8 +475,7 @@ etest / 操作员直接编辑**唯一文件 `hw-config.json`**（首次运行自
 | 字段 | 含义 | 默认值 |
 | --- | --- | --- |
 | `lock` | 配置锁：`{enabled, password}` —— `enabled=true` 时 GUI 所有配置项只读（防误改）；解锁需密码（默认 `admin`，仅本会话生效） | `{true, "admin"}` |
-| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过 | `true` |
-| `modes` | 逐模式开关（rules 中共 **10 种 mode**：cpu-clock / temp / fan-speed / voltage / power / cpu-usage / mem-usage / disk-usage / net-speed / gpu-usage）；如 `"temp": false` 跳过该模式全部规则 | 全部 `true` |
+| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过（逐项由 `plan` 中每条规则的 `enabled` 控制） | `true` |
 | `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
 | `auto_run` | 启动后自动开始执行规则 | `true` |
 | `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |

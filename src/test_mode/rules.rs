@@ -604,16 +604,17 @@ pub async fn run_rule(rule: &Rule) -> RuleResult {
 pub async fn run_rules(path: &str) -> e_utils::AnyResult<RulesReport> {
   register_all();
   let file = parse_rules_file(path)?;
-  // 模式开关：优先取参数文件自身的 test_mode/modes（统一配置），否则取 hw-config.json
-  let cfg = match std::fs::read_to_string(path) {
+  // 总开关：优先取参数文件自身的 test_mode（统一配置），否则取 hw-config.json
+  let test_mode = match std::fs::read_to_string(path) {
     Ok(text) => serde_json::from_str::<crate::gui_config::HwConfig>(&text)
-      .unwrap_or_else(|_| crate::gui_config::HwConfig::load(crate::gui_config::CONFIG_FILE).0),
-    Err(_) => crate::gui_config::HwConfig::load(crate::gui_config::CONFIG_FILE).0,
+      .map(|c| c.test_mode)
+      .unwrap_or_else(|_| crate::gui_config::HwConfig::load(crate::gui_config::CONFIG_FILE).0.test_mode),
+    Err(_) => crate::gui_config::HwConfig::load(crate::gui_config::CONFIG_FILE).0.test_mode,
   };
   let plan = file.name.clone().unwrap_or_else(|| path.to_string());
   let mut results: Vec<RuleResult> = Vec::new();
   for rule in &file.rules {
-    if !rule.enabled || !cfg.mode_enabled(&rule.mode) {
+    if !rule.enabled || !test_mode {
       results.push(RuleResult::skipped(rule));
     } else {
       results.push(run_rule(rule).await);

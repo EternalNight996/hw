@@ -97,11 +97,6 @@ impl Default for LockConfig {
 
 fn default_true() -> bool { true }
 
-/// 内置全部测试模式（12 条规则所用）：cpu-clock / temp / fan-speed / voltage / power / cpu-usage / mem-usage / disk-usage / net-speed / gpu-usage
-pub const ALL_MODES: [&str; 10] = [
-  "cpu-clock", "temp", "fan-speed", "voltage", "power",
-  "cpu-usage", "mem-usage", "disk-usage", "net-speed", "gpu-usage",
-];
 
 /// 统一配置表：`gui` = 运行行为，`plan` = 测试规则（etest 只改这一个文件）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,9 +111,6 @@ pub struct HwConfig {
   /// 测试模式总开关：false = 全部规则跳过
   #[serde(default = "default_true")]
   pub test_mode: bool,
-  /// 各测试模式开关（mode 名 -> 是否启用；缺省视为 true）
-  #[serde(default)]
-  pub modes: std::collections::HashMap<String, bool>,
   /// 测试规则段（全功能项计划，放最下面）
   pub plan: crate::test_mode::rules::RuleFile,
 }
@@ -131,17 +123,11 @@ impl Default for HwConfig {
       gui: GuiConfig::default(),
       plan: crate::test_mode::rules::full_plan(),
       test_mode: true,
-      modes: ALL_MODES.iter().map(|m| (m.to_string(), true)).collect(),
     }
   }
 }
 
 impl HwConfig {
-  /// 某模式是否启用（总开关 + 逐模式开关）
-  pub fn mode_enabled(&self, mode: &str) -> bool {
-    self.test_mode && self.modes.get(mode).copied().unwrap_or(true)
-  }
-
   /// 生成统一配置模板文本
   pub fn template() -> e_utils::AnyResult<String> {
     Ok(serde_json::to_string_pretty(&HwConfig::default())?)

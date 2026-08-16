@@ -61,8 +61,6 @@ struct RulesGui {
   file: Option<rules::RuleFile>,
   /// 测试模式总开关（来自 config.test_mode）
   global_test_mode: bool,
-  /// 逐模式开关（来自 config.modes）
-  mode_switches: std::collections::HashMap<String, bool>,
   run: Option<rules::RuleRun>,
   results: Vec<rules::RuleResult>,
   plan: String,
@@ -77,7 +75,6 @@ impl RulesGui {
     Self {
       file: None,
       global_test_mode: true,
-      mode_switches: std::collections::HashMap::new(),
       run: None,
       results: Vec::new(),
       plan: String::new(),
@@ -122,9 +119,8 @@ impl RulesGui {
     }
     let idx = self.results.len();
     let mut rule = self.file.as_ref().unwrap().rules[idx].clone();
-    // enabled=false 或 模式未启用（总开关/逐模式）：不执行，标记跳过并继续
-    let mode_on = self.global_test_mode && self.mode_switches.get(&rule.mode).copied().unwrap_or(true);
-    if !rule.enabled || !mode_on {
+    // enabled=false 或 总开关关闭：不执行，标记跳过并继续
+    if !rule.enabled || !self.global_test_mode {
       self.results.push(rules::RuleResult::skipped(&rule));
       self.advance();
       return;
@@ -432,7 +428,6 @@ impl GuiApp {
     app.c_load = config.gui.check_params.load;
     app.rules.global_load = config.gui.raise_load_percent;
     app.rules.global_test_mode = config.test_mode;
-    app.rules.mode_switches = config.modes.clone();
     // plan 段：统一配置内嵌的测试规则
     if !config.plan.rules.is_empty() {
       app.rules.file = Some(config.plan.clone());

@@ -21,18 +21,6 @@
     }
   },
   "test_mode": true,
-  "modes": {
-    "voltage": true,
-    "disk-usage": true,
-    "gpu-usage": true,
-    "temp": true,
-    "cpu-clock": true,
-    "fan-speed": true,
-    "power": true,
-    "cpu-usage": true,
-    "mem-usage": true,
-    "net-speed": true
-  },
   "plan": {
     "name": "全项产测",
     "rules": [
