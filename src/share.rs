@@ -4,8 +4,8 @@ pub fn bytes_to_gib(bytes: u64) -> f64 {
   bytes as f64 / (1024.0 * 1024.0 * 1024.0)
 }
 
-// 日志明细：全部走 e-log（文件 + stderr），不输出到 stdout；
-// stdout 仅保留最终一行 R<...>R 协议（见 protocol_line）。
+// 日志明细：全部走 e-log（文件 + stderr），不输出到 stdout、不含 R<...>R 包装。
+// 产测结束时，R<...>R 结果作为“结果日志”的最后一行追加（见 write_result_line）。
 pub fn p(v: impl AsRef<str>) {
   #[cfg(any(feature = "log", feature = "tracing"))]
   e_log::info!("{}", v.as_ref());
@@ -23,10 +23,26 @@ pub fn dp(v: impl AsRef<str>) {
   e_log::debug!("{}", v.as_ref());
 }
 
-/// R<...>R 协议行：**仅**输出到 stdout，作为产测结束的最后一行的唯一输出（不进日志明细）
-pub fn protocol_line(v: impl AsRef<str>) {
-  println!("{}", v.as_ref());
+/// 构造 R<...>R 结果行（CmdResult 结构，与 etest 约定一致）
+pub fn rr_line(content: &str, status: bool) -> String {
+  use e_utils::cmd::CmdResult;
+  let res: CmdResult<serde_json::Value> = CmdResult {
+    content: content.to_string(),
+    status,
+    opts: serde_json::Value::Null,
+  };
+  res.to_str().unwrap_or_default()
 }
+
+/// 将 R<...>R 结果追加为结果日志（config log_file，默认 hw-gui-test.log）的最后一行
+pub fn write_result_line(rr: &str) {
+  let path = crate::gui_config::HwConfig::result_log_path();
+  if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+    use std::io::Write;
+    let _ = writeln!(f, "{}", rr);
+  }
+}
+
 
 use std::path::Path;
 

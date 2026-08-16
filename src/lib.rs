@@ -49,4 +49,4 @@ pub mod os_more;
 pub mod share;
 pub mod test_mode;
 pub mod wmic;
-pub use share::{dp, ep, p, protocol_line, wp};
+pub use share::{dp, ep, p, rr_line, wp, write_result_line};

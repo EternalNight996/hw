@@ -555,21 +555,14 @@ impl GuiApp {
   }
 
 
-  /// 构造 etest 兼容的 R<...>R 结果行（与 CLI main.rs 的 CmdResult 结构完全一致）
-  fn rules_etest_line(&self) -> String {
-    use e_utils::cmd::CmdResult;
+  /// 产测报告 JSON（无 R<...>R 包装）
+  fn rules_report_json(&self) -> String {
     let report = rules::RulesReport {
       plan: self.rules.plan.clone(),
       status: self.rules.overall_ok(),
       results: self.rules.results.clone(),
     };
-    let content = report.to_json().unwrap_or_default();
-    let res: CmdResult<serde_json::Value> = CmdResult {
-      content,
-      status: report.status,
-      opts: serde_json::Value::Null,
-    };
-    res.to_str().unwrap_or_default()
+    report.to_json().unwrap_or_default()
   }
 
 }
@@ -660,19 +653,12 @@ impl eframe::App for GuiApp {
         }
       }
     }
-    // 规则完成：输出 R<...>R 结果（stdout + 日志文件），与 CLI 协议一致，etest 统一解析
+    // 规则完成：报告 JSON 走 e-log 明细；R<...>R 结果作为结果日志的最后一行追加
     if self.rules.done && !self.rules.results.is_empty() && !self.rules_emitted {
       self.rules_emitted = true;
-      let line = self.rules_etest_line();
-      hw::protocol_line(&line); // stdout 最后一行的 R<...>R 协议（不进日志明细）
-      if !self.config.gui.log_file.is_empty() {
-        let ts = now_str();
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.gui.log_file) {
-          use std::io::Write;
-          let _ = f.write_all(format!("{}	{}
-", ts, line).as_bytes());
-        }
-      }
+      let json = self.rules_report_json();
+      hw::p(&json); // e-log 明细（logs/hw-*.log + stderr）
+      hw::write_result_line(&hw::rr_line(&json, self.rules.overall_ok()));
       if self.config.gui.auto_close {
         self.auto_closed = true;
         let ok = self.rules.overall_ok();

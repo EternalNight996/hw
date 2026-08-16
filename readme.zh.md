@@ -405,7 +405,7 @@ set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 R<{"content":"...","status":true,"opts":null}>R
 ```
 
-`status` = 整体 PASS/FAIL；`content` = 规则报告 JSON（见下）。
+> **输出契约**：明细（逐秒进度/汇总）经 e-log 正常输出（`logs/hw-*.log` + stderr），不含 `R<...>R`；测试结束时，将全项产测明细以 `R<...>R` 作为**结果日志（`gui.log_file`，默认 `hw-gui-test.log`）的最后一行**追加 —— `status` = 整体 PASS/FAIL，`content` = 规则报告 JSON。
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 

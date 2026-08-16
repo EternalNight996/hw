@@ -130,6 +130,12 @@ impl HwConfig {
     Ok(serde_json::to_string_pretty(&HwConfig::default())?)
   }
 
+/// 结果日志路径：读 hw-config.json 的 gui.log_file（支持占位符），缺省 hw-gui-test.log
+pub fn result_log_path() -> String {
+  let (cfg, _) = HwConfig::load(CONFIG_FILE);
+  resolve_placeholders(&cfg.gui.log_file)
+}
+
   /// 保存统一配置到文件（UTF-8，无 BOM）
   pub fn save(&self, path: &str) -> e_utils::AnyResult<()> {
     let json = serde_json::to_string_pretty(self)?;

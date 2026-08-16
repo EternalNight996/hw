@@ -405,7 +405,7 @@ Production testing is driven by the **etest** platform, which invokes `hw.exe` v
 R<{"content":"...","status":true,"opts":null}>R
 ```
 
-`status` = overall PASS/FAIL; `content` = rule report JSON (see below).
+> **Output contract**: details (per-second progress, summaries) are logged via e-log (`logs/hw-*.log` + stderr) without `R<...>R`; when the run finishes, the full per-item result is appended as the **last line** of the result log (`gui.log_file`, default `hw-gui-test.log`) in `R<...>R` format — `status` = overall PASS/FAIL, `content` = rule report JSON.
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 
