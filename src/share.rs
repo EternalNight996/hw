@@ -4,29 +4,28 @@ pub fn bytes_to_gib(bytes: u64) -> f64 {
   bytes as f64 / (1024.0 * 1024.0 * 1024.0)
 }
 
+// 日志明细：全部走 e-log（文件 + stderr），不输出到 stdout；
+// stdout 仅保留最终一行 R<...>R 协议（见 protocol_line）。
 pub fn p(v: impl AsRef<str>) {
-  #[cfg(feature = "cli")]
-  println!("{}", v.as_ref());
   #[cfg(any(feature = "log", feature = "tracing"))]
   e_log::info!("{}", v.as_ref());
 }
 pub fn ep(v: impl AsRef<str>) {
-  #[cfg(feature = "cli")]
-  println!("{}", v.as_ref());
   #[cfg(any(feature = "log", feature = "tracing"))]
   e_log::error!("{}", v.as_ref());
 }
 pub fn wp(v: impl AsRef<str>) {
-  #[cfg(feature = "cli")]
-  println!("{}", v.as_ref());
   #[cfg(any(feature = "log", feature = "tracing"))]
   e_log::warn!("{}", v.as_ref());
 }
 pub fn dp(v: impl AsRef<str>) {
-  #[cfg(feature = "cli")]
-  println!("{}", v.as_ref());
   #[cfg(any(feature = "log", feature = "tracing"))]
   e_log::debug!("{}", v.as_ref());
+}
+
+/// R<...>R 协议行：**仅**输出到 stdout，作为产测结束的最后一行的唯一输出（不进日志明细）
+pub fn protocol_line(v: impl AsRef<str>) {
+  println!("{}", v.as_ref());
 }
 
 use std::path::Path;

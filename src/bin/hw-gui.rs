@@ -790,7 +790,7 @@ impl eframe::App for GuiApp {
     if self.rules.done && !self.rules.results.is_empty() && !self.rules_emitted {
       self.rules_emitted = true;
       let line = self.rules_etest_line();
-      hw::p(&line); // stdout(R<...>R 协议) + e-log 日志文件
+      hw::protocol_line(&line); // stdout 最后一行的 R<...>R 协议（不进日志明细）
       if !self.config.gui.log_file.is_empty() {
         let ts = now_str();
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&self.config.gui.log_file) {
