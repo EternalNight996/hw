@@ -1110,13 +1110,14 @@ impl GuiApp {
           .striped(true)
           .num_columns(8)
           .show(ui, |ui| {
-            for h in ["#", "id", "模式", "指标", "下限", "上限", "稳定σ", "秒数", "负载%"] {
+            for h in ["#", "id", "说明", "模式", "指标", "下限", "上限", "稳定σ", "秒数", "负载%"] {
               ui.strong(h);
             }
             ui.end_row();
             for (i, r) in file.rules.iter().enumerate() {
               ui.label((i + 1).to_string());
               ui.label(&r.id);
+              ui.label(if r.description.is_empty() { "-".into() } else { r.description.clone() });
               ui.label(&r.mode);
               ui.label(if r.metric.is_empty() {
                 "全部".into()
@@ -1201,7 +1202,11 @@ impl GuiApp {
             }
             ui.end_row();
             for r in &self.rules.results {
-              ui.label(&r.item);
+              if r.description.is_empty() {
+                ui.label(&r.item);
+              } else {
+                ui.label(format!("{} ({})", r.description, r.item));
+              }
               ui.label(&r.mode);
               ui.label(&r.metric);
               ui.label(format!("{:.2}", r.avg));

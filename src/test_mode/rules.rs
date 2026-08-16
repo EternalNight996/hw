@@ -34,8 +34,11 @@ use super::{get as get_mode, register_all, Metric, MetricStat, ModeContext, Mode
 /// 单条测试规则
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Rule {
-  /// 测试项 ID（etest 唯一标识）
+  /// 测试项 ID（etest 唯一标识，英文短名）
   pub id: String,
+  /// 中文描述（如 "CPU 主频"），GUI 与报告直接显示
+  #[serde(default)]
+  pub description: String,
   /// 模式名（--task 同名，如 net-speed / cpu-usage / temp）
   pub mode: String,
   /// 指标名包含匹配（空 = 该模式全部指标都须通过）
@@ -89,6 +92,9 @@ impl std::error::Error for RulesFail {}
 pub struct RuleResult {
   /// 测试项 ID
   pub item: String,
+  /// 中文描述
+  #[serde(default)]
+  pub description: String,
   pub mode: String,
   /// 参与判定的指标名（metric 匹配到多个时取第一个）
   pub metric: String,
@@ -114,6 +120,7 @@ impl RuleResult {
   pub fn failed(rule: &Rule, message: impl Into<String>) -> Self {
     RuleResult {
       item: rule.id.clone(),
+      description: rule.description.clone(),
       mode: rule.mode.clone(),
       metric: String::new(),
       unit: String::new(),
@@ -175,6 +182,7 @@ pub fn full_plan() -> RuleFile {
     rules: vec![
       Rule {
         id: "cpu-clock".into(),
+        description: "CPU 主频（MHz）".into(),
         mode: "cpu-clock".into(),
         metric: String::new(),
         unit: Some("MHz".into()),
@@ -186,6 +194,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "cpu-temp".into(),
+        description: "CPU 温度（°C）".into(),
         mode: "temp".into(),
         metric: "CPU Package".into(),
         unit: Some("°C".into()),
@@ -197,6 +206,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "gpu-temp".into(),
+        description: "GPU 温度（°C）".into(),
         mode: "temp".into(),
         metric: "GPU".into(),
         unit: Some("°C".into()),
@@ -208,6 +218,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "mobo-temp".into(),
+        description: "主板温度（°C）".into(),
         mode: "temp".into(),
         metric: "Mainboard".into(),
         unit: Some("°C".into()),
@@ -219,6 +230,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "fan".into(),
+        description: "风扇转速（RPM）".into(),
         mode: "fan-speed".into(),
         metric: String::new(),
         unit: Some("RPM".into()),
@@ -230,6 +242,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "voltage".into(),
+        description: "电压（V）".into(),
         mode: "voltage".into(),
         metric: String::new(),
         unit: Some("V".into()),
@@ -241,6 +254,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "power".into(),
+        description: "功率（W）".into(),
         mode: "power".into(),
         metric: String::new(),
         unit: Some("W".into()),
@@ -252,6 +266,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "cpu-usage".into(),
+        description: "CPU 利用率（%）".into(),
         mode: "cpu-usage".into(),
         metric: "CPU_Usage_Global".into(),
         unit: Some("%".into()),
@@ -263,6 +278,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "ram-usage".into(),
+        description: "内存利用率（%）".into(),
         mode: "mem-usage".into(),
         metric: "RAM_Usage".into(),
         unit: Some("%".into()),
@@ -274,6 +290,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "disk-c".into(),
+        description: "C 盘占用率（%）".into(),
         mode: "disk-usage".into(),
         metric: "C: Used%".into(),
         unit: Some("%".into()),
@@ -285,6 +302,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "net-up".into(),
+        description: "网速上行（B/s）".into(),
         mode: "net-speed".into(),
         metric: "Total_Rx".into(),
         unit: Some("B/s".into()),
@@ -296,6 +314,7 @@ pub fn full_plan() -> RuleFile {
       },
       Rule {
         id: "gpu-usage".into(),
+        description: "GPU 利用率（%）".into(),
         mode: "gpu-usage".into(),
         metric: String::new(),
         unit: Some("%".into()),
@@ -496,6 +515,7 @@ impl RuleRun {
     };
     RuleResult {
       item: self.rule.id.clone(),
+      description: self.rule.description.clone(),
       mode: self.rule.mode.clone(),
       metric: primary.name.clone(),
       unit: primary.unit.clone(),
@@ -581,6 +601,7 @@ mod tests {
   fn dummy_rule(max: Option<f64>) -> Rule {
     Rule {
       id: "d".into(),
+      description: "假模式".into(),
       mode: "dummy-rule".into(),
       metric: "DummyValue".into(),
       unit: None,
@@ -651,6 +672,7 @@ mod tests {
   fn rule_matches() {
     let r = Rule {
       id: "x".into(),
+      description: String::new(),
       mode: "mem-usage".into(),
       metric: "RAM".into(),
       unit: None,

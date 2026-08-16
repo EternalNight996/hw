@@ -22,6 +22,7 @@
     "rules": [
       {
         "id": "cpu-clock",
+        "description": "CPU 主频（MHz）",
         "mode": "cpu-clock",
         "metric": "",
         "unit": "MHz",
@@ -33,6 +34,7 @@
       },
       {
         "id": "cpu-temp",
+        "description": "CPU 温度（°C）",
         "mode": "temp",
         "metric": "CPU Package",
         "unit": "°C",
@@ -44,6 +46,7 @@
       },
       {
         "id": "gpu-temp",
+        "description": "GPU 温度（°C）",
         "mode": "temp",
         "metric": "GPU",
         "unit": "°C",
@@ -55,6 +58,7 @@
       },
       {
         "id": "mobo-temp",
+        "description": "主板温度（°C）",
         "mode": "temp",
         "metric": "Mainboard",
         "unit": "°C",
@@ -66,6 +70,7 @@
       },
       {
         "id": "fan",
+        "description": "风扇转速（RPM）",
         "mode": "fan-speed",
         "metric": "",
         "unit": "RPM",
@@ -77,6 +82,7 @@
       },
       {
         "id": "voltage",
+        "description": "电压（V）",
         "mode": "voltage",
         "metric": "",
         "unit": "V",
@@ -88,6 +94,7 @@
       },
       {
         "id": "power",
+        "description": "功率（W）",
         "mode": "power",
         "metric": "",
         "unit": "W",
@@ -99,6 +106,7 @@
       },
       {
         "id": "cpu-usage",
+        "description": "CPU 利用率（%）",
         "mode": "cpu-usage",
         "metric": "CPU_Usage_Global",
         "unit": "%",
@@ -110,6 +118,7 @@
       },
       {
         "id": "ram-usage",
+        "description": "内存利用率（%）",
         "mode": "mem-usage",
         "metric": "RAM_Usage",
         "unit": "%",
@@ -121,6 +130,7 @@
       },
       {
         "id": "disk-c",
+        "description": "C 盘占用率（%）",
         "mode": "disk-usage",
         "metric": "C: Used%",
         "unit": "%",
@@ -132,6 +142,7 @@
       },
       {
         "id": "net-up",
+        "description": "网速上行（B/s）",
         "mode": "net-speed",
         "metric": "Total_Rx",
         "unit": "B/s",
@@ -143,6 +154,7 @@
       },
       {
         "id": "gpu-usage",
+        "description": "GPU 利用率（%）",
         "mode": "gpu-usage",
         "metric": "",
         "unit": "%",

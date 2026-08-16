@@ -415,6 +415,7 @@ R<{"content":"...","status":true,"opts":null}>R
 | Field | Meaning | Example |
 | --- | --- | --- |
 | `id` | Test item id (unique) | `net-up` |
+| `description` | Chinese description shown in GUI/report (e.g. `CPU 主频（MHz）`) | `CPU 主频（MHz）` |
 | `mode` | Registered test mode (section 17) | `net-speed` |
 | `metric` | Metric name contains-match; empty = all metrics must pass | `Total_Rx` |
 | `unit` | Optional unit check | `B/s` |

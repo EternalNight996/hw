@@ -415,6 +415,7 @@ R<{"content":"...","status":true,"opts":null}>R
 | 字段 | 说明 | 示例 |
 | --- | --- | --- |
 | `id` | 测试项 ID（唯一） | `net-up` |
+| `description` | 中文描述（GUI 与报告直接显示，如 `CPU 主频（MHz）`） | `CPU 主频（MHz）` |
 | `mode` | 已注册测试模式（见第 17 节） | `net-speed` |
 | `metric` | 指标名包含匹配；空 = 该模式全部指标须通过 | `Total_Rx` |
 | `unit` | 可选单位校验 | `B/s` |
