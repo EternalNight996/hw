@@ -381,10 +381,9 @@ See [src/test_mode/mod.rs](src/test_mode/mod.rs) for the trait docs.
 ### [18. 📖 GUI — hw-gui (eframe/egui desktop app)](src/bin/hw-gui.rs)
 A desktop GUI (`hw-gui`) built with eframe/egui, modeled on TrafficMonitor's floating-window style:
 
-- **Live monitoring** — continuously samples the registered test modes (net-speed, cpu-usage, mem-usage, disk-usage, temp, gpu-usage) and plots each metric over time
-- **Check visualization** — run `check` with target/±error/load, watch per-second samples against the target band, live PASS/FAIL
-- **History & export** — every check run is recorded to `hw-gui-history.json`; export JSON/CSV reports
-- **etest rules panel** — the unified `hw-config.json` plan is auto-loaded and run from the GUI with per-rule progress/curve and PASS-FAIL table; export the same report JSON as the CLI (see section 19)
+- **Left sidebar — test items**: all functional items from `hw-config.json` plan, each with a `是否测试` checkbox (unlock to toggle, persisted) and last PASS/FAIL/跳过 status; plus live metric values
+- **Center — test data line charts** (fixed layout, updates while testing): per-rule samples / live series / check curves with target band
+- **Check & rules run** from the top bar; export the same etest report JSON as the CLI (see section 19)
 
 ```bash
 # Build (the gui feature adds eframe/egui_plot; requires rustc >= 1.95)

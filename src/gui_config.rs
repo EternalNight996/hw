@@ -130,6 +130,13 @@ impl HwConfig {
     Ok(serde_json::to_string_pretty(&HwConfig::default())?)
   }
 
+  /// 保存统一配置到文件（UTF-8，无 BOM）
+  pub fn save(&self, path: &str) -> e_utils::AnyResult<()> {
+    let json = serde_json::to_string_pretty(self)?;
+    std::fs::write(path, json)?;
+    Ok(())
+  }
+
   /// 加载统一配置；文件缺失/损坏时自动重建模板
   pub fn load(path: &str) -> (Self, bool) {
     match std::fs::read_to_string(path) {

@@ -381,10 +381,9 @@ hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 ### [18. 📖 图形化界面 — hw-gui（eframe/egui 桌面应用）](src/bin/hw-gui.rs)
 基于 eframe/egui 的桌面 GUI（`hw-gui`），形态参考 TrafficMonitor 的悬浮窗风格：
 
-- **实时监控** — 持续采样已注册的测试模式（net-speed、cpu-usage、mem-usage、disk-usage、temp、gpu-usage），各指标随时间绘制曲线
-- **Check 可视化** — 设定目标值/±误差/负载运行 check，逐秒采样叠加目标带，实时 PASS/FAIL
-- **历史与导出** — 每次 check 自动记录到 `hw-gui-history.json`，可导出 JSON/CSV 报告
-- **etest 规则执行面板** — 统一配置 `hw-config.json` 的 plan 段自动加载并在 GUI 逐条执行（进度/曲线/逐项 PASS-FAIL），导出与 CLI 相同的报告 JSON（见第 19 节）
+- **左侧栏 — 测试功能项**：`hw-config.json` plan 的全部功能项，每项带「是否测试」勾选框（解锁后可改并保存）与上次 PASS/FAIL/跳过 状态；下方为实时指标值
+- **中间 — 测试数据线图**（固定布局，测试时更新）：当前规则样本曲线 / 实时曲线 / Check 曲线（含目标带）
+- **Check 与规则运行**在顶栏操作；可导出与 CLI 相同的 etest 报告 JSON（见第 19 节）
 
 ```bash
 # 构建（gui 特性引入 eframe/egui_plot；需要 rustc >= 1.95）
