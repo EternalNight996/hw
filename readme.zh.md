@@ -365,7 +365,7 @@ hw --api Test --task mem-usage --args data
 # 磁盘占用率与 IO 速率
 hw --api Test --task disk-usage --args print -- 3
 
-# 温度（°C）与显卡利用率（需在 plugins/ 放置 OHM/LHM/AIDA64）
+# 温度（°C）与显卡利用率（需在 plugins/ 放置 LHM/OHM/AIDA64，推荐 LHM）
 hw --api Test --task temp --args print -- 3
 hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 ```
@@ -396,7 +396,7 @@ target\debug\hw-gui.exe
 set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 ```
 
-温度/GPU 模式需要 `plugins/` 下有 OHM/LHM/AIDA64（见第 17 节），首次启动这些模式最长约 20 秒（拉起后端进程）；其余模式开箱即用。
+温度/GPU/风扇/电压/功率/CPU 主频模式需要 `plugins/` 下有传感器后端 —— **推荐 LibreHardwareMonitor（LHM，OpenHardwareMonitor 的维护版）**，放在 `plugins/LHM/LibreHardwareMonitor.exe`；OHM（`plugins/OHM/OpenHardwareMonitor.exe`）或 AIDA64（`plugins/AIDA64/AIDA64.exe`）作为回退。首次启动这些模式最长约 20 秒（拉起后端进程）；其余模式开箱即用。
 ---
 ### [19. 📖 etest 测试平台接入](src/test_mode/rules.rs)
 生产测试由 **etest** 平台调度：平台通过命令行调用 `hw.exe`，解析标准输出的 `R<...>R` 包装 JSON：

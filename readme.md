@@ -365,7 +365,7 @@ hw --api Test --task mem-usage --args data
 # Disk used% and IO rates
 hw --api Test --task disk-usage --args print -- 3
 
-# Temperature (°C) and GPU utilization (need OHM/LHM/AIDA64 in plugins/)
+# Temperature (°C) and GPU utilization (need LHM/OHM/AIDA64 in plugins/, LHM preferred)
 hw --api Test --task temp --args print -- 3
 hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
 ```
@@ -396,7 +396,7 @@ target\debug\hw-gui.exe
 set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 ```
 
-Temperature/GPU modes need OHM/LHM/AIDA64 executables under `plugins/` (see section 17); the first start of those modes may take up to ~20 s to launch the backend. Other modes work out of the box.
+Temperature/GPU/fan/voltage/power/CPU-clock modes need a sensor backend executable under `plugins/` — **prefer LibreHardwareMonitor (LHM, the maintained fork of OpenHardwareMonitor)** at `plugins/LHM/LibreHardwareMonitor.exe`; OHM (`plugins/OHM/OpenHardwareMonitor.exe`) or AIDA64 (`plugins/AIDA64/AIDA64.exe`) are used as fallback. First start of these modes may take up to ~20 s to launch the backend. Other modes work out of the box.
 ---
 ### [19. 📖 etest Test Platform Integration](src/test_mode/rules.rs)
 Production testing is driven by the **etest** platform, which invokes `hw.exe` via CLI and parses the `R<...>R`-wrapped JSON on stdout:

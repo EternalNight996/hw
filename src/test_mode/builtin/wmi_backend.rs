@@ -14,15 +14,15 @@ pub(crate) enum Backend {
 }
 
 impl Backend {
-  /// 启动后端进程并建立 WMI 连接（按编译特性选择优先级最高的后端：OHM > LHM > AIDA64）
+  /// 启动后端进程并建立 WMI 连接（LHM 优先——OHM 的维护版；OHM 回退；AIDA64 最后）
   pub fn start() -> e_utils::AnyResult<Backend> {
-    #[cfg(feature = "ohm")]
-    {
-      return Self::start_one(crate::ohm::OHM::EXE, crate::ohm::OHM::DIR, || Ok(Backend::Ohm(crate::ohm::OHM::new()?)));
-    }
-    #[cfg(all(feature = "lhm", not(feature = "ohm")))]
+    #[cfg(feature = "lhm")]
     {
       return Self::start_one(crate::lhm::LHM::EXE, crate::lhm::LHM::DIR, || Ok(Backend::Lhm(crate::lhm::LHM::new()?)));
+    }
+    #[cfg(all(feature = "ohm", not(feature = "lhm")))]
+    {
+      return Self::start_one(crate::ohm::OHM::EXE, crate::ohm::OHM::DIR, || Ok(Backend::Ohm(crate::ohm::OHM::new()?)));
     }
     #[cfg(all(feature = "aida64", not(any(feature = "ohm", feature = "lhm"))))]
     {
@@ -30,7 +30,7 @@ impl Backend {
     }
     #[cfg(not(any(feature = "ohm", feature = "lhm", feature = "aida64")))]
     {
-      Err("no sensor backend feature enabled (ohm/lhm/aida64)".into())
+      Err("no sensor backend feature enabled (lhm/ohm/aida64)".into())
     }
   }
 
@@ -45,10 +45,10 @@ impl Backend {
     if pids.is_empty() {
       return Err(format!("{} 进程启动失败", exe).into());
     }
-    #[cfg(feature = "ohm")]
-    crate::ohm::OHM::test(100)?;
-    #[cfg(all(feature = "lhm", not(feature = "ohm")))]
+    #[cfg(feature = "lhm")]
     crate::lhm::LHM::test(100)?;
+    #[cfg(all(feature = "ohm", not(feature = "lhm")))]
+    crate::ohm::OHM::test(100)?;
     #[cfg(all(feature = "aida64", not(any(feature = "ohm", feature = "lhm"))))]
     crate::aida64::AIDA64::test(100)?;
     connect()
