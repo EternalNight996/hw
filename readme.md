@@ -74,7 +74,7 @@ hw = {version="0.1", default-features = false, feature=["ohm","cli","log"]}
 ```bash
 hw --api OS --task data --args CPU Clock
 ```
-```rust
+```text
    Compiling hw v0.1.2 (D:\MyApp\hw)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.18s
      Running `target\x86_64-pc-windows-msvc\debug\hw.exe --api OHM --task data --args CPU Clock`
@@ -110,7 +110,7 @@ R<{"content":"1068","status":true,"opts":null}>R
 ```bash
 hw --api OHM --task print --full --args CPU Clock
 ```
-```rust
+```text
 ...
 
 R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"res\":\"PASS\",\"data\":\"1102\",\"min\":1101.5174560546875,\"max\":1101.5174560546875,\"avg\":1102.0,\"total\":6609.104736328125,\"samples\":6,\"test_secs\":0,\"error_count\":0,\"load\":{\"min\":0.0,\"max\":0.0,\"avg\":0.0,\"total\":0.0,\"status\":[]},\"status\":[...]}","status":true,"opts":null}>R
@@ -120,7 +120,7 @@ R<{"content":"{\"api\":\"OHM\",\"hw_type\":\"CPU\",\"sensor_type\":\"Clock\",\"r
 ```bash
 hw --api OHM --task check --full --args CPU Clock -- 10 2000 3000 100
 ```
-```rust
+```text
 ...
 
 --- CPU Status at Second 10 ---

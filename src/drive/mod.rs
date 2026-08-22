@@ -132,7 +132,7 @@ pub async fn drive_query<T: AsRef<str>>(
         }
       }
       "restart" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_restart,true)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_restart, true)?;
         for status in &status_list {
           if status.status == DriveStatusType::Runing {
             break;
@@ -141,7 +141,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "enable" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_enable,true)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_enable, true)?;
         for status in &status_list {
           if status.status != DriveStatusType::Runing {
             return Err("Enable Error: not runing".into());
@@ -150,7 +150,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "disable" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_disable,true)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_disable, true)?;
         for status in &status_list {
           if status.status != DriveStatusType::Disabled {
             return Err("Disable Error: not disabled".into());
@@ -159,7 +159,7 @@ pub async fn drive_query<T: AsRef<str>>(
         Ok(serde_json::to_string(&status_list)?)
       }
       "remove" => {
-        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_remove,false)?;
+        let status_list = crate::drive::find_with_run(&args, &filter, crate::drive::pnputil_remove, false)?;
         for status in &status_list {
           if status.status != DriveStatusType::None {
             return Err("Remove Error: not none".into());

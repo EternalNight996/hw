@@ -139,7 +139,7 @@ where
 
 /// # PnPUtil
 /// # Example sh
-/// ```
+/// ```text
 /// PNPUTIL [/add-driver <...> | /delete-driver <...> |
 /// /export-driver <...> | /enum-drivers |
 /// /enum-devices [<...>] | /enum-devicetree [<...>] |
@@ -148,7 +148,7 @@ where
 /// /scan-devices [<...>] | /enum-classes [<...>] |
 /// /enum-interfaces [<...>] | /enum-containers [<...>] |
 /// /?]
-/// ```
+/// ```text
 pub fn pnputil<I, S>(command: I) -> e_utils::AnyResult<String>
 where
   I: IntoIterator<Item = S>,
@@ -161,7 +161,7 @@ where
   Ok(res)
 }
 /// #/enable-device 启用系统上的设备。 从 Windows 10 版本 2004 开始提供命令
-/// ```
+/// ```text
 /// 从 Windows 10 版本 2004 开始可用的标志：
 /// /reboot - 如果需要完成操作，请重新启动系统
 /// 从 Windows 11 版本 21H2 开始可用的标志：
@@ -169,14 +169,14 @@ where
 /// 从 Windows 11 版本 22H2 开始可用的标志：
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
-/// ```
+/// ```text
 pub fn pnputil_enable(commands: Vec<String>) -> e_utils::AnyResult<String> {
   let mut args = vec!["/enable-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
 /// #/disable-device 禁用系统上的设备。 从 Windows 10 版本 2004 开始提供命令
-/// ```
+/// ```text
 /// 从 Windows 10 版本 2004 开始可用的标志：
 /// /reboot - 如果需要完成操作，请重新启动系统
 /// 从 Windows 11 版本 21H2 开始可用的标志：
@@ -185,14 +185,14 @@ pub fn pnputil_enable(commands: Vec<String>) -> e_utils::AnyResult<String> {
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
 /// /force - 即使设备提供关键系统功能，也禁用
-/// ```
+/// ```text
 pub fn pnputil_disable(commands: Vec<String>) -> e_utils::AnyResult<String> {
   let mut args = vec!["/disable-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
 /// #/remove-device 尝试从系统中删除设备。 从 Windows 10 版本 2004 开始提供命令。
-/// ```
+/// ```text
 /// 从 Windows 10 版本 2004 开始可用的标志：
 /// /subtree - 删除整个设备子树，包括任何子设备
 /// /reboot - 如果需要完成操作��请重新启动系统
@@ -202,14 +202,14 @@ pub fn pnputil_disable(commands: Vec<String>) -> e_utils::AnyResult<String> {
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选
 /// /force - 即使设备提供关键系统功能，也会删除
-/// ```
+/// ```text
 pub fn pnputil_remove(commands: Vec<String>) -> e_utils::AnyResult<String> {
   let mut args = vec!["/remove-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
 /// #/restart-device 尝试从系统中删除设备。 从 Windows 10 版本 2004 开始提供命令。
-/// ```
+/// ```text
 ///从 Windows 10 版本 2004 开始可用的标志：
 /// /reboot - 如果需要完成操作，请重新启动系统
 /// 从 Windows 11 版本 21H2 开始可用的标志：
@@ -217,18 +217,18 @@ pub fn pnputil_remove(commands: Vec<String>) -> e_utils::AnyResult<String> {
 /// 从 Windows 11 版本 22H2 开始可用的标志：
 /// /class <name | GUID> - 按设备类名称或 GUID 进行筛选
 /// /bus <name | GUID> - 按总线枚举器名称或总线类型 GUID 进行筛选。
-/// ```
+/// ```text
 pub fn pnputil_restart(commands: Vec<String>) -> e_utils::AnyResult<String> {
   let mut args = vec!["/restart-device".to_string()];
   args.extend(commands);
   pnputil(args)
 }
 /// #/add-driver 添加驱动程序包
-/// ```
+/// ```text
 /// pnputil /add-driver c:\oem\*.inf /install
 /// pnputil /add-driver x:\driver.inf /install
 /// pnputil /add-driver device.inf /install
-/// ```
+/// ```text
 pub fn pnputil_add_driver(commands: Vec<String>) -> e_utils::AnyResult<String> {
   let mut args = vec!["/add-driver".to_string()];
   args.extend(commands);
@@ -236,19 +236,19 @@ pub fn pnputil_add_driver(commands: Vec<String>) -> e_utils::AnyResult<String> {
 }
 
 /// #/scan-devices 扫描系统是否有任何设备硬件更改。 从 Windows 10 版本 2004 开始提供命令。
-/// ```
+/// ```text
 /// /scan-devices [/instanceid <instance ID>] [/async]
 /// 从 Windows 10 版本 2004 开始可用的标志：
 /// /instanceid <instance ID> - 扫描设备子树中的更改
 /// /async - 异步扫描更改
-/// ```
+/// ```text
 pub fn pnputil_scan() -> e_utils::AnyResult<String> {
   pnputil(vec!["/scan-devices"])
 }
 /// #/delete-device 删除驱动程序包
-/// ```
+/// ```text
 /// 删除驱动程序包
-/// ```
+/// ```text
 pub fn pnputil_delete_driver<I>(commands: I) -> e_utils::AnyResult<String>
 where
   I: IntoIterator<Item = String>,
@@ -259,10 +259,10 @@ where
 }
 
 /// #/export-driver 导出驱动
-/// ```
+/// ```text
 /// pnputil /export-driver oem6.inf .
 /// pnputil /export-driver * c:\backup
-/// ```
+/// ```text
 pub fn pnputil_export_driver(commands: Vec<String>) -> e_utils::AnyResult<String> {
   if let Some(target) = commands.get(1) {
     let target = std::path::Path::new(target);

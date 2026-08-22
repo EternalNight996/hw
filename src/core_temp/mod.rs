@@ -132,7 +132,7 @@ impl CoreTemp {
 
 impl CoreTemp {
   pub const EXE: &'static str = "CoreTemp.exe";
-  pub const DIR: &'static str = "plugins/CoreTemp";    
+  pub const DIR: &'static str = "plugins/CoreTemp";
   fn parse_value(value: Vec<f64>) -> (f64, f64, f64) {
     let temperature = value.iter().sum::<f64>() / value.len() as f64;
     let min = value.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).cloned().unwrap_or(0.0);

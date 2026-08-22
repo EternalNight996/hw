@@ -16,7 +16,6 @@
 // #[cfg(not(any(target_os = "android", target_os = "linux")))]
 // use crate::bsd::*;
 
-
 // /// Returns an iterator that produces the list of interfaces that the
 // /// operating system considers "up", that is, configured and active.
 // pub fn interfaces() -> io::Result<InterfaceUp> {
@@ -167,7 +166,6 @@
 //     Some([b0, b1, b2, b3, b4, b5])
 //   }
 // }
-
 
 // #[cfg(all(unix, not(any(target_os = "android", target_os = "linux"))))]
 // mod bsd {

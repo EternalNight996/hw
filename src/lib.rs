@@ -19,10 +19,10 @@
 pub mod aida64;
 pub mod drive;
 pub mod file_info;
-#[cfg(all(feature = "ohm", target_os = "windows"))]
-pub mod ohm;
 #[cfg(all(feature = "lhm", target_os = "windows"))]
 pub mod lhm;
+#[cfg(all(feature = "ohm", target_os = "windows"))]
+pub mod ohm;
 #[cfg(feature = "os")]
 pub mod os;
 #[cfg(feature = "os-office")]
@@ -35,14 +35,14 @@ pub mod cli;
 #[cfg(feature = "cli")]
 pub use cli::*;
 
-#[cfg(feature = "disk")]
-pub mod disk;
-#[cfg(all(feature = "core-temp", target_os = "windows"))]
-pub mod core_temp;
+pub mod api_test;
 #[cfg(all(feature = "argus-monitor", target_os = "windows"))]
 pub mod argus_monitor;
-pub mod api_test;
 pub mod common;
+#[cfg(all(feature = "core-temp", target_os = "windows"))]
+pub mod core_temp;
+#[cfg(feature = "disk")]
+pub mod disk;
 pub mod os_more;
 pub mod share;
 pub mod wmic;

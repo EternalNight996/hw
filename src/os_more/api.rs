@@ -247,7 +247,7 @@ pub async fn network_query<T: AsRef<str>>(info: &super::Type, args: &[T], filter
           crate::p(format!("本地时间: {}", local_time.format("%Y-%m-%d %H:%M:%S")));
           crate::p(format!("时间差: {}秒", time_diff.num_seconds()));
           if is_valid {
-            Err(format!("时间状态: × 误差在{}/s 允许误差{}/s",time_diff.num_seconds(), sec).into())
+            Err(format!("时间状态: × 误差在{}/s 允许误差{}/s", time_diff.num_seconds(), sec).into())
           } else {
             Ok(format!("时间状态: ✔️ 误差在{sec}/s内"))
           }

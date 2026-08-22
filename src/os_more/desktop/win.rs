@@ -46,12 +46,7 @@ fn process_desktop_entries(desktop_path: &PathBuf, uname: &str, attr_filter: Opt
         }
       }
 
-      if entry
-        .file_name()
-        .into_string()
-        .map(|fname| filters.contains(&&*fname))
-        .unwrap_or_default()
-      {
+      if entry.file_name().into_string().map(|fname| filters.contains(&&*fname)).unwrap_or_default() {
         continue;
       }
 

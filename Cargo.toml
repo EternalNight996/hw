@@ -4,7 +4,7 @@ crate-type = ["rlib"]
 proc-macro = false
 
 [features]
-log = ["e-log/log"]
+log = ["tracing"]
 tracing = ["e-log/tracing"]
 ohm = ["wmi", "system"]
 lhm = ["wmi", "system"]

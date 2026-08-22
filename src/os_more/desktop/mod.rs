@@ -91,12 +91,7 @@ mod tests {
       let items = get_desktop_items(None, None, &vec![]);
 
       for item in &items {
-        let is_hidden = item
-          .path
-          .file_name()
-          .and_then(|n| n.to_str())
-          .map(|s| s.starts_with('.'))
-          .unwrap_or(false);
+        let is_hidden = item.path.file_name().and_then(|n| n.to_str()).map(|s| s.starts_with('.')).unwrap_or(false);
 
         assert_eq!(item.is_hidden, is_hidden, "隐藏状态应该与文件名是否以点开头一致: {}", item.path.display());
       }

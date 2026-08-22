@@ -175,7 +175,6 @@ impl Gateway {
   }
 }
 
-
 /// Get IP address of the default Network Interface
 pub fn get_local_ipaddr() -> Result<IpAddr, String> {
   let socket = match UdpSocket::bind("0.0.0.0:0") {
@@ -513,10 +512,7 @@ impl MacAddr {
   }
   /// Return a formatted string of MAC address
   pub fn address(&self) -> String {
-    format!(
-      "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-      self.0, self.1, self.2, self.3, self.4, self.5
-    )
+    format!("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", self.0, self.1, self.2, self.3, self.4, self.5)
   }
   /// Construct an all-zero MacAddr instance
   pub fn zero() -> MacAddr {

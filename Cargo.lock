@@ -383,7 +383,6 @@ checksum = "11b0e0abb994e06ddf47f0d18da6fb6be547af6e412617d7831f4c1af8a5fcdd"
 dependencies = [
  "crossbeam-channel",
  "e-utils",
- "log",
  "parking_lot",
  "paste",
  "serde",

@@ -35,7 +35,6 @@ pub async fn os_office_query<T: AsRef<str>>(task: &str, args: &[T]) -> e_utils::
       _ => Err("Task Error".into()),
     };
   }
-
 }
 
 /// Office激活版本
