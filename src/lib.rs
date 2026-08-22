@@ -43,7 +43,10 @@ pub mod common;
 pub mod core_temp;
 #[cfg(feature = "disk")]
 pub mod disk;
+pub mod gui_config;
+pub mod log;
 pub mod os_more;
 pub mod share;
+pub mod test_mode;
 pub mod wmic;
-pub use share::{dp, ep, p, wp};
+pub use share::{dp, ep, p, rr_line, wp, write_result_line};

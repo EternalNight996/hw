@@ -21,6 +21,7 @@ arg_enum! {
         OSOffice,
         Disk,
         CoreTemp,
+        Test,
     }
 }
 

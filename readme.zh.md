@@ -8,6 +8,8 @@
   
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw)[![API](https://docs.rs/e-log/badge.svg)](https://docs.rs/hw)[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
+[![CI](https://github.com/eternalnight996/hw/actions/workflows/ci.yml/badge.svg)](https://github.com/eternalnight996/hw/actions/workflows/ci.yml)
+
 [English](readme.md) | 简体中文
 
 </div>
@@ -36,6 +38,12 @@ cd hw
 cargo install just
 just
 ```
+
+> 运行日志以 e-log（tracing）方式输出：按天滚动写入 `logs/hw-*.log`（含时间戳+级别），控制台输出到 **stderr**；stdout 仅保留 `R<...>R` 协议行，etest 解析不受日志干扰。
+
+> CI（GitHub Actions）覆盖：`cargo check --all-features`、`--no-default-features --features "cli,log"`、`--features "ohm,cli,log"` 与 `cargo test`（lib + doc）。
+
+**默认启动为 GUI**：`cargo run`（或 `target\\debug\\hw-gui.exe`）打开桌面应用，含「实时监控 / Check 测试 / etest 规则」三个视图；命令行工具仍为 `hw`（如 `hw --api Test --task list`）。
 
 **命令区别说明：**
 - **data**: 仅返回传感器当前值
@@ -337,6 +345,166 @@ hw --api Disk --task data --args C:
 hw --api Disk --task mount-tree --args C:
 # 检查磁盘负载
 hw --api Disk --task check-load --args 10 90
+```
+---
+### [17. 📖 点击Rust调用测试模式](src/test_mode/)
+### 测试模式（可注册测试框架，受 TrafficMonitor 插件接口启发）
+```bash
+# 列出所有已注册模式
+hw --api Test --task list
+
+# 网速上/下行速率（B/s），5 次采样
+hw --api Test --task net-speed --args print -- 5
+
+# CPU 利用率检查：5 秒，目标 80%，误差 ±10%，并施加 60% 负载
+hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 60
+
+# 内存利用率，单次数据
+hw --api Test --task mem-usage --args data
+
+# 磁盘占用率与 IO 速率
+hw --api Test --task disk-usage --args print -- 3
+
+# 温度（°C）与显卡利用率（需在 plugins/ 放置 LHM/OHM/AIDA64，推荐 LHM）
+hw --api Test --task temp --args print -- 3
+hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
+```
+动词为 `--args` 首参数（`data` / `print` / `check`，缺省 `print`）；测试参数跟在 `--` 后：`<秒数> <目标值> <误差> <负载%>`；`--filter` 限制参与校验/输出的指标。
+
+**新增一个测试模式 = 1 个模块 + 1 行注册**（无需改动分发代码）：
+1. 实现 `TestMode`（name/description/create）+ `ModeInstance`（sample，可选 setup/teardown/spawn_load）
+2. 声明 `pub static MODE: XxxMode = XxxMode;`
+3. 在 `src/test_mode/builtin/mod.rs` 注册一行
+
+详见 [src/test_mode/mod.rs](src/test_mode/mod.rs) 的 trait 文档。
+---
+### [18. 📖 图形化界面 — hw-gui（eframe/egui 桌面应用）](src/bin/hw-gui.rs)
+基于 eframe/egui 的桌面 GUI（`hw-gui`），形态参考 TrafficMonitor 的悬浮窗风格：
+
+- **左侧栏 — 测试功能项**：`hw-config.json` plan 的全部功能项，每项带「是否测试」勾选框（解锁后可改并保存）与上次 PASS/FAIL/跳过 状态；下方为实时指标值
+- **中间 — 测试数据线图**（固定布局，测试时更新）：当前规则样本曲线 / 实时曲线 / Check 曲线（含目标带）
+- **Check 与规则运行**在顶栏操作；可导出与 CLI 相同的 etest 报告 JSON（见第 19 节）
+
+```bash
+# 构建（gui 特性引入 eframe/egui_plot；需要 rustc >= 1.95）
+cargo build --features gui --bin hw-gui
+
+# 运行
+target\debug\hw-gui.exe
+
+# 自动化冒烟测试：3 秒后自动关闭窗口
+set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
+```
+
+温度/GPU/风扇/电压/功率/CPU 主频模式需要 `plugins/` 下有传感器后端 —— **推荐 LibreHardwareMonitor（LHM，OpenHardwareMonitor 的维护版）**，放在 `plugins/LHM/LibreHardwareMonitor.exe`；OHM（`plugins/OHM/OpenHardwareMonitor.exe`）或 AIDA64（`plugins/AIDA64/AIDA64.exe`）作为回退。首次启动这些模式最长约 20 秒（拉起后端进程）；其余模式开箱即用。
+---
+### [19. 📖 etest 测试平台接入](src/test_mode/rules.rs)
+生产测试由 **etest** 平台调度：平台通过命令行调用 `hw.exe`，解析标准输出的 `R<...>R` 包装 JSON：
+
+```text
+R<{"content":"...","status":true,"opts":null}>R
+```
+
+> **输出契约**：明细（逐秒进度/汇总）经 e-log 正常输出（`logs/hw-*.log` + stderr），不含 `R<...>R`；测试结束时，将全项产测明细以 `R<...>R` 作为**结果日志（`gui.log_file`，默认 `hw-gui-test.log`）的最后一行**追加 —— `status` = 整体 PASS/FAIL，`content` = 规则报告 JSON。
+
+> 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
+
+**测试规则 —— 统一配置 `hw-config.json` 的 `plan` 段**（etest 只改这一个文件：`gui`=运行行为，`plan`=测试规则）。每个测试项一条，含上下限与稳定性：
+
+| 字段 | 说明 | 示例 |
+| --- | --- | --- |
+| `id` | 测试项 ID（唯一） | `net-up` |
+| `description` | 中文描述（GUI 与报告直接显示，如 `CPU 主频（MHz）`） | `CPU 主频（MHz）` |
+| `enabled` | **是否测试该项**：`true` = 执行并判定；`false` = 跳过（仍显示在清单，报告标记 `skipped`，不参与整体判定） | `true` |
+| `mode` | 已注册测试模式（见第 17 节） | `net-speed` |
+| `metric` | 指标名包含匹配；空 = 该模式全部指标须通过 | `Total_Rx` |
+| `unit` | 可选单位校验 | `B/s` |
+| `min` / `max` | 上下限，按采样**平均值**判定；省略 = 不限 | `1000000` / `null` |
+| `max_std` | **稳定性**：采样标准差 σ 上限；省略 = 不限 | `2.0` |
+| `secs` | 采样秒数（默认 3） | `5` |
+| `load` | 负载%（默认 0） | `0` |
+
+`plan` 段模板（入库的 `hw-config.json` 含 `gui` + 本 `plan`）：
+
+```json
+{
+  "name": "my-plan",
+  "rules": [
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "max": null, "max_std": null, "secs": 5, "load": 0 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "min": null, "max": 90, "max_std": 2.0, "secs": 3, "load": 0 }
+  ]
+}
+```
+
+**命令：**
+
+```bash
+# 生成/刷新规则模板
+# 重新生成统一配置模板（gui + plan）
+hw --api Test --task config-template --args hw-config.json
+
+# 执行 hw-config.json 内的 plan（也兼容裸规则文件）
+hw --api Test --task run-rules --args hw-config.json
+```
+
+`content` 中的报告 JSON（逐项）：`{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`。拿到官方 etest 规范后可按其字段名对齐。
+
+GUI 的「etest 规则」视图可直接加载同一规则文件逐条执行（带进度与曲线），并导出与 CLI 完全一致的报告 JSON —— 最终生产测试可以全程在 GUI 中运行。
+
+**全功能项对照表**（限值为建议值，按你的产品调整）：
+
+| 功能项 | mode | metric（建议） | 建议上限/说明 |
+| --- | --- | --- | --- |
+| CPU 主频 | `cpu-clock` | 任意（空=全部核心） | MHz，稳定性可加 `max_std` |
+| CPU 温度 | `temp` | `CPU Package` | ≤ 85 °C |
+| GPU 温度 | `temp` | `GPU` | ≤ 90 °C |
+| 主板温度 | `temp` | `Mainboard` | ≤ 60 °C |
+| 风扇转速 | `fan-speed` | 任意（空=全部风扇） | 建议 `min` ≥ 500 RPM |
+| 电压 | `voltage` | 任意 | V，按规格填 min/max |
+| 功率 | `power` | 任意 | W，按规格填 max |
+| CPU 利用率 | `cpu-usage` | `CPU_Usage_Global` | % |
+| 内存利用率 | `mem-usage` | `RAM_Usage` | ≤ 90 %，稳定性 `max_std` |
+| 磁盘占用 | `disk-usage` | `C: Used%` | ≤ 90 % |
+| 网速 | `net-speed` | `Total_Rx` / `Total_Tx` | B/s，按需 `min` |
+| GPU 利用率 | `gpu-usage` | 任意 | % |
+
+---
+### [20. 📖 统一配置表（`hw-config.json`，etest 只改这一个文件）](src/gui_config.rs)
+etest / 操作员直接编辑**唯一文件 `hw-config.json`**（首次运行自动生成）—— `gui` 段控制运行行为、`plan` 段为测试规则，无需改代码：
+
+| 字段 | 含义 | 默认值 |
+| --- | --- | --- |
+| `lock` | 配置锁：`{enabled, password}` —— `enabled=true` 时 GUI 所有配置项只读（防误改）；解锁需密码（默认 `admin`，仅本会话生效） | `{true, "admin"}` |
+| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过（逐项由 `plan` 中每条规则的 `enabled` 控制） | `true` |
+| `default_view` | 启动视图：`live` / `check` / `rules` | `rules` |
+| `auto_run` | 启动后自动开始执行规则 | `true` |
+| `run_seconds` | 测试总时长上限（秒）；`0` = 不限（按每条规则自身 secs），超时后剩余规则标记超时 | `0` |
+| `auto_close` | 测试完成后自动关闭窗口 | `true` |
+| `exit_code_on_fail` | 测试失败时进程退出码返回 `1`（etest 不解析也能判断；仅 auto_close 时生效） | `true` |
+| `raise_load_percent` | 全局负载%；>0 时作为未指定负载规则的默认负载（也是 Check 默认负载） | `0` |
+| `display_mode` | `all` = 显示全部指标；`single` = 只显示 `display_metrics` 指定指标 | `all` |
+| `display_metrics` | `display_mode=single` 时按指标名包含匹配显示（如 `["CPU_0_Clock"]` 只看 CPU 主频、`["CPU_Usage_Global"]` 只看占用） | `[]` |
+| `check_params` | Check 测试参数（etest 可直接修改）：`{secs, target, error, load}`（秒数/目标值/±误差/负载） | `{5, 1000, 500, 0}` |
+| `log_file` | 测试结果日志文件，`R<...>R` 结果追加写入（支持 `{origin}`/`{env:KEY}`，空 = 不写文件） | `hw-gui-test.log` |
+
+产线一键示例：启动即进规则视图 → 自动运行 `plan` → 拉 60% 负载 → 只看 CPU 主频/占用 → 完成自动关闭并以退出码上报：
+
+```json
+{
+  "gui": {
+    "default_view": "rules",
+    "auto_run": true,
+    "run_seconds": 60,
+    "auto_close": true,
+    "exit_code_on_fail": true,
+    "raise_load_percent": 60,
+    "display_mode": "single",
+    "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"],
+    "check_params": { "secs": 5, "target": 1000, "error": 500, "load": 0 },
+    "log_file": "hw-gui-test.log"
+  },
+  "plan": { "name": "全项产测", "rules": [ ... 12 项 ... ] }
+}
 ```
 ---
 ## 🚀 开发进度

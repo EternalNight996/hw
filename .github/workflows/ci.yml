@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Check (all features)
+        run: cargo check --all-features
+      - name: Check (minimal cli+log)
+        run: cargo check --no-default-features --features "cli,log"
+      - name: Check (README combo ohm,cli,log)
+        run: cargo check --no-default-features --features "ohm,cli,log"
+      - name: Test (lib + doc)
+        run: cargo test
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Check (minimal cli+log, cross-platform)
+        run: cargo check --no-default-features --features "cli,log"
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: fmt (informational)
+        run: cargo fmt -- --check || echo "fmt drift exists; run cargo fmt to fix"

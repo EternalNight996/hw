@@ -1,0 +1,185 @@
+{
+  "_说明": "hw 统一配置表，etest 可直接修改本文件（gui=运行行为, plan=测试规则, lock=配置锁）。字段说明见 README 第 20 节。",
+  "lock": {
+    "enabled": true,
+    "password": "admin"
+  },
+  "gui": {
+    "default_view": "rules",
+    "auto_run": true,
+    "run_seconds": 0,
+    "auto_close": true,
+    "exit_code_on_fail": true,
+    "raise_load_percent": 0.0,
+    "display_mode": "all",
+    "display_metrics": [],
+    "check_params": {
+      "secs": 5,
+      "target": 1000.0,
+      "error": 500.0,
+      "load": 0.0
+    }
+  },
+  "test_mode": true,
+  "plan": {
+    "name": "全项产测",
+    "rules": [
+      {
+        "id": "cpu-clock",
+        "description": "CPU 主频（MHz）",
+        "enabled": true,
+        "mode": "cpu-clock",
+        "metric": "",
+        "unit": "MHz",
+        "min": null,
+        "max": null,
+        "max_std": null,
+        "secs": 5,
+        "load": 0.0
+      },
+      {
+        "id": "cpu-temp",
+        "description": "CPU 温度（°C）",
+        "enabled": true,
+        "mode": "temp",
+        "metric": "CPU Package",
+        "unit": "°C",
+        "min": null,
+        "max": 85.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "gpu-temp",
+        "description": "GPU 温度（°C）",
+        "enabled": true,
+        "mode": "temp",
+        "metric": "GPU",
+        "unit": "°C",
+        "min": null,
+        "max": 90.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "mobo-temp",
+        "description": "主板温度（°C）",
+        "enabled": true,
+        "mode": "temp",
+        "metric": "Mainboard",
+        "unit": "°C",
+        "min": null,
+        "max": 60.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "fan",
+        "description": "风扇转速（RPM）",
+        "enabled": true,
+        "mode": "fan-speed",
+        "metric": "",
+        "unit": "RPM",
+        "min": 500.0,
+        "max": null,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "voltage",
+        "description": "电压（V）",
+        "enabled": true,
+        "mode": "voltage",
+        "metric": "",
+        "unit": "V",
+        "min": null,
+        "max": null,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "power",
+        "description": "功率（W）",
+        "enabled": true,
+        "mode": "power",
+        "metric": "",
+        "unit": "W",
+        "min": null,
+        "max": null,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "cpu-usage",
+        "description": "CPU 利用率（%）",
+        "enabled": true,
+        "mode": "cpu-usage",
+        "metric": "CPU_Usage_Global",
+        "unit": "%",
+        "min": null,
+        "max": 100.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "ram-usage",
+        "description": "内存利用率（%）",
+        "enabled": true,
+        "mode": "mem-usage",
+        "metric": "RAM_Usage",
+        "unit": "%",
+        "min": null,
+        "max": 90.0,
+        "max_std": 2.0,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "disk-c",
+        "description": "C 盘占用率（%）",
+        "enabled": true,
+        "mode": "disk-usage",
+        "metric": "C: Used%",
+        "unit": "%",
+        "min": null,
+        "max": 90.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      },
+      {
+        "id": "net-up",
+        "description": "网速上行（B/s）",
+        "enabled": true,
+        "mode": "net-speed",
+        "metric": "Total_Rx",
+        "unit": "B/s",
+        "min": 1000000.0,
+        "max": null,
+        "max_std": null,
+        "secs": 5,
+        "load": 0.0
+      },
+      {
+        "id": "gpu-usage",
+        "description": "GPU 利用率（%）",
+        "enabled": true,
+        "mode": "gpu-usage",
+        "metric": "",
+        "unit": "%",
+        "min": null,
+        "max": 100.0,
+        "max_std": null,
+        "secs": 3,
+        "load": 0.0
+      }
+    ]
+  }
+}

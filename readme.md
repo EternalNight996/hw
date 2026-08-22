@@ -8,6 +8,8 @@
   
 [![API](https://img.shields.io/badge/api-master-yellow.svg)](https://github.com/eternalnight996/hw)[![API](https://docs.rs/e-log/badge.svg)](https://docs.rs/hw)[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
+[![CI](https://github.com/eternalnight996/hw/actions/workflows/ci.yml/badge.svg)](https://github.com/eternalnight996/hw/actions/workflows/ci.yml)
+
 English | [简体中文](readme.zh.md)
 
 </div>
@@ -36,6 +38,12 @@ cd hw
 cargo install just
 just
 ```
+
+> 运行日志以 e-log（tracing）方式输出：按天滚动写入 `logs/hw-*.log`（含时间戳+级别），控制台输出到 **stderr**；stdout 仅保留 `R<...>R` 协议行，etest 解析不受日志干扰。
+
+> CI (GitHub Actions) covers: `cargo check --all-features`, `--no-default-features --features "cli,log"`, `--features "ohm,cli,log"`, and `cargo test` (lib + doc).
+
+**Default launch is the GUI**: `cargo run` (or `target\\debug\\hw-gui.exe`) opens the desktop app with three views — Live Monitoring / Check / etest Rules. The CLI tool remains `hw` (e.g. `hw --api Test --task list`).
 
 **Command Differences:**
 - **data**: Only returns current sensor values
@@ -337,6 +345,170 @@ hw --api Disk --task data --args C:
 hw --api Disk --task mount-tree --args C:
 # Check Disk Load
 hw --api Disk --task check-load --args 10 90
+```
+---
+### [17. 📖 Click for Rust Test Modes](src/test_mode/)
+### Test Modes (pluggable test framework, inspired by TrafficMonitor's plugin interface)
+```bash
+# List all registered modes
+hw --api Test --task list
+
+# Network upload/download rate (B/s), 5 samples
+hw --api Test --task net-speed --args print -- 5
+
+# CPU usage check: 5s, target 80%, ±10%, with 60% load
+hw --api Test --task cpu-usage --args check --filter CPU_Usage_Global -- 5 80 10 60
+
+# Memory usage, single data point
+hw --api Test --task mem-usage --args data
+
+# Disk used% and IO rates
+hw --api Test --task disk-usage --args print -- 3
+
+# Temperature (°C) and GPU utilization (need LHM/OHM/AIDA64 in plugins/, LHM preferred)
+hw --api Test --task temp --args print -- 3
+hw --api Test --task gpu-usage --args check --filter "GPU Core" -- 5 90 10
+```
+The verb is the first `--args` value (`data` / `print` / `check`, default `print`); test params follow `--` as `<secs> <target> <error> <load%>`; `--filter` restricts which metrics are validated/emitted.
+
+**Adding a new mode** = 1 module + 1 registration line (no dispatcher changes):
+1. Implement `TestMode` (name/description/create) + `ModeInstance` (sample; optional setup/teardown/spawn_load)
+2. Add a `pub static MODE: XxxMode = XxxMode;`
+3. Register in `src/test_mode/builtin/mod.rs` (one line)
+
+See [src/test_mode/mod.rs](src/test_mode/mod.rs) for the trait docs.
+---
+### [18. 📖 GUI — hw-gui (eframe/egui desktop app)](src/bin/hw-gui.rs)
+A desktop GUI (`hw-gui`) built with eframe/egui, modeled on TrafficMonitor's floating-window style:
+
+- **Left sidebar — test items**: all functional items from `hw-config.json` plan, each with a `是否测试` checkbox (unlock to toggle, persisted) and last PASS/FAIL/跳过 status; plus live metric values
+- **Center — test data line charts** (fixed layout, updates while testing): per-rule samples / live series / check curves with target band
+- **Check & rules run** from the top bar; export the same etest report JSON as the CLI (see section 19)
+
+```bash
+# Build (the gui feature adds eframe/egui_plot; requires rustc >= 1.95)
+cargo build --features gui --bin hw-gui
+
+# Run
+target\debug\hw-gui.exe
+
+# Automated smoke test: auto-close the window after 3 seconds
+set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
+```
+
+Temperature/GPU/fan/voltage/power/CPU-clock modes need a sensor backend executable under `plugins/` — **prefer LibreHardwareMonitor (LHM, the maintained fork of OpenHardwareMonitor)** at `plugins/LHM/LibreHardwareMonitor.exe`; OHM (`plugins/OHM/OpenHardwareMonitor.exe`) or AIDA64 (`plugins/AIDA64/AIDA64.exe`) are used as fallback. First start of these modes may take up to ~20 s to launch the backend. Other modes work out of the box.
+---
+### [19. 📖 etest Test Platform Integration](src/test_mode/rules.rs)
+Production testing is driven by the **etest** platform, which invokes `hw.exe` via CLI and parses the `R<...>R`-wrapped JSON on stdout:
+
+```text
+R<{"content":"...","status":true,"opts":null}>R
+```
+
+> **Output contract**: details (per-second progress, summaries) are logged via e-log (`logs/hw-*.log` + stderr) without `R<...>R`; when the run finishes, the full per-item result is appended as the **last line** of the result log (`gui.log_file`, default `hw-gui-test.log`) in `R<...>R` format — `status` = overall PASS/FAIL, `content` = rule report JSON.
+
+> 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
+
+**Test rules — the `plan` section of the unified `hw-config.json`** (one file for etest: `gui` = run behavior, `plan` = test rules). One entry per test item with its limits:
+
+| Field | Meaning | Example |
+| --- | --- | --- |
+| `id` | Test item id (unique) | `net-up` |
+| `description` | Chinese description shown in GUI/report (e.g. `CPU 主频（MHz）`) | `CPU 主频（MHz）` |
+| `enabled` | **Test this item?** `true` = run & judge; `false` = skipped (still listed, report marks `skipped`, excluded from overall status) | `true` |
+| `mode` | Registered test mode (section 17) | `net-speed` |
+| `metric` | Metric name contains-match; empty = all metrics must pass | `Total_Rx` |
+| `unit` | Optional unit check | `B/s` |
+| `min` / `max` | Lower/upper limit, judged on sampling **average**; omitted = unlimited | `1000000` / `null` |
+| `max_std` | **Stability**: max standard deviation σ; omitted = unlimited | `2.0` |
+| `secs` | Sampling seconds (default 3) | `5` |
+| `load` | Load % (default 0) | `0` |
+
+`plan` template (the committed `hw-config.json` contains `gui` + this `plan`):
+
+```json
+{
+  "name": "my-plan",
+  "rules": [
+    { "id": "net-up", "mode": "net-speed", "metric": "Total_Rx", "unit": "B/s", "min": 1000000, "max": null, "max_std": null, "secs": 5, "load": 0 },
+    { "id": "ram-usage", "mode": "mem-usage", "metric": "RAM_Usage", "unit": "%", "min": null, "max": 90, "max_std": 2.0, "secs": 3, "load": 0 }
+  ]
+}
+```
+
+**Commands:**
+
+```bash
+# Generate / refresh the rule template
+# Regenerate the unified config template (gui + plan)
+hw --api Test --task config-template --args hw-config.json
+
+# Execute the plan inside hw-config.json (or a bare rule file)
+hw --api Test --task run-rules --args hw-config.json
+```
+
+Report JSON in `content` (per item): `{plan, status, results:[{item, mode, metric, unit, value, avg, min, max, std_dev, samples, min_limit, max_limit, max_std_limit, pass, message}]}`. Field names can be adapted to the official etest schema when provided.
+
+The GUI's **etest 规则 (Rules)** view loads the same rule file, runs each rule with live progress/curves, and exports the identical report JSON — the final production test can run entirely from the GUI.
+
+**Full item reference** (per-item limits are suggestions — adjust to your product):
+
+| 功能项 | mode | metric（建议） | 建议上限/说明 |
+| --- | --- | --- | --- |
+| CPU 主频 | `cpu-clock` | 任意（空=全部核心） | MHz，稳定性可加 `max_std` |
+| CPU 温度 | `temp` | `CPU Package` | ≤ 85 °C |
+| GPU 温度 | `temp` | `GPU` | ≤ 90 °C |
+| 主板温度 | `temp` | `Mainboard` | ≤ 60 °C |
+| 风扇转速 | `fan-speed` | 任意（空=全部风扇） | 建议 `min` ≥ 500 RPM |
+| 电压 | `voltage` | 任意 | V，按规格填 min/max |
+| 功率 | `power` | 任意 | W，按规格填 max |
+| CPU 利用率 | `cpu-usage` | `CPU_Usage_Global` | % |
+| 内存利用率 | `mem-usage` | `RAM_Usage` | ≤ 90 %，稳定性 `max_std` |
+| 磁盘占用 | `disk-usage` | `C: Used%` | ≤ 90 % |
+| 网速 | `net-speed` | `Total_Rx` / `Total_Tx` | B/s，按需 `min` |
+| GPU 利用率 | `gpu-usage` | 任意 | % |
+
+---
+### [20. 📖 Unified Config Table (`hw-config.json`, one file for etest debugging)](src/gui_config.rs)
+etest/operators edit the **single file `hw-config.json`** (auto-created on first run) — `gui` section controls run behavior, `plan` section holds the test rules. No code changes needed:
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `lock` | Config lock: `{enabled, password}` — when `enabled` is `true` all GUI config items are read-only; unlock with the password (default `admin`, in-session only) | `{true, "admin"}` |
+| `test_mode` | **测试模式总开关**：`true` = 正常测试；`false` = 全部规则跳过（逐项由 `plan` 中每条规则的 `enabled` 控制） | `true` |
+| `default_view` | Startup view: `live` / `check` / `rules` | `rules` |
+| `auto_run` | Auto-start rule execution after launch | `true` |
+| `run_seconds` | Total test duration cap (seconds); `0` = unlimited (each rule keeps its own `secs`); remaining rules are marked timeout when exceeded | `0` |
+| `auto_close` | Auto-close the window when the test completes | `true` |
+| `exit_code_on_fail` | Return process exit code `1` on test failure (etest can judge without parsing; only applies with `auto_close`) | `true` |
+| `raise_load_percent` | Global load %; >0 becomes the default load for rules without explicit load (and the Check default) | `0` |
+| `display_mode` | `all` = show every metric; `single` = only `display_metrics` | `all` |
+| `display_metrics` | Metric name contains-match list used when `display_mode=single` (e.g. `["CPU_0_Clock"]` for CPU frequency, `["CPU_Usage_Global"]`) | `[]` |
+| `check_params` | Check 测试默认参数（etest 可直接修改）：`{secs, target, error, load}` | `{5, 1000, 500, 0}` |
+| `log_file` | Test result log file — the `R<...>R` result is appended here (supports `{origin}`/`{env:KEY}`, empty = no file) | `hw-gui-test.log` |
+
+```json
+
+```
+
+Example — production one-shot: start at the rules view, run the `plan`, raise 60% load, watch only CPU frequency/usage, close with exit code when done:
+
+```json
+{
+  "gui": {
+    "default_view": "rules",
+    "auto_run": true,
+    "run_seconds": 60,
+    "auto_close": true,
+    "exit_code_on_fail": true,
+    "raise_load_percent": 60,
+    "display_mode": "single",
+    "display_metrics": ["CPU_0_Clock", "CPU_Usage_Global"],
+    "check_params": { "secs": 5, "target": 1000, "error": 500, "load": 0 },
+    "log_file": "hw-gui-test.log"
+  },
+  "plan": { "name": "全项产测", "rules": [ ... 12 items ... ] }
+}
 ```
 ---
 ## 🚀 Development Progress
