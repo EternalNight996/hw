@@ -4,11 +4,15 @@ use goblin::pe::PE;
 use goblin::Object;
 use std::borrow::Cow;
 use std::collections::HashMap;
+#[cfg(target_os = "windows")]
 use std::ffi::OsStr;
+#[cfg(target_os = "windows")]
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+#[cfg(target_os = "windows")]
 use winapi::shared::minwindef::DWORD;
+#[cfg(target_os = "windows")]
 use winapi::um::processenv::SearchPathW;
 
 use super::{ArchType, Dependency, ExeTypeEx, ImportedFunction, PlatformType};
@@ -216,7 +220,7 @@ fn elf_lib_data_parse(elf: Elf<'_>) -> Vec<Dependency> {
       #[cfg(target_os = "windows")]
       let fullpath = None; // ELF 文件在 Windows 上不适用
       #[cfg(target_os = "linux")]
-      let fullpath = super::find::find_so_path(lib);
+      let fullpath = find_so_path(lib);
       Dependency {
         name: lib.to_string(),
         functions: Vec::new(),
@@ -267,7 +271,8 @@ fn pe_lib_data_parse(pe: PE<'_>) -> Vec<Dependency> {
   libs.into_values().collect()
 }
 
-/// 寻找完整路径
+/// 寻找完整路径(Windows: SearchPathW)
+#[cfg(target_os = "windows")]
 pub fn find_dll_path(dll_name: &str) -> Option<std::path::PathBuf> {
   let wide_dll_name: Vec<u16> = OsStr::new(dll_name).encode_wide().chain(std::iter::once(0)).collect();
 
@@ -295,4 +300,10 @@ pub fn find_dll_path(dll_name: &str) -> Option<std::path::PathBuf> {
   } else {
     None
   }
+}
+
+/// 寻找完整路径(非 Windows:无 DLL 搜索路径概念,恒 None)
+#[cfg(not(target_os = "windows"))]
+pub fn find_dll_path(_dll_name: &str) -> Option<std::path::PathBuf> {
+  None
 }
