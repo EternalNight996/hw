@@ -345,6 +345,16 @@ hw --api Disk --task data --args C:
 hw --api Disk --task mount-tree --args C:
 # 检查磁盘负载
 hw --api Disk --task check-load --args 10 90
+# 各卷已用容量（含无盘符/资源管理器里不显示的隐藏卷，如恢复分区、系统备份盘）
+hw --api Disk --task usage --args "系统备份盘"
+# 只取已使用容量值：磁盘名 + 字节数（多项空格分隔；名称取卷标 > 盘符 > 卷 GUID 短名）
+hw --api Disk --task usage-used -- "系统备份盘"
+# 备份是否更新：本次已用 > 上次已用字节数 => R<...>R 的 status=true
+hw --api Disk --task usage-check --args 21474836480 -- "系统备份盘"
+# 备份盘首件基线/后续拦截：首次建档，之后比对；丢失/改动/空盘 => status=false
+hw --api Disk --task backup-check --args backup-base.json -- "系统备份盘"
+# 深度校验（逐文件内容 SHA-256，慢）：加 hash
+hw --api Disk --task backup-check --args backup-base.json hash -- "系统备份盘"
 ```
 ---
 ### [17. 📖 点击Rust调用测试模式](src/test_mode/)
@@ -405,7 +415,7 @@ set HW_GUI_SMOKE=1 && target\debug\hw-gui.exe
 R<{"content":"...","status":true,"opts":null}>R
 ```
 
-> **输出契约**：明细（逐秒进度/汇总）经 e-log 正常输出（`logs/hw-*.log` + stderr），不含 `R<...>R`；测试结束时，将全项产测明细以 `R<...>R` 作为**结果日志（`gui.log_file`，默认 `hw-gui-test.log`）的最后一行**追加 —— `status` = 整体 PASS/FAIL，`content` = 规则报告 JSON。
+> **输出契约**：明细（逐秒进度/汇总）经 e-log 正常输出（`logs/hw-*.log` + stderr），不含 `R<...>R`；**`R<...>R` 结果行**在每次调用结束时生成，追加为 **`logs/hw.log` 的最后一行**（事后排查）—— `status` = 整体 PASS/FAIL，`content` = 结果 JSON。**加 `--res` 时，这一行还会写到标准输出 stdout**（etest-core 按标准输出解析），同时进入**结果模式**：内容只保留关键字段（判定结论/差异计数/指纹），明细只落 `logs/hw.log` 不再输出 stderr，stdout 里除这一行 `R<...>R` 外没有任何其它内容。**不加 `--res` 时标准输出不含协议行**（明细照常走 stderr），R 行只进日志。失败判定同样是 stdout 上的 `status:false`。
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 

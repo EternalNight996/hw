@@ -270,6 +270,19 @@ hw --api Disk --task data --args C:
 hw --api Disk --task mount-tree --args C:
 # 检查磁盘负载
 hw --api Disk --task check-load --args 10 90
+# 各卷已用容量（含无盘符/资源管理器隐藏的卷，如恢复分区、系统备份盘）
+hw --api Disk --task usage --args "系统备份盘"
+# 备份是否更新：本次已用 > 上次已用字节数 => R<...>R 的 status=true
+hw --api Disk --task usage-check --args 21474836480 -- "系统备份盘"
+# 备份盘首件/拦截：首次运行建基线，之后每次比对；丢失/改动/空盘 => status=false
+hw --api Disk --task backup-check --args backup-base.json -- "系统备份盘"
+# 深度校验：逐文件内容 SHA-256（慢，适合离线）
+hw --api Disk --task backup-check --args backup-base.json hash -- "系统备份盘"
+# 只取已使用容量值：磁盘名 + 字节数（多项空格分隔，便于直接判大小/取数）
+hw --api Disk --task usage-used -- "系统备份盘"
+# 结果模式 --res：标准输出一行 R<...>R（仅关键字段），明细只写 logs/hw.log
+# 不加 --res 时标准输出不含协议行，R 行只追加到 logs/hw.log
+hw --api Disk --task backup-check --res --args backup-base.json -- "系统备份盘"
 ```
 -----------------------------------------------------------
 
@@ -291,6 +304,10 @@ pub struct Opts {
   /// 扩展参数
   #[structopt(long, required = false)]
   pub args: Vec<String>,
+  /// 结果模式：标准输出输出一行 R<...>R（内容为关键字段），明细只写 logs/hw.log；
+  /// 不加 --res 时标准输出不含协议行（R 行只追加到 logs/hw.log）
+  #[structopt(long)]
+  pub res: bool,
   /// 扩展指令
   #[structopt(required = false, last = true)]
   pub command: Vec<String>,
@@ -303,6 +320,7 @@ impl Default for Opts {
       full: false,
       // verbose: 0,
       args: Vec::new(),
+      res: false,
       filter: Vec::new(),
       command: Vec::new(),
     }

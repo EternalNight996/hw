@@ -1,6 +1,8 @@
 #[tokio::main]
 async fn main() -> e_utils::AnyResult<()> {
-  hw::log::init_logging();
+  // --res 结果模式：明细只写 logs/hw.log，标准输出只留 R<...>R 协议行
+  let res = std::env::args().any(|a| a == "--res");
+  hw::log::init_logging_with(res);
   #[cfg(feature = "cli")]
   {
     use hw::cli::api;
@@ -23,8 +25,13 @@ async fn main() -> e_utils::AnyResult<()> {
     } else {
       hw::ep(&content);
     }
-    // 结果：R<...>R 作为结果日志的最后一行追加（etest 读取）
-    hw::write_result_line(&hw::rr_line(&content, status));
+    // 结果：--res 才把 R<...>R 写标准输出（etest-core 从 stdout 解析）；
+    // 无论是否 --res，都追加为结果日志 logs/hw.log 的最后一行
+    let rr = hw::rr_line(&content, status);
+    if res {
+      println!("{rr}");
+    }
+    hw::write_result_line(&rr);
     return Ok(());
   }
   #[cfg(not(feature = "cli"))]

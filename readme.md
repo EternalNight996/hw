@@ -345,6 +345,15 @@ hw --api Disk --task data --args C:
 hw --api Disk --task mount-tree --args C:
 # Check Disk Load
 hw --api Disk --task check-load --args 10 90
+# Used space of each volume, including hidden ones without a drive letter
+hw --api Disk --task usage --args "Backup"
+# Disk name + used bytes (space separated when several volumes match; name = label > drive > short volume GUID)
+hw --api Disk --task usage-used -- "Backup"
+# Is the backup updated: used > last used bytes => R<...>R status=true
+hw --api Disk --task usage-check --args 21474836480 -- "Backup"
+# Backup first-article baseline / interception: init on first run, verify afterwards
+hw --api Disk --task backup-check --args backup-base.json -- "Backup"
+# Deep check (per-file content SHA-256, slow): append "hash"
 ```
 ---
 ### [17. 📖 Click for Rust Test Modes](src/test_mode/)
@@ -405,7 +414,7 @@ Production testing is driven by the **etest** platform, which invokes `hw.exe` v
 R<{"content":"...","status":true,"opts":null}>R
 ```
 
-> **Output contract**: details (per-second progress, summaries) are logged via e-log (`logs/hw-*.log` + stderr) without `R<...>R`; when the run finishes, the full per-item result is appended as the **last line** of the result log (`gui.log_file`, default `hw-gui-test.log`) in `R<...>R` format — `status` = overall PASS/FAIL, `content` = rule report JSON.
+> **Output contract**: details (per-second progress, summaries) are logged via e-log (`logs/hw-*.log` + stderr) without `R<...>R`; the `R<...>R` result line is appended as the **last line of `logs/hw.log`**; with **`--res`** it is additionally printed to stdout as the only line (this is what etest-core parses) and the payload is reduced to the key fields, while details go to `logs/hw.log` only. Without `--res` stdout carries no protocol line — `status` = overall PASS/FAIL, `content` = result JSON. Failures are reported the same way on stdout with `status:false`. Add `--res` for **result mode**: stdout still carries that single `R<...>R` line, but the content keeps only the key fields (verdict / diff counters / fingerprint) and the details are no longer emitted to stderr, only to `logs/hw.log` — the platform needs no log filtering, and volatile fields no longer interfere.
 
 > 规则/配置格式参考兄弟项目 **MVCheck**（机内视觉检查上位机，`Conf.json` 模式）：随仓库提供模板文件、首次运行自动生成、etest 直接编辑。
 

@@ -6,6 +6,12 @@
 
 /// 初始化日志（幂等，可重复调用）。需 tracing 特性。
 pub fn init_logging() {
+  init_logging_with(false);
+}
+
+/// 初始化日志；quiet=true 时明细只写 logs/hw.log，不再输出到 stderr
+/// （CLI --res 用：标准输出只留 R<...>R 协议行，标准错误也保持干净）
+pub fn init_logging_with(quiet: bool) {
   #[cfg(feature = "tracing")]
   {
     use e_log::subscriber::layer::SubscriberExt as _;
@@ -15,10 +21,15 @@ pub fn init_logging() {
     // ReadWrite：允许 write_result_line 把 R<...>R 结果追加为该文件最后一行
     let roll = e_log::appender::rolling::never(&folder, "hw.log", e_log::FileShare::ReadWrite);
     let file_layer = e_log::subscriber::fmt::layer().with_writer(roll).with_ansi(false).with_target(false);
-    // 控制台层（stderr，避免污染 stdout 协议流）
-    let console_layer = e_log::subscriber::fmt::layer().with_writer(std::io::stderr).with_ansi(false).with_target(false);
-    let sub = e_log::subscriber::registry().with(file_layer).with(console_layer);
-    e_log::init_subscriber(sub, false);
+    if quiet {
+      // 结果模式：明细只落文件
+      e_log::init_subscriber(e_log::subscriber::registry().with(file_layer), false);
+    } else {
+      // 控制台层（stderr，避免污染 stdout 协议流）
+      let console_layer = e_log::subscriber::fmt::layer().with_writer(std::io::stderr).with_ansi(false).with_target(false);
+      e_log::init_subscriber(e_log::subscriber::registry().with(file_layer).with(console_layer), false);
+    }
     e_log::info!("日志初始化完成: {}", folder.display());
   }
+  let _ = quiet;
 }

@@ -146,7 +146,7 @@ pub async fn api(op: Opts, _opts: &mut Value) -> e_utils::AnyResult<String> {
     #[cfg(feature = "os-office")]
     Inner::OSOffice => return crate::os_office::os_office_query(&op.task, &op.args).await,
     #[cfg(feature = "disk")]
-    Inner::Disk => return crate::disk::disk_query(&op.task, &op.args, &op.command).await,
+    Inner::Disk => return crate::disk::disk_query(&op.task, &op.args, &op.command, op.res).await,
   };
   if tester.core.results.data.is_empty() && tester.core.is_check {
     tester.core.results.res = "FAIL".to_string();
