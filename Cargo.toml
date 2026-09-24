@@ -72,7 +72,8 @@ winresource = { version = "0.1", optional = true }
 static_vcruntime = { version = "2", optional = true }
 [build-dependencies]
 built = { version = "0.7", features = ["chrono", "git2"], optional = true }
-e-utils = { version = "0.4.18" }
+# e-utils: 跟随主项目版本(本地 path),不再独立锁 crates.io 0.4
+e-utils = { version = "0.5", path = "../e-utils" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 wmi = { version = "0.14", optional = true }
@@ -80,7 +81,8 @@ windows = { version = "0.30", optional = true }
 winapi = { version = "0.3.9", optional = true }
 
 [dependencies]
-e-utils = { version = "^0.4.19", features = ["tokio", "cmd", "parse"] }
+# e-utils: 同上(跟随主项目)
+e-utils = { version = "0.5", path = "../e-utils", features = ["tokio", "cmd", "parse"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
