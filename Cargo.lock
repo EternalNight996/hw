@@ -952,7 +952,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11b0e0abb994e06ddf47f0d18da6fb6be547af6e412617d7831f4c1af8a5fcdd"
 dependencies = [
  "crossbeam-channel",
- "e-utils",
+ "e-utils 0.4.20",
  "paste",
  "serde",
  "serde_json",
@@ -983,8 +983,27 @@ dependencies = [
  "strum",
  "sys-locale",
  "thiserror 2.0.20",
- "tokio",
  "winapi",
+]
+
+[[package]]
+name = "e-utils"
+version = "0.5.1"
+source = "git+ssh://git@github.com/EternalNight996/e-utils.git?tag=v0.5.1#8aaa9b40824066437257c7bb3b0b10cf91686d23"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "encoding_rs",
+ "memchr",
+ "once_cell",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "strum",
+ "sys-locale",
+ "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
@@ -1697,12 +1716,12 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hw"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "built",
  "csv",
  "e-log",
- "e-utils",
+ "e-utils 0.5.1",
  "eframe",
  "egui_plot",
  "futures",
@@ -2284,7 +2303,7 @@ checksum = "4a7349f56a805da588dc8873a0ceef143e21971d2ad65ee86e47e51dbcdb1adc"
 dependencies = [
  "byteorder",
  "conv",
- "e-utils",
+ "e-utils 0.4.20",
  "strum",
 ]
 

@@ -73,7 +73,7 @@ static_vcruntime = { version = "2", optional = true }
 [build-dependencies]
 built = { version = "0.7", features = ["chrono", "git2"], optional = true }
 # e-utils: 跟随主项目版本(本地 path),不再独立锁 crates.io 0.4
-e-utils = { version = "0.5", path = "../e-utils" }
+e-utils = { version = "0.5", git = "ssh://git@github.com/EternalNight996/e-utils.git", tag = "v0.5.1" }
 
 [target.'cfg(target_os="windows")'.dependencies]
 wmi = { version = "0.14", optional = true }
@@ -82,7 +82,7 @@ winapi = { version = "0.3.9", optional = true }
 
 [dependencies]
 # e-utils: 同上(跟随主项目)
-e-utils = { version = "0.5", path = "../e-utils", features = ["tokio", "cmd", "parse"] }
+e-utils = { version = "0.5", git = "ssh://git@github.com/EternalNight996/e-utils.git", tag = "v0.5.1", features = ["tokio", "cmd", "parse"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
@@ -110,7 +110,7 @@ required-features = ["gui"]
 [package]
 name = "hw"
 default-run = "hw-gui"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["Eternal(梦游) <EternalNightYeah2@yeah.net>"]
 edition = "2021"
 rust-version = "1.78.0"
